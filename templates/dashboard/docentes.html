@@ -1,0 +1,473 @@
+{% extends 'dashboard/base.html' %}
+
+{% block dashboard_content %}
+<!-- Estadísticas para docentes -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-icon">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Cursos Activos</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Estudiantes</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-icon">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Presentaciones Recibidas</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Por Revisar</div>
+        </div>
+    </div>
+</div>
+
+<!-- Herramientas Principales -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2 text-primary"></i>Herramientas Principales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions">
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Nueva Asignación</h6>
+                        <p class="text-muted small mb-0">Crear tarea de presentación</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Gestionar Cursos</h6>
+                        <p class="text-muted small mb-0">Administrar cursos y grupos</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Ver Estudiantes</h6>
+                        <p class="text-muted small mb-0">Lista de estudiantes activos</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Reportes</h6>
+                        <p class="text-muted small mb-0">Análisis y estadísticas</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Configurar IA</h6>
+                        <p class="text-muted small mb-0">Ajustar criterios de evaluación</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Calificaciones</h6>
+                        <p class="text-muted small mb-0">Revisar evaluaciones automáticas</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Asignaciones Recientes -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-alt me-2 text-primary"></i>Asignaciones Recientes
+                </h5>
+                <a href="#" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i>Ver Todas
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-tasks text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+                    </div>
+                    <h6 class="text-muted mb-3">No has creado asignaciones aún</h6>
+                    <p class="text-muted small mb-4">Comienza creando tu primera asignación de presentación para tus estudiantes.</p>
+                    <a href="#" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Crear Primera Asignación
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rendimiento de Estudiantes -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-success"></i>Rendimiento General
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="text-primary mb-2">
+                                <i class="fas fa-upload fa-2x"></i>
+                            </div>
+                            <h4 class="text-primary mb-1">0</h4>
+                            <small class="text-muted">Presentaciones Hoy</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="text-success mb-2">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                            <h4 class="text-success mb-1">0</h4>
+                            <small class="text-muted">Evaluadas</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="text-warning mb-2">
+                                <i class="fas fa-clock fa-2x"></i>
+                            </div>
+                            <h4 class="text-warning mb-1">0</h4>
+                            <small class="text-muted">Pendientes</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="text-info mb-2">
+                                <i class="fas fa-star fa-2x"></i>
+                            </div>
+                            <h4 class="text-info mb-1">0.0</h4>
+                            <small class="text-muted">Promedio</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel Lateral -->
+    <div class="col-lg-4">
+        <!-- Actividad Reciente -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-clock me-2 text-info"></i>Actividad Reciente
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    <i class="fas fa-history text-muted" style="font-size: 2.5rem; opacity: 0.3;"></i>
+                    <p class="text-muted small mt-2 mb-0">No hay actividad reciente</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Guía Rápida -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2 text-warning"></i>Guía Rápida
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary">1</div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1 small fw-bold">Crear Curso</h6>
+                            <p class="small text-muted mb-0">Configura tu primer curso y agrega estudiantes</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info">2</div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1 small fw-bold">Nueva Asignación</h6>
+                            <p class="small text-muted mb-0">Crea tareas de presentación para tus estudiantes</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning">3</div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1 small fw-bold">Configurar IA</h6>
+                            <p class="small text-muted mb-0">Ajusta los criterios de evaluación automática</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success">4</div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1 small fw-bold">Revisar Resultados</h6>
+                            <p class="small text-muted mb-0">Analiza las evaluaciones y proporciona feedback</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Configuración IA -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-brain me-2 text-purple"></i>Configuración IA
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="small fw-semibold">Análisis de Rostro</span>
+                    <span class="badge bg-success">Activo</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="small fw-semibold">Transcripción de Voz</span>
+                    <span class="badge bg-success">Activo</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <span class="small fw-semibold">Análisis de Coherencia</span>
+                    <span class="badge bg-success">Activo</span>
+                </div>
+                
+                <div class="d-grid mt-3">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-cog me-2"></i>Configurar Criterios
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recursos -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-book me-2 text-success"></i>Recursos
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-video me-2"></i>Tutorial Docente
+                    </a>
+                    <a href="#" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-file-pdf me-2"></i>Manual de Usuario
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-question-circle me-2"></i>FAQ
+                    </a>
+                    <a href="#" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-headset me-2"></i>Soporte Técnico
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.stat-card * {
+    position: relative;
+    z-index: 2;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card.primary { background: var(--primary-gradient); }
+.stat-card.success { background: var(--success-gradient); }
+.stat-card.warning { background: var(--warning-gradient); }
+.stat-card.danger { background: var(--danger-gradient); }
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.quick-action {
+    background: rgba(99, 102, 241, 0.02);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--dark-color);
+}
+
+.quick-action:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+    box-shadow: 0 15px 40px rgba(99, 102, 241, 0.15);
+    color: var(--primary-color);
+    text-decoration: none;
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.quick-action-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: all 0.3s ease;
+}
+
+.quick-action-icon i {
+    font-size: 1.2rem;
+    color: white;
+}
+
+.quick-action:hover .quick-action-icon {
+    transform: scale(1.1);
+}
+
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 35px;
+    width: 2px;
+    height: 20px;
+    background: #e2e8f0;
+}
+
+.timeline-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.timeline-content {
+    flex: 1;
+}
+
+.text-purple {
+    color: #8b5cf6 !important;
+}
+
+@media (max-width: 768px) {
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+}
+</style>
+{% endblock %}

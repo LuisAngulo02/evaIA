@@ -1,0 +1,492 @@
+{% extends 'dashboard/base.html' %}
+
+{% block dashboard_content %}
+<!-- Estadísticas rápidas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card primary">
+            <div class="stat-icon">
+                <i class="fas fa-video"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Presentaciones Subidas</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card warning">
+            <div class="stat-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-number">0.0</div>
+            <div class="stat-label">Promedio General</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Completadas</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card danger">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-number">0</div>
+            <div class="stat-label">Pendientes</div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-primary"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions">
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-upload"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Subir Presentación</h6>
+                        <p class="text-muted small mb-0">Cargar video de tu exposición</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Mis Presentaciones</h6>
+                        <p class="text-muted small mb-0">Ver historial de exposiciones</p>
+                    </a>
+                    
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Ver Calificaciones</h6>
+                        <p class="text-muted small mb-0">Revisar resultados y feedback</p>
+                    </a>
+                    
+                    <a href="{% url 'profile' %}" class="quick-action">
+                        <div class="quick-action-icon">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Editar Perfil</h6>
+                        <p class="text-muted small mb-0">Actualizar información personal</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tareas Pendientes -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-tasks me-2 text-primary"></i>Mis Tareas Pendientes
+                </h5>
+                <span class="badge bg-primary rounded-pill">0</span>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-clipboard-check text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+                    </div>
+                    <h6 class="text-muted mb-3">No tienes tareas pendientes</h6>
+                    <p class="text-muted small mb-4">¡Excelente! Estás al día con todas tus presentaciones.</p>
+                    <a href="#" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-2"></i>Explorar Asignaciones
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel Lateral -->
+    <div class="col-lg-4">
+        <!-- Progreso Académico -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-success"></i>Progreso Académico
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-semibold">Presentaciones Completadas</span>
+                        <span class="small text-muted">0%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-gradient bg-primary" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-semibold">Calidad Promedio</span>
+                        <span class="small text-muted">0%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-gradient bg-success" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Sube tu primera presentación para ver estadísticas
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Consejos IA -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-lightbulb me-2 text-warning"></i>Consejos de IA
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-video text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 small">Calidad de Video</h6>
+                        <p class="small text-muted mb-0">Asegúrate de tener buena iluminación y que tu rostro sea claramente visible.</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-start mb-3">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-microphone text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 small">Audio Claro</h6>
+                        <p class="small text-muted mb-0">Habla con claridad y evita ruidos de fondo para mejor transcripción.</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-start">
+                    <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                        <i class="fas fa-clock text-info"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 small">Tiempo Óptimo</h6>
+                        <p class="small text-muted mb-0">Mantén un ritmo constante, ni muy rápido ni muy lento.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Soporte -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle me-2 text-info"></i>¿Necesitas Ayuda?
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-book me-2"></i>Guía de Usuario
+                    </a>
+                    <a href="#" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-video me-2"></i>Tutorial en Video
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividad Reciente -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2 text-primary"></i>Actividad Reciente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-clock text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                    </div>
+                    <h6 class="text-muted mb-2">No hay actividad reciente</h6>
+                    <p class="text-muted small">Cuando realices acciones en el sistema, aparecerán aquí.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.stat-card * {
+    position: relative;
+    z-index: 2;
+}
+
+.stat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.stat-card.primary { background: var(--primary-gradient); }
+.stat-card.success { background: var(--success-gradient); }
+.stat-card.warning { background: var(--warning-gradient); }
+.stat-card.danger { background: var(--danger-gradient); }
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
+
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.quick-action {
+    background: rgba(99, 102, 241, 0.02);
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--dark-color);
+}
+
+.quick-action:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+    box-shadow: 0 15px 40px rgba(99, 102, 241, 0.15);
+    color: var(--primary-color);
+    text-decoration: none;
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.quick-action-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: all 0.3s ease;
+}
+
+.quick-action-icon i {
+    font-size: 1.2rem;
+    color: white;
+}
+
+.quick-action:hover .quick-action-icon {
+    transform: scale(1.1);
+}
+
+.progress {
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stat-card {
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+    }
+}
+</style>
+{% endblock %}
+<div class="row">
+    <!-- Estadísticas rápidas -->
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-video fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">0</h5>
+                <p class="card-text">Presentaciones Subidas</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">0</h5>
+                <p class="card-text">Calificaciones</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                <h5 class="card-title">0</h5>
+                <p class="card-text">Pendientes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                <h5 class="card-title">0.0</h5>
+                <p class="card-text">Promedio General</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Acciones rápidas -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Mis Tareas Pendientes</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">No tienes tareas pendientes por el momento.</p>
+                    <a href="#" class="btn btn-outline-primary">Ver Todas las Tareas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>Subir Presentación
+                    </a>
+                    <a href="#" class="btn btn-outline-info">
+                        <i class="fas fa-video me-2"></i>Mis Presentaciones
+                    </a>
+                    <a href="#" class="btn btn-outline-success">
+                        <i class="fas fa-chart-bar me-2"></i>Ver Calificaciones
+                    </a>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-user-edit me-2"></i>Editar Perfil
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Consejos</h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    <strong>💡 Tip:</strong> Para mejores resultados en la evaluación automática, 
+                    asegúrate de que tu rostro esté bien iluminado y hablar con claridad.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Actividad Reciente</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No hay actividad reciente.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
