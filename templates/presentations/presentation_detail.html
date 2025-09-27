@@ -1,0 +1,1125 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ presentation.title }} - Detalles{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Enhanced Header Section -->
+    <div class="presentation-header mb-5">
+        <div class="breadcrumb-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb-modern">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:my_presentations' %}">
+                            <i class="fas fa-video me-2"></i>Mis Presentaciones
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ presentation.title|truncatechars:40 }}</li>
+                </ol>
+            </nav>
+        </div>
+        
+        <div class="header-content">
+            <div class="presentation-info">
+                <div class="presentation-title-section">
+                    <h1 class="presentation-title">{{ presentation.title }}</h1>
+                    <div class="presentation-badges">
+                        <div class="badge-item course-badge">
+                            <i class="fas fa-graduation-cap"></i>
+                            <span>{{ presentation.assignment.course.code }}</span>
+                        </div>
+                        <div class="badge-item status-badge status-{{ presentation.status|lower }}">
+                            {% if presentation.status == 'GRADED' %}
+                                <i class="fas fa-star"></i>
+                            {% elif presentation.status == 'ANALYZED' %}  
+                                <i class="fas fa-robot"></i>
+                            {% elif presentation.status == 'PROCESSING' %}
+                                <i class="fas fa-cog fa-spin"></i>
+                            {% elif presentation.status == 'UPLOADED' %}
+                                <i class="fas fa-upload"></i>
+                            {% elif presentation.status == 'FAILED' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% elif presentation.status == 'REJECTED' %}
+                                <i class="fas fa-times-circle"></i>
+                            {% else %}
+                                <i class="fas fa-clock"></i>
+                            {% endif %}
+                            <span>{{ presentation.get_status_display }}</span>
+                        </div>
+                        {% if presentation.is_late %}
+                            <div class="badge-item warning-badge">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Entrega Tardía</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="presentation-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <div class="stat-content">
+                            <span class="stat-label">Subida</span>
+                            <span class="stat-value">{{ presentation.uploaded_at|date:"d M Y" }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-user-tie"></i>
+                        <div class="stat-content">
+                            <span class="stat-label">Docente</span>
+                            <span class="stat-value">{{ presentation.assignment.course.teacher.get_full_name }}</span>
+                        </div>
+                    </div>
+                    {% if presentation.video_file %}
+                    <div class="stat-item">
+                        <i class="fas fa-file-video"></i>
+                        <div class="stat-content">
+                            <span class="stat-label">Archivo</span>
+                            <span class="stat-value">{{ presentation.video_file.size|filesizeformat }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="action-panel">
+                {% if presentation.overall_ai_score %}
+                <div class="score-display-large">
+                    <div class="score-circle-large">
+                        <span class="score-number">{{ presentation.overall_ai_score }}</span>
+                        <span class="score-unit">%</span>
+                    </div>
+                    <div class="score-label">Puntuación IA</div>
+                </div>
+                {% endif %}
+                
+                <div class="action-buttons-modern">
+                    {% if presentation.status != 'GRADED' and not presentation.final_score %}
+                        <a href="{% url 'presentations:edit_presentation' presentation.id %}" class="btn-action primary">
+                            <i class="fas fa-edit"></i>
+                            <span>Editar</span>
+                        </a>
+                        <button type="button" class="btn-action danger" 
+                                onclick="confirmDelete({{ presentation.id }}, '{{ presentation.title|escapejs }}')">
+                            <i class="fas fa-trash"></i>
+                            <span>Eliminar</span>
+                        </button>
+                    {% endif %}
+                    {% if presentation.video_file %}
+                        <a href="{{ presentation.video_file.url }}" download class="btn-action secondary">
+                            <i class="fas fa-download"></i>
+                            <span>Descargar</span>
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'presentations:my_presentations' %}" class="btn-action outline">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="presentation-content">
+        <!-- Video Section -->
+        <div class="video-section">
+            {% if presentation.video_file %}
+            <div class="video-container-modern">
+                <div class="video-header">
+                    <h2><i class="fas fa-play-circle me-2"></i>Video de la Presentación</h2>
+                </div>
+                <div class="video-wrapper">
+                    <video id="videoPlayer" controls class="modern-video-player">
+                        <source src="{{ presentation.video_file.url }}" type="video/mp4">
+                        <source src="{{ presentation.video_file.url }}" type="video/webm">
+                        Tu navegador no soporta el elemento video.
+                    </video>
+                    <div class="video-overlay" id="videoOverlay">
+                        <div class="play-button-large" onclick="playVideo()">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="video-info-bar">
+                    <div class="video-stats">
+                        <div class="stat-chip">
+                            <i class="fas fa-file-video"></i>
+                            <span>{{ presentation.video_file.size|filesizeformat }}</span>
+                        </div>
+                        {% if presentation.duration %}
+                        <div class="stat-chip">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ presentation.duration }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="stat-chip">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ presentation.uploaded_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+                    <div class="video-actions">
+                        <button class="video-action-btn" onclick="toggleFullscreen()" title="Pantalla completa">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="video-action-btn" onclick="downloadVideo()" title="Descargar">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="video-action-btn" onclick="shareVideo()" title="Compartir">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-video-state">
+                <div class="no-video-content">
+                    <div class="no-video-icon">
+                        <i class="fas fa-video-slash"></i>
+                    </div>
+                    <h3>Video no disponible</h3>
+                    <p>El archivo de video no se ha subido correctamente o no está disponible.</p>
+                    {% if presentation.status != 'GRADED' %}
+                    <a href="{% url 'presentations:edit_presentation' presentation.id %}" class="btn-action primary">
+                        <i class="fas fa-upload me-2"></i>Subir Video
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Information Sidebar -->
+        <div class="info-sidebar">
+            <!-- Assignment Details Card -->
+            <div class="info-card assignment-card">
+                <div class="card-header-modern">
+                    <div class="header-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3>Detalles de la Asignación</h3>
+                </div>
+                <div class="card-content">
+                    <div class="assignment-title">{{ presentation.assignment.title }}</div>
+                    <div class="assignment-description">{{ presentation.assignment.description|default:"Sin descripción disponible" }}</div>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-graduation-cap"></i>Curso
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.course.name }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-tag"></i>Tipo
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.get_assignment_type_display }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-stopwatch"></i>Duración Máxima
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.max_duration }} min</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-calendar-times"></i>Fecha Límite
+                            </span>
+                            <span class="detail-value {% if presentation.is_late %}late-delivery{% endif %}">
+                                {{ presentation.assignment.due_date|date:"d M Y H:i" }}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-trophy"></i>Puntaje Máximo
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.max_score }} pts</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-user-tie"></i>Docente
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.course.teacher.get_full_name|default:presentation.assignment.course.teacher.username }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if presentation.assignment.instructions %}
+                    <div class="instructions-section">
+                        <div class="instructions-header">
+                            <i class="fas fa-list-ul"></i>
+                            <span>Instrucciones</span>
+                        </div>
+                        <div class="instructions-content">
+                            {{ presentation.assignment.instructions|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Student Notes -->
+            {% if presentation.description %}
+            <div class="info-card notes-card">
+                <div class="card-header-modern">
+                    <div class="header-icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <h3>Mis Notas</h3>
+                </div>
+                <div class="card-content">
+                    <div class="notes-content">
+                        {{ presentation.description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Processing Status -->
+    {% if presentation.status == 'PROCESSING' %}
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <div class="processing-animation mb-3">
+                <i class="fas fa-cogs fa-spin text-primary" style="font-size: 3rem;"></i>
+            </div>
+            <h6 class="mb-2">Procesando con IA</h6>
+            <p class="text-muted small mb-0">Tu presentación está siendo analizada. Te notificaremos cuando esté lista.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar esta presentación?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta acción no se puede deshacer y se eliminará el archivo de video.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Presentation Detail Modern Design */
+.presentation-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.presentation-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.1;
+}
+
+.breadcrumb-section {
+    margin-bottom: 1.5rem;
+}
+
+.breadcrumb-modern {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0;
+}
+
+.breadcrumb-modern .breadcrumb-item {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.breadcrumb-modern .breadcrumb-item a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.breadcrumb-modern .breadcrumb-item a:hover {
+    color: rgba(255, 255, 255, 0.9);
+    transform: translateX(5px);
+}
+
+.breadcrumb-modern .breadcrumb-item.active {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 600;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    z-index: 2;
+}
+
+.presentation-info {
+    flex: 1;
+}
+
+.presentation-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.presentation-badges {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.badge-item {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.badge-item:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.badge-item i {
+    font-size: 0.9rem;
+}
+
+.status-analyzed {
+    background: rgba(52, 152, 219, 0.3) !important;
+    border-color: rgba(52, 152, 219, 0.4) !important;
+}
+
+.status-graded {
+    background: rgba(46, 204, 113, 0.3) !important;
+    border-color: rgba(46, 204, 113, 0.4) !important;
+}
+
+.status-processing {
+    background: rgba(241, 196, 15, 0.3) !important;
+    border-color: rgba(241, 196, 15, 0.4) !important;
+}
+
+.warning-badge {
+    background: rgba(230, 126, 34, 0.3) !important;
+    border-color: rgba(230, 126, 34, 0.4) !important;
+}
+
+.presentation-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.stat-item i {
+    font-size: 1.2rem;
+    opacity: 0.8;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.action-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.score-display-large {
+    text-align: center;
+}
+
+.score-circle-large {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.score-circle-large::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 120%;
+    background: conic-gradient(from 0deg, rgba(255,255,255,0.3) 0deg, transparent 360deg);
+    transform: translate(-50%, -50%);
+    animation: rotate 3s linear infinite;
+}
+
+.score-number {
+    font-size: 2rem;
+    font-weight: 700;
+    position: relative;
+    z-index: 2;
+}
+
+.score-unit {
+    font-size: 1rem;
+    opacity: 0.8;
+    position: relative;
+    z-index: 2;
+}
+
+.score-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.action-buttons-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-action::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-action:hover::before {
+    left: 100%;
+}
+
+.btn-action.primary {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-action.primary:hover {
+    background: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn-action.danger {
+    background: rgba(231, 76, 60, 0.3);
+    color: white;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.btn-action.danger:hover {
+    background: rgba(231, 76, 60, 0.5);
+    transform: translateY(-2px);
+}
+
+.btn-action.secondary {
+    background: rgba(52, 152, 219, 0.3);
+    color: white;
+    border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+.btn-action.secondary:hover {
+    background: rgba(52, 152, 219, 0.5);
+    transform: translateY(-2px);
+}
+
+.btn-action.outline {
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-action.outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px);
+}
+
+/* Main Content Layout */
+.presentation-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.video-section {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.video-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.video-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.video-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.video-container-modern {
+    position: relative;
+}
+
+.video-wrapper {
+    position: relative;
+    background: #000;
+    border-radius: 0;
+}
+
+.modern-video-player {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    display: block;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.video-wrapper:hover .video-overlay {
+    opacity: 1;
+}
+
+.play-button-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+}
+
+.play-button-large:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.play-button-large i {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-left: 5px;
+}
+
+.video-info-bar {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #dee2e6;
+}
+
+.video-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-chip {
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.stat-chip i {
+    color: #007bff;
+}
+
+.video-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.video-action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #007bff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.video-action-btn:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+}
+
+/* No Video State */
+.no-video-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-video-content {
+    max-width: 300px;
+}
+
+.no-video-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.no-video-icon i {
+    font-size: 2rem;
+    color: #6c757d;
+}
+
+.no-video-content h3 {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.no-video-content p {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+/* Info Sidebar */
+.info-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+.card-header-modern {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.header-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.card-header-modern h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+.assignment-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.75rem;
+}
+
+.assignment-description {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+.details-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #007bff;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.detail-label i {
+    color: #007bff;
+    width: 16px;
+}
+
+.detail-value {
+    text-align: right;
+    color: #2c3e50;
+    font-weight: 500;
+    flex: 1;
+}
+
+.late-delivery {
+    color: #dc3545 !important;
+    font-weight: 700 !important;
+}
+
+.instructions-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #f8f9fa;
+}
+
+.instructions-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.instructions-header i {
+    color: #28a745;
+}
+
+.instructions-content {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid #28a745;
+    line-height: 1.6;
+    color: #495057;
+}
+
+/* Notes Card */
+.notes-card .card-content {
+    padding: 1.5rem;
+}
+
+.notes-content {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 10px;
+    padding: 1rem;
+    color: #856404;
+    line-height: 1.6;
+}
+
+/* Animations */
+@keyframes rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .presentation-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .presentation-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .action-buttons-modern {
+        flex-direction: row;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .presentation-header {
+        padding: 1.5rem;
+    }
+    
+    .presentation-title {
+        font-size: 2rem;
+    }
+    
+    .presentation-badges {
+        justify-content: center;
+    }
+    
+    .video-info-bar {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .video-stats {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Video Player Functions
+function playVideo() {
+    const video = document.getElementById('videoPlayer');
+    const overlay = document.getElementById('videoOverlay');
+    
+    if (video) {
+        video.play();
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        }
+    }
+}
+
+function toggleFullscreen() {
+    const video = document.getElementById('videoPlayer');
+    if (video) {
+        if (video.requestFullscreen) {
+            video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen();
+        } else if (video.msRequestFullscreen) {
+            video.msRequestFullscreen();
+        }
+    }
+}
+
+function downloadVideo() {
+    const video = document.getElementById('videoPlayer');
+    if (video && video.currentSrc) {
+        const a = document.createElement('a');
+        a.href = video.currentSrc;
+        a.download = 'presentacion.mp4';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+}
+
+function shareVideo() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Mi Presentación - {{ presentation.title|escapejs }}',
+            text: 'Mira mi presentación',
+            url: window.location.href
+        }).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('URL copiada al portapapeles');
+        }).catch(() => {
+            prompt('Copia esta URL:', window.location.href);
+        });
+    }
+}
+
+// Delete confirmation
+function confirmDelete(presentationId, title) {
+    const confirmMessage = `¿Estás seguro de que deseas eliminar la presentación "${title}"?\n\nEsta acción no se puede deshacer y se eliminará el archivo de video.`;
+    
+    if (confirm(confirmMessage)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/presentations/presentation/${presentationId}/delete/`;
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken.value;
+            form.appendChild(csrfInput);
+        }
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('videoPlayer');
+    const overlay = document.getElementById('videoOverlay');
+    
+    if (video && overlay) {
+        video.addEventListener('play', () => {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        });
+        
+        video.addEventListener('pause', () => {
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        });
+        
+        video.addEventListener('ended', () => {
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        });
+    }
+});
+</script>
+{% endblock %}

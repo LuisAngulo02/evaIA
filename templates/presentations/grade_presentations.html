@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Calificar Presentaciones - EvalExpo AI{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-6 fw-bold text-dark mb-2">
+                <i class="fas fa-star me-3" style="color: var(--primary-color);"></i>
+                Calificar Presentaciones
+            </h1>
+            <p class="text-muted fs-5">Revisa y califica las presentaciones de los estudiantes</p>
+        </div>
+    </div>
+
+    <!-- Presentations to Grade -->
+    <div class="row">
+        <div class="col-12">
+            {% if presentations %}
+                {% for presentation in presentations %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-2">{{ presentation.title }}</h5>
+                                <p class="text-muted mb-2">
+                                    <strong>Estudiante:</strong> {{ presentation.student.get_full_name }}
+                                    <br>
+                                    <strong>Asignación:</strong> {{ presentation.assignment.title }}
+                                </p>
+                                <div class="presentation-meta">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>Subida: {{ presentation.uploaded_at|date:"d M Y H:i" }}
+                                        {% if presentation.overall_ai_score %}
+                                            <i class="fas fa-robot ms-3 me-1"></i>IA Score: {{ presentation.overall_ai_score }}%
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if presentation.status == 'UPLOADED' %}
+                                    <span class="badge bg-warning me-2">
+                                        <i class="fas fa-clock me-1"></i>Subida
+                                    </span>
+                                {% elif presentation.status == 'PROCESSING' %}
+                                    <span class="badge bg-info me-2">
+                                        <i class="fas fa-cogs me-1"></i>Procesando
+                                    </span>
+                                {% elif presentation.status == 'ANALYZED' %}
+                                    <span class="badge bg-success me-2">
+                                        <i class="fas fa-check me-1"></i>Analizada
+                                    </span>
+                                {% elif presentation.status == 'GRADED' %}
+                                    <span class="badge bg-primary me-2">
+                                        <i class="fas fa-star me-1"></i>Calificada
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary me-2">
+                                        {{ presentation.get_status_display }}
+                                    </span>
+                                {% endif %}
+                                
+                                <div class="btn-group">
+                                    <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Ver
+                                    </a>
+                                    {% if presentation.status == 'ANALYZED' or presentation.status == 'GRADED' %}
+                                    <a href="{% url 'presentations:grade_presentation_detail' presentation.id %}" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-star me-1"></i>
+                                        {% if presentation.status == 'GRADED' %}Revisar{% else %}Calificar{% endif %}
+                                    </a>
+                                    {% elif presentation.status == 'UPLOADED' %}
+                                    <button class="btn btn-secondary btn-sm" disabled>
+                                        <i class="fas fa-hourglass-half me-1"></i>Pendiente IA
+                                    </button>
+                                    {% elif presentation.status == 'PROCESSING' %}
+                                    <button class="btn btn-info btn-sm" disabled>
+                                        <i class="fas fa-cogs me-1"></i>Procesando
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="empty-state">
+                            <div class="empty-icon mb-4">
+                                <i class="fas fa-star text-muted" style="font-size: 5rem; opacity: 0.3;"></i>
+                            </div>
+                            <h4 class="mb-3">No hay presentaciones disponibles</h4>
+                            <p class="text-muted mb-4">
+                                Las presentaciones de tus estudiantes aparecerán aquí una vez que las suban a sus asignaciones
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

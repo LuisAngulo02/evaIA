@@ -55,7 +55,7 @@
             </div>
             <div class="card-body">
                 <div class="quick-actions">
-                    <a href="#" class="quick-action">
+                    <a href="{% url 'presentations:upload_presentation' %}" class="quick-action">
                         <div class="quick-action-icon">
                             <i class="fas fa-upload"></i>
                         </div>
@@ -63,7 +63,7 @@
                         <p class="text-muted small mb-0">Cargar video de tu exposición</p>
                     </a>
                     
-                    <a href="#" class="quick-action">
+                    <a href="{% url 'presentations:my_presentations' %}" class="quick-action">
                         <div class="quick-action-icon">
                             <i class="fas fa-video"></i>
                         </div>
@@ -71,20 +71,12 @@
                         <p class="text-muted small mb-0">Ver historial de exposiciones</p>
                     </a>
                     
-                    <a href="#" class="quick-action">
+                    <a href="{% url 'reports:student_reports' %}" class="quick-action">
                         <div class="quick-action-icon">
                             <i class="fas fa-chart-bar"></i>
                         </div>
                         <h6 class="fw-bold mb-1">Ver Calificaciones</h6>
                         <p class="text-muted small mb-0">Revisar resultados y feedback</p>
-                    </a>
-                    
-                    <a href="{% url 'profile' %}" class="quick-action">
-                        <div class="quick-action-icon">
-                            <i class="fas fa-user-edit"></i>
-                        </div>
-                        <h6 class="fw-bold mb-1">Editar Perfil</h6>
-                        <p class="text-muted small mb-0">Actualizar información personal</p>
                     </a>
                 </div>
             </div>
@@ -109,7 +101,7 @@
                     </div>
                     <h6 class="text-muted mb-3">No tienes tareas pendientes</h6>
                     <p class="text-muted small mb-4">¡Excelente! Estás al día con todas tus presentaciones.</p>
-                    <a href="#" class="btn btn-outline-primary">
+                    <a href="{% url 'presentations:upload_presentation' %}" class="btn btn-outline-primary">
                         <i class="fas fa-search me-2"></i>Explorar Asignaciones
                     </a>
                 </div>
@@ -445,7 +437,7 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-primary">
+                    <a href="{% url 'upload_presentation' %}" class="btn btn-primary">
                         <i class="fas fa-upload me-2"></i>Subir Presentación
                     </a>
                     <a href="#" class="btn btn-outline-info">
@@ -454,7 +446,7 @@
                     <a href="#" class="btn btn-outline-success">
                         <i class="fas fa-chart-bar me-2"></i>Ver Calificaciones
                     </a>
-                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'auth:profile' %}" class="btn btn-outline-secondary">
                         <i class="fas fa-user-edit me-2"></i>Editar Perfil
                     </a>
                 </div>

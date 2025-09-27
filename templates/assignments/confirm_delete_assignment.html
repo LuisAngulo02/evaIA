@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Asignación - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="delete-confirmation-card">
+                <div class="card-header">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Confirmar Eliminación</h3>
+                    <p class="text-muted">Esta acción no se puede deshacer</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="assignment-info">
+                        <h5>{{ assignment.title }}</h5>
+                        <p class="assignment-course">{{ assignment.course.code }} - {{ assignment.course.name }}</p>
+                        {% if assignment.description %}
+                        <p class="assignment-description">{{ assignment.description }}</p>
+                        {% endif %}
+                        
+                        <div class="assignment-details">
+                            <div class="detail-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Fecha límite: {{ assignment.due_date|date:"d M Y H:i" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-trophy"></i>
+                                <span>Puntaje máximo: {{ assignment.max_score }} puntos</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Duración máxima: {{ assignment.max_duration }} minutos</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-message">
+                        <div class="warning-content">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <h6>¿Qué sucederá al eliminar esta asignación?</h6>
+                                <ul class="warning-list">
+                                    <li>La asignación se marcará como inactiva</li>
+                                    <li>No aparecerá en las listas de asignaciones activas</li>
+                                    <li>Los estudiantes no podrán subir nuevas presentaciones</li>
+                                    <li>Las presentaciones existentes se conservarán</li>
+                                    <li>Los datos históricos no se perderán</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if assignment.presentation_set.exists %}
+                    <div class="affected-items">
+                        <h6 class="text-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Presentaciones Existentes
+                        </h6>
+                        <div class="affected-content">
+                            <div class="presentation-stats">
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.count }}</strong>
+                                    <span>Total de presentaciones</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.filter:status='GRADED'.count }}</strong>
+                                    <span>Ya calificadas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.filter:status='ANALYZED'.count }}</strong>
+                                    <span>Por calificar</span>
+                                </div>
+                            </div>
+                            <p class="small text-muted mt-2">
+                                Las presentaciones existentes no serán eliminadas y mantendrán sus calificaciones.
+                                Sin embargo, los estudiantes no podrán subir nuevas presentaciones para esta asignación.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if assignment.due_date > timezone.now %}
+                    <div class="active-warning">
+                        <div class="active-content">
+                            <i class="fas fa-calendar-check"></i>
+                            <div>
+                                <h6>Asignación Activa</h6>
+                                <p>Esta asignación aún está activa y los estudiantes pueden estar trabajando en ella. 
+                                   Considera postponer la eliminación hasta después de la fecha límite.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-actions">
+                    <a href="{% url 'presentations:manage_assignments' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Eliminar Asignación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.delete-confirmation-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.warning-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+}
+
+.card-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.assignment-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.assignment-info h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.assignment-course {
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.assignment-description {
+    color: #495057;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+}
+
+.assignment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.detail-item i {
+    color: #007bff;
+    width: 16px;
+}
+
+.warning-message {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.warning-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.warning-content i {
+    color: #856404;
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.warning-content h6 {
+    color: #856404;
+    margin-bottom: 0.75rem;
+}
+
+.warning-list {
+    color: #856404;
+    margin-bottom: 0;
+    padding-left: 1rem;
+}
+
+.warning-list li {
+    margin-bottom: 0.25rem;
+}
+
+.affected-items {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.affected-items h6 {
+    color: #721c24;
+    margin-bottom: 1rem;
+}
+
+.presentation-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+}
+
+.stat-item strong {
+    display: block;
+    font-size: 1.5rem;
+    color: #721c24;
+    margin-bottom: 0.25rem;
+}
+
+.stat-item span {
+    font-size: 0.8rem;
+    color: #721c24;
+}
+
+.affected-content .small {
+    color: #856404;
+}
+
+.active-warning {
+    background: #d1ecf1;
+    border: 1px solid #b7d4ea;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.active-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.active-content i {
+    color: #0c5460;
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.active-content h6 {
+    color: #0c5460;
+    margin-bottom: 0.5rem;
+}
+
+.active-content p {
+    color: #0c5460;
+    margin-bottom: 0;
+}
+
+.card-actions {
+    padding: 1.5rem 2rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+@media (max-width: 768px) {
+    .card-actions {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .warning-content,
+    .active-content {
+        flex-direction: column;
+    }
+    
+    .presentation-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .assignment-details {
+        align-items: flex-start;
+    }
+    
+    .detail-item {
+        justify-content: flex-start;
+    }
+}
+</style>
+
+{% endblock %}

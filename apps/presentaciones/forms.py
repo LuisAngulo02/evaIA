@@ -1,193 +1,152 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User, Group
-from .models import Profile
+from django.core.validators import FileExtensionValidator
+from django.utils import timezone
+from .models import Presentation, Assignment, Course
 
-class CustomUserCreationForm(UserCreationForm):
-    first_name = forms.CharField(
-        max_length=30, 
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nombres'
-        })
-    )
+class PresentationUploadForm(forms.ModelForm):
+    """Formulario para subir presentaciones"""
     
-    last_name = forms.CharField(
-        max_length=30, 
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Apellidos'
-        })
-    )
-    
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'correo@ejemplo.com'
-        })
-    )
-    
-
-    role = forms.ModelChoiceField(
-        queryset=Group.objects.filter(name__in=['Estudiante', 'Docente', 'Administrador']),
-        required=True,
-        empty_label="Selecciona tu rol",
-        widget=forms.Select(attrs={
-            'class': 'form-control'
-        }),
-        help_text="Selecciona el rol que corresponde a tu función."
-    )
-    
-    institution = forms.CharField(
-        max_length=200, 
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Universidad o Institución'
-        })
-    )
-    
-    phone = forms.CharField(
-        max_length=15, 
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': '+1234567890'
-        })
-    )
-
     class Meta:
-        model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
+        model = Presentation
+        fields = ['assignment', 'title', 'video_file', 'description']  
         widgets = {
-            'username': forms.TextInput(attrs={
+            'assignment': forms.Select(attrs={
+                'class': 'form-select form-select-lg',
+                'required': True,
+                'id': 'assignment'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'form-control form-control-lg',
+                'placeholder': 'Ej: Análisis de Límites en Funciones Trigonométricas',
+                'required': True,
+                'id': 'title'
+            }),
+            'video_file': forms.FileInput(attrs={
+                'class': 'form-control d-none',
+                'accept': 'video/*',
+                'id': 'id_video_file'
+            }),
+            'description': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': 'Nombre de usuario'
+                'rows': 4,
+                'placeholder': 'Agrega cualquier información adicional que consideres importante...',
+                'id': 'notes'
+            }),
+        }
+        labels = {
+            'assignment': 'Asignación',
+            'title': 'Título de la presentación',
+            'video_file': 'Archivo de video',
+            'description': 'Notas adicionales',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Si es edición (instance existe), el video no es requerido
+        if self.instance and self.instance.pk:
+            self.fields['video_file'].required = False
+            self.fields['video_file'].widget.attrs['required'] = False
+        
+        if user and user.groups.filter(name='Estudiante').exists():
+            # Solo mostrar asignaciones activas y no vencidas
+            self.fields['assignment'].queryset = Assignment.objects.filter(
+                is_active=True,
+                due_date__gte=timezone.now()
+            ).select_related('course', 'course__teacher').order_by('due_date')
+            
+            # Personalizar el display de las asignaciones
+            self.fields['assignment'].empty_label = "Selecciona una asignación..."
+        else:
+            self.fields['assignment'].queryset = Assignment.objects.none()
+    
+    def clean_video_file(self):
+        video = self.cleaned_data.get('video_file')
+        if video:
+            # Validar tamaño (máximo 500MB)
+            max_size = 500 * 1024 * 1024  # 500MB en bytes
+            if video.size > max_size:
+                raise forms.ValidationError('El archivo es demasiado grande. Máximo 500MB.')
+            
+            # Validar extensión
+            valid_extensions = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v']
+            ext = video.name.split('.')[-1].lower()
+            if ext not in valid_extensions:
+                raise forms.ValidationError(
+                    f'Formato no válido. Formatos permitidos: {", ".join(valid_extensions).upper()}'
+                )
+        
+        return video
+    
+    def clean_title(self):
+        title = self.cleaned_data.get('title', '').strip()
+        if len(title) < 5:
+            raise forms.ValidationError('El título debe tener al menos 5 caracteres.')
+        if len(title) > 200:
+            raise forms.ValidationError('El título no puede exceder 200 caracteres.')
+        return title
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        assignment = cleaned_data.get('assignment')
+        
+        if assignment:
+            # Verificar que la asignación no esté vencida
+            if assignment.due_date < timezone.now():
+                raise forms.ValidationError('No puedes subir presentaciones a asignaciones vencidas.')
+        
+        return cleaned_data
+
+class CourseForm(forms.ModelForm):
+    """Formulario para crear/editar cursos (solo docentes)"""
+    
+    class Meta:
+        model = Course
+        fields = ['name', 'code', 'description', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Matemáticas I'
+            }),
+            'code': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: MAT101'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Descripción del curso...'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
             }),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Personalizar widgets para los campos de contraseña
-        self.fields['password1'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Contraseña'
-        })
-        self.fields['password2'].widget.attrs.update({
-            'class': 'form-control',
-            'placeholder': 'Confirmar contraseña'
-        })
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        user.email = self.cleaned_data['email']
-        
-        if commit:
-            user.save()
-            
-            # Asignar el grupo seleccionado al usuario
-            selected_group = self.cleaned_data['role']
-            user.groups.add(selected_group)
-            
-            # Actualizar perfil con datos adicionales
-            if hasattr(user, 'profile'):
-                profile = user.profile
-            else:
-                profile = Profile.objects.create(user=user)
-                
-            profile.institution = self.cleaned_data['institution']
-            profile.phone = self.cleaned_data['phone']
-            profile.save()
-            
-        return user
-
-class ProfileForm(forms.ModelForm):
-    first_name = forms.CharField(
-        max_length=30,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
+class AssignmentForm(forms.ModelForm):
+    """Formulario para crear/editar asignaciones (solo docentes)"""
     
-    last_name = forms.CharField(
-        max_length=30,
-        widget=forms.TextInput(attrs={'class': 'form-control'})
-    )
-    
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={'class': 'form-control'})
-    )
-    
-
-    role = forms.ModelChoiceField(
-        queryset=Group.objects.filter(name__in=['Estudiante', 'Docente', 'Administrador']),
-        required=True,
-        empty_label="Selecciona tu rol",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        help_text="Tu rol actual en el sistema."
-    )
-
     class Meta:
-        model = Profile
-        fields = ['institution', 'phone']
+        model = Assignment
+        fields = [
+            'title', 'description', 'course', 'assignment_type', 
+            'max_duration', 'due_date', 'max_score', 'instructions', 'is_active'
+        ]
         widgets = {
-            'institution': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'due_date': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local'
+            }),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.user:
-            # Prellenar campos del usuario
-            self.fields['first_name'].initial = self.instance.user.first_name
-            self.fields['last_name'].initial = self.instance.user.last_name
-            self.fields['email'].initial = self.instance.user.email
-            
-            # Prellenar el grupo actual
-            user_groups = self.instance.user.groups.filter(name__in=['Estudiante', 'Docente', 'Administrador'])
-            if user_groups.exists():
-                self.fields['role'].initial = user_groups.first()
-
-    def save(self, commit=True):
-        profile = super().save(commit=False)
-        
-        if commit:
-            # Actualizar datos del usuario
-            user = profile.user
-            user.first_name = self.cleaned_data['first_name']
-            user.last_name = self.cleaned_data['last_name']
-            user.email = self.cleaned_data['email']
-            user.save()
-            
-            # Actualizar grupos
-            # Primero remover grupos de rol existentes
-            user.groups.filter(name__in=['Estudiante', 'Docente', 'Administrador']).delete()
-            # Añadir el nuevo grupo
-            selected_group = self.cleaned_data['role']
-            user.groups.add(selected_group)
-            
-            profile.save()
-            
-        return profile
-
-class LoginForm(forms.Form):
-    username = forms.CharField(
-        max_length=150,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Nombre de usuario',
-            'autocomplete': 'username'
-        })
-    )
     
-    password = forms.CharField(
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Contraseña',
-            'autocomplete': 'current-password'
-        })
-    )
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user and user.groups.filter(name='Docente').exists():
+            self.fields['course'].queryset = Course.objects.filter(
+                teacher=user,
+                is_active=True
+            ).order_by('name')
+        else:
+            self.fields['course'].queryset = Course.objects.none()

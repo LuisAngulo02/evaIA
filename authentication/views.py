@@ -7,7 +7,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.http import JsonResponse
 from .models import Profile
 from .forms import CustomUserCreationForm, ProfileForm, LoginForm
-from .decoradores import role_required, student_required, teacher_required, admin_required
+from .decoradores import group_required, student_required, teacher_required, admin_required
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -90,6 +90,12 @@ def logout_view(request):
 @login_required
 def dashboard_view(request):
     """Dashboard principal que redirige según el rol del usuario"""
+    # Crear perfil si no existe
+    if not hasattr(request.user, 'profile') or not request.user.profile:
+        from .models import Profile
+        Profile.objects.create(user=request.user)
+        messages.info(request, 'Se ha creado tu perfil automáticamente.')
+    
     profile = request.user.profile
     context = {
         'user': request.user,
@@ -98,7 +104,7 @@ def dashboard_view(request):
     
     # Redirigir según el grupo del usuario
     if request.user.groups.filter(name='Docente').exists():
-        return render(request, 'dashboard/docentes.html', context)
+        return redirect('presentations:teacher_dashboard')
     elif request.user.groups.filter(name='Estudiante').exists():
         return render(request, 'dashboard/estudiantes.html', context)
     elif request.user.groups.filter(name='Administrador').exists():

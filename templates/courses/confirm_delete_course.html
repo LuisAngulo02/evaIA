@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Curso - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="delete-confirmation-card">
+                <div class="card-header">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Confirmar Eliminación</h3>
+                    <p class="text-muted">Esta acción no se puede deshacer</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="course-info">
+                        <h5>{{ course.name }}</h5>
+                        <p class="course-code">{{ course.code }}</p>
+                        {% if course.description %}
+                        <p class="course-description">{{ course.description }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="warning-message">
+                        <div class="warning-content">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <h6>¿Qué sucederá al eliminar este curso?</h6>
+                                <ul class="warning-list">
+                                    <li>El curso se marcará como inactivo</li>
+                                    <li>No aparecerá en las listas de cursos activos</li>
+                                    <li>Las asignaciones existentes se mantendrán</li>
+                                    <li>Los datos históricos se conservarán</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if course.assignment_set.exists %}
+                    <div class="affected-items">
+                        <h6 class="text-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Elementos Afectados
+                        </h6>
+                        <div class="affected-content">
+                            <p><strong>{{ course.assignment_set.count }}</strong> asignaciones asociadas</p>
+                            <p class="small text-muted">
+                                Las asignaciones existentes no serán eliminadas, pero no podrás crear nuevas 
+                                asignaciones para este curso.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-actions">
+                    <a href="{% url 'presentations:manage_courses' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Eliminar Curso
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.delete-confirmation-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.warning-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 2rem;
+}
+
+.card-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.course-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.course-info h5 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.course-code {
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.course-description {
+    color: #495057;
+    font-style: italic;
+    margin-bottom: 0;
+}
+
+.warning-message {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.warning-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.warning-content i {
+    color: #856404;
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.warning-content h6 {
+    color: #856404;
+    margin-bottom: 0.75rem;
+}
+
+.warning-list {
+    color: #856404;
+    margin-bottom: 0;
+    padding-left: 1rem;
+}
+
+.warning-list li {
+    margin-bottom: 0.25rem;
+}
+
+.affected-items {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.affected-items h6 {
+    color: #721c24;
+    margin-bottom: 1rem;
+}
+
+.affected-content p {
+    color: #721c24;
+    margin-bottom: 0.5rem;
+}
+
+.affected-content .small {
+    color: #856404;
+}
+
+.card-actions {
+    padding: 1.5rem 2rem;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn {
+    padding: 0.75rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+@media (max-width: 768px) {
+    .card-actions {
+        flex-direction: column-reverse;
+        gap: 1rem;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .warning-content {
+        flex-direction: column;
+    }
+}
+</style>
+
+{% endblock %}

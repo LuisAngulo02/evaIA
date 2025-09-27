@@ -16,30 +16,35 @@ class Profile(models.Model):
         return f"{self.user.get_full_name()} - {self.get_role()}"
     
     def get_role(self):
-        """Obtener el rol desde los grupos de Django"""
-        if self.user.groups.filter(name='Administrador').exists():
-            return 'ADMIN'
-        elif self.user.groups.filter(name='Docente').exists():
-            return 'DOCENTE'
-        elif self.user.groups.filter(name='Estudiante').exists():
-            return 'ESTUDIANTE'
-        return 'SIN_ROL'
+        """Obtener el primer grupo del usuario (rol principal)"""
+        user_group = self.user.groups.filter(name__in=['Administrador', 'Docente', 'Estudiante']).first()
+        return user_group.name if user_group else None
     
     def get_role_display(self):
         """Obtener el nombre del rol para mostrar"""
         role = self.get_role()
-        role_names = {
-            'ADMIN': 'Administrador',
-            'DOCENTE': 'Docente', 
-            'ESTUDIANTE': 'Estudiante',
-            'SIN_ROL': 'Sin rol asignado'
-        }
-        return role_names.get(role, 'Sin rol')
+        return role if role else 'Sin rol asignado'
     
     @property
     def role(self):
-        """Propiedad para compatibilidad con código existente"""
+        """Propiedad para obtener el rol del usuario"""
         return self.get_role()
+    
+    def has_role(self, role_name):
+        """Verificar si el usuario tiene un rol específico"""
+        return self.user.groups.filter(name=role_name).exists()
+    
+    def is_student(self):
+        """Verificar si el usuario es estudiante"""
+        return self.has_role('Estudiante')
+    
+    def is_teacher(self):
+        """Verificar si el usuario es docente"""
+        return self.has_role('Docente')
+    
+    def is_admin(self):
+        """Verificar si el usuario es administrador"""
+        return self.has_role('Administrador')
     
     @property
     def full_name(self):
@@ -53,9 +58,12 @@ class Profile(models.Model):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.get_or_create(user=instance)
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
+    # Crear perfil si no existe
+    if not hasattr(instance, 'profile'):
+        Profile.objects.get_or_create(user=instance)
+    else:
         instance.profile.save()
