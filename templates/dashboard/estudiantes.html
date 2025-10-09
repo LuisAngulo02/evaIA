@@ -8,7 +8,7 @@
             <div class="stat-icon">
                 <i class="fas fa-video"></i>
             </div>
-            <div class="stat-number">0</div>
+            <div class="stat-number">{{ stats.total_presentations }}</div>
             <div class="stat-label">Presentaciones Subidas</div>
         </div>
     </div>
@@ -18,7 +18,7 @@
             <div class="stat-icon">
                 <i class="fas fa-star"></i>
             </div>
-            <div class="stat-number">0.0</div>
+            <div class="stat-number">{{ stats.average_score|floatformat:1 }}</div>
             <div class="stat-label">Promedio General</div>
         </div>
     </div>
@@ -28,7 +28,7 @@
             <div class="stat-icon">
                 <i class="fas fa-check-circle"></i>
             </div>
-            <div class="stat-number">0</div>
+            <div class="stat-number">{{ stats.completed_presentations }}</div>
             <div class="stat-label">Completadas</div>
         </div>
     </div>
@@ -38,8 +38,8 @@
             <div class="stat-icon">
                 <i class="fas fa-clock"></i>
             </div>
-            <div class="stat-number">0</div>
-            <div class="stat-label">Pendientes</div>
+            <div class="stat-number">{{ pending_assignments|length }}</div>
+            <div class="stat-label">Tareas Pendientes</div>
         </div>
     </div>
 </div>
@@ -92,19 +92,61 @@
                 <h5 class="mb-0">
                     <i class="fas fa-tasks me-2 text-primary"></i>Mis Tareas Pendientes
                 </h5>
-                <span class="badge bg-primary rounded-pill">0</span>
+                <span class="badge bg-primary rounded-pill">{{ pending_assignments|length }}</span>
             </div>
             <div class="card-body">
-                <div class="text-center py-5">
-                    <div class="mb-4">
-                        <i class="fas fa-clipboard-check text-muted" style="font-size: 4rem; opacity: 0.3;"></i>
+                {% if pending_assignments %}
+                    <div class="assignment-list">
+                        {% for assignment in pending_assignments %}
+                        <div class="assignment-item border rounded p-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <div class="assignment-icon me-3">
+                                        <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-tasks text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ assignment.title }}</h6>
+                                        <p class="text-muted small mb-1">{{ assignment.course.name }}</p>
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Vence: {{ assignment.due_date|date:"d/m/Y" }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if assignment.due_date|timeuntil %}
+                                        <span class="badge bg-info">{{ assignment.due_date|timeuntil }}</span>
+                                    {% endif %}
+                                    <a href="{% url 'presentations:upload_presentation' %}?assignment={{ assignment.id }}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-upload me-1"></i>Subir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <h6 class="text-muted mb-3">No tienes tareas pendientes</h6>
-                    <p class="text-muted small mb-4">¡Excelente! Estás al día con todas tus presentaciones.</p>
-                    <a href="{% url 'presentations:upload_presentation' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-search me-2"></i>Explorar Asignaciones
-                    </a>
-                </div>
+                    
+                    {% if pending_assignments|length > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'presentations:my_presentations' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>Ver todas las asignaciones
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-clipboard-check text-success" style="font-size: 4rem; opacity: 0.3;"></i>
+                        </div>
+                        <h6 class="text-muted mb-3">¡Excelente trabajo!</h6>
+                        <p class="text-muted small mb-4">No tienes tareas pendientes. Estás al día con todas tus presentaciones.</p>
+                        <a href="{% url 'presentations:my_presentations' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-video me-2"></i>Ver mis presentaciones
+                        </a>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -115,36 +157,47 @@
         <div class="card mb-4">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="fas fa-chart-line me-2 text-success"></i>Progreso Académico
+                    <i class="fas fa-chart-line me-2 text-success"></i>Mi Progreso Académico
                 </h6>
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-semibold">Presentaciones Completadas</span>
-                        <span class="small text-muted">0%</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-gradient bg-primary" style="width: 0%"></div>
+                    <div class="progress-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold small">Presentaciones Completadas</span>
+                            <span class="text-primary fw-bold small">{{ progress.completion_percentage|floatformat:1 }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-gradient bg-primary" style="width: {{ progress.completion_percentage|floatformat:1 }}%"></div>
+                        </div>
+                        <small class="text-muted">{{ stats.completed_presentations }} de {{ stats.total_presentations }} completadas</small>
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-semibold">Calidad Promedio</span>
-                        <span class="small text-muted">0%</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-gradient bg-success" style="width: 0%"></div>
+                    <div class="progress-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold small">Calidad Promedio IA</span>
+                            <span class="text-success fw-bold small">{{ progress.quality_percentage|floatformat:1 }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-gradient bg-success" style="width: {{ progress.quality_percentage|floatformat:1 }}%"></div>
+                        </div>
+                        <small class="text-muted">Basado en análisis de IA</small>
                     </div>
                 </div>
                 
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Sube tu primera presentación para ver estadísticas
+                {% if stats.total_presentations > 0 %}
+                <div class="alert alert-info bg-light border-0 py-2">
+                    <small>
+                        <strong>Resumen:</strong> {{ stats.completed_presentations }} presentación{{ stats.completed_presentations|pluralize:"es" }} con promedio de {{ stats.average_score|floatformat:1 }}%
                     </small>
                 </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <small class="text-muted">Sube tu primera presentación para ver tu progreso</small>
+                </div>
+                {% endif %}
             </div>
         </div>
         
@@ -157,7 +210,7 @@
             </div>
             <div class="card-body">
                 <div class="d-flex align-items-start mb-3">
-                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
                         <i class="fas fa-video text-primary"></i>
                     </div>
                     <div>
@@ -167,7 +220,7 @@
                 </div>
                 
                 <div class="d-flex align-items-start mb-3">
-                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
                         <i class="fas fa-microphone text-success"></i>
                     </div>
                     <div>
@@ -177,7 +230,7 @@
                 </div>
                 
                 <div class="d-flex align-items-start">
-                    <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3">
+                    <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
                         <i class="fas fa-clock text-info"></i>
                     </div>
                     <div>
@@ -188,44 +241,109 @@
             </div>
         </div>
         
-        <!-- Soporte -->
+        <!-- Accesos Rápidos -->
         <div class="card">
             <div class="card-header">
                 <h6 class="mb-0">
-                    <i class="fas fa-question-circle me-2 text-info"></i>¿Necesitas Ayuda?
+                    <i class="fas fa-bookmark me-2 text-info"></i>Accesos Útiles
                 </h6>
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-book me-2"></i>Guía de Usuario
+                    <a href="{% url 'presentations:my_presentations' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-video me-2"></i>Mis Presentaciones
                     </a>
-                    <a href="#" class="btn btn-outline-info btn-sm">
-                        <i class="fas fa-video me-2"></i>Tutorial en Video
+                    <a href="{% url 'reports:student_reports' %}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-chart-bar me-2"></i>Ver Calificaciones
                     </a>
+                    <a href="{% url 'help:user_guide' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-question-circle me-2"></i>Guía de Usuario
+                    </a>
+                </div>
+                
+                <div class="mt-3 pt-3 border-top">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>¿Necesitas ayuda?</strong><br>
+                        Consulta nuestra guía de usuario o revisa los consejos de IA para mejorar tus presentaciones.
+                    </small>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+
+
 <!-- Actividad Reciente -->
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="fas fa-history me-2 text-primary"></i>Actividad Reciente
                 </h5>
+                {% if recent_presentations|length > 0 %}
+                <span class="badge bg-primary rounded-pill">{{ recent_presentations|length }}</span>
+                {% endif %}
             </div>
             <div class="card-body">
-                <div class="text-center py-4">
-                    <div class="mb-3">
-                        <i class="fas fa-clock text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                {% if recent_presentations %}
+                    <div class="activity-list">
+                        {% for presentation in recent_presentations %}
+                        <div class="activity-item border-bottom pb-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <div class="activity-icon me-3">
+                                        {% if presentation.status == 'GRADED' %}
+                                            <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                                <i class="fas fa-check text-success"></i>
+                                            </div>
+                                        {% elif presentation.status == 'ANALYZED' %}
+                                            <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                                <i class="fas fa-star text-warning"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                                <i class="fas fa-clock text-info"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 small">{{ presentation.title }}</h6>
+                                        <p class="text-muted small mb-1">{{ presentation.assignment.course.name }}</p>
+                                        <small class="text-muted">{{ presentation.uploaded_at|timesince }} atrás</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if presentation.status == 'GRADED' and presentation.final_score %}
+                                        <span class="badge bg-success">{{ presentation.final_score|floatformat:1 }}%</span>
+                                    {% elif presentation.ai_score %}
+                                        <span class="badge bg-info">IA: {{ presentation.ai_score|floatformat:1 }}%</span>
+                                    {% endif %}
+                                    <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <h6 class="text-muted mb-2">No hay actividad reciente</h6>
-                    <p class="text-muted small">Cuando realices acciones en el sistema, aparecerán aquí.</p>
-                </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'presentations:my_presentations' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-history me-2"></i>Ver todo el historial
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="fas fa-clock text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">No hay actividad reciente</h6>
+                        <p class="text-muted small">Cuando subas presentaciones, aparecerán aquí.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -355,6 +473,71 @@
     border-radius: 10px;
 }
 
+/* Progreso académico mejorado */
+.progress-item {
+    padding: 1rem;
+    background: rgba(99, 102, 241, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.progress-item .progress {
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.1);
+    overflow: hidden;
+}
+
+.progress-item .progress-bar {
+    border-radius: 8px;
+    transition: width 0.8s ease;
+}
+
+/* Lista de asignaciones y actividad */
+.assignment-item,
+.activity-item {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.assignment-item:hover,
+.activity-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.assignment-item:last-child,
+.activity-item:last-child {
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 1rem !important;
+}
+
+.assignment-icon,
+.activity-icon {
+    flex-shrink: 0;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Alertas mejoradas */
+.alert {
+    border-radius: 12px;
+    border: none;
+}
+
+/* Botones de accesos rápidos */
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
 @media (max-width: 768px) {
     .quick-actions {
         grid-template-columns: repeat(2, 1fr);
@@ -367,118 +550,202 @@
     .stat-number {
         font-size: 1.8rem;
     }
+    
+    .assignment-item .d-flex,
+    .activity-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+    
+    .assignment-item .d-flex > div:last-child,
+    .activity-item .d-flex > div:last-child {
+        align-self: flex-end;
+    }
 }
 </style>
 {% endblock %}
-<div class="row">
-    <!-- Estadísticas rápidas -->
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-video fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">0</h5>
-                <p class="card-text">Presentaciones Subidas</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-star fa-3x text-warning mb-3"></i>
-                <h5 class="card-title">0</h5>
-                <p class="card-text">Calificaciones</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-clock fa-3x text-info mb-3"></i>
-                <h5 class="card-title">0</h5>
-                <p class="card-text">Pendientes</p>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
-                <h5 class="card-title">0.0</h5>
-                <p class="card-text">Promedio General</p>
-            </div>
-        </div>
-    </div>
-</div>
+    padding: 30px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
 
-<div class="row">
-    <!-- Acciones rápidas -->
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Mis Tareas Pendientes</h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center py-4">
-                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
-                    <p class="text-muted">No tienes tareas pendientes por el momento.</p>
-                    <a href="#" class="btn btn-outline-primary">Ver Todas las Tareas</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Acciones Rápidas</h5>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{% url 'upload_presentation' %}" class="btn btn-primary">
-                        <i class="fas fa-upload me-2"></i>Subir Presentación
-                    </a>
-                    <a href="#" class="btn btn-outline-info">
-                        <i class="fas fa-video me-2"></i>Mis Presentaciones
-                    </a>
-                    <a href="#" class="btn btn-outline-success">
-                        <i class="fas fa-chart-bar me-2"></i>Ver Calificaciones
-                    </a>
-                    <a href="{% url 'auth:profile' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-user-edit me-2"></i>Editar Perfil
-                    </a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Consejos</h6>
-            </div>
-            <div class="card-body">
-                <small class="text-muted">
-                    <strong>💡 Tip:</strong> Para mejores resultados en la evaluación automática, 
-                    asegúrate de que tu rostro esté bien iluminado y hablar con claridad.
-                </small>
-            </div>
-        </div>
-    </div>
-</div>
+.welcome-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    z-index: 1;
+}
 
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-history me-2"></i>Actividad Reciente</h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center py-3">
-                    <i class="fas fa-clock fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">No hay actividad reciente.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+.welcome-content {
+    z-index: 2;
+    position: relative;
+}
+
+.btn-help {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    text-decoration: none;
+}
+
+.btn-help:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+.welcome-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.welcome-subtitle {
+    opacity: 0.9;
+    margin-bottom: 20px;
+}
+
+.welcome-avatar {
+    z-index: 2;
+}
+
+.avatar-circle {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.avatar-circle i {
+    font-size: 2rem;
+    color: white;
+}
+
+.stat-card.info { 
+    background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%); 
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.quick-actions-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.quick-action-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.quick-action-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.1);
+    transform: translateY(-2px);
+}
+
+.quick-action-card .quick-action-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.quick-action-card:hover .quick-action-icon {
+    background: #6366f1;
+    color: white;
+}
+
+.quick-action-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+.quick-action-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.content-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header-custom {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.card-body-custom {
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .welcome-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .welcome-avatar {
+        margin-top: 20px;
+    }
+    
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+</style>
+

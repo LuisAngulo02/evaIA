@@ -97,22 +97,97 @@ def dashboard_view(request):
         messages.info(request, 'Se ha creado tu perfil automáticamente.')
     
     profile = request.user.profile
-    context = {
-        'user': request.user,
-        'profile': profile,
-    }
     
     # Redirigir según el grupo del usuario
     if request.user.groups.filter(name='Docente').exists():
         return redirect('presentations:teacher_dashboard')
     elif request.user.groups.filter(name='Estudiante').exists():
-        return render(request, 'dashboard/estudiantes.html', context)
+        return redirect('auth:student_dashboard')
     elif request.user.groups.filter(name='Administrador').exists():
-        return render(request, 'dashboard/admin.html', context)
+        return render(request, 'dashboard/admin.html', {
+            'user': request.user,
+            'profile': profile,
+        })
     else:
         # Usuario sin rol asignado
         messages.warning(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
         return redirect('auth:login')
+
+@login_required
+@student_required
+def student_dashboard_view(request):
+    """Dashboard para estudiantes con estadísticas reales"""
+    from django.db.models import Avg, Count
+    from django.utils import timezone
+    from apps.presentaciones.models import Presentation, Assignment
+    
+    # Obtener presentaciones del estudiante
+    user_presentations = Presentation.objects.filter(student=request.user)
+    
+    # Estadísticas del estudiante
+    stats = {
+        'total_presentations': user_presentations.count(),
+        'completed_presentations': user_presentations.filter(status='GRADED').count(),
+        'pending_presentations': user_presentations.filter(status__in=['UPLOADED', 'PROCESSING', 'ANALYZED']).count(),
+        'average_score': 0.0
+    }
+    
+    # Calcular promedio general
+    if stats['completed_presentations'] > 0:
+        avg_score = user_presentations.filter(
+            status='GRADED',
+            final_score__isnull=False
+        ).aggregate(Avg('final_score'))['final_score__avg']
+        stats['average_score'] = round(avg_score, 1) if avg_score else 0.0
+    
+    # Asignaciones pendientes
+    # Obtener todos los cursos donde el usuario está inscrito
+    user_courses = request.user.enrolled_courses.filter(is_active=True)
+    
+    # Obtener todas las asignaciones activas de esos cursos
+    all_assignments = Assignment.objects.filter(
+        course__in=user_courses,
+        is_active=True,
+        due_date__gte=timezone.now()
+    ).select_related('course')
+    
+    # Filtrar asignaciones que el usuario no ha completado
+    completed_assignment_ids = user_presentations.values_list('assignment_id', flat=True)
+    
+    pending_assignments = all_assignments.exclude(
+        id__in=completed_assignment_ids
+    ).order_by('due_date')[:5]
+    
+    # Presentaciones recientes
+    recent_presentations = user_presentations.select_related(
+        'assignment', 'assignment__course'
+    ).order_by('-uploaded_at')[:5]
+    
+    # Progreso académico
+    progress = {
+        'completion_percentage': 0,
+        'quality_percentage': 0
+    }
+    
+    if stats['total_presentations'] > 0:
+        progress['completion_percentage'] = (stats['completed_presentations'] / stats['total_presentations']) * 100
+        
+        # Calcular calidad promedio basada en score IA
+        avg_ai_score = user_presentations.filter(
+            ai_score__isnull=False
+        ).aggregate(Avg('ai_score'))['ai_score__avg']
+        progress['quality_percentage'] = avg_ai_score if avg_ai_score else 0
+    
+    context = {
+        'user': request.user,
+        'profile': request.user.profile,
+        'stats': stats,
+        'progress': progress,
+        'pending_assignments': pending_assignments,
+        'recent_presentations': recent_presentations,
+    }
+    
+    return render(request, 'dashboard/estudiantes.html', context)
 
 def check_username(request):
     """Vista AJAX para verificar si un nombre de usuario está disponible"""

@@ -205,11 +205,12 @@
     }
 
     .btn-export {
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        font-size: 0.875rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: 10px;
+        font-size: 0.9rem;
         font-weight: 600;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
     }
 
     .empty-state {
@@ -242,6 +243,32 @@
         font-size: 0.8rem;
         color: #6c757d;
     }
+
+    .export-notification {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .btn-export:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        border-color: #dc3545;
+    }
+    
+    .btn-export:active {
+        transform: translateY(0px);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+    }
 </style>
 {% endblock %}
 
@@ -261,11 +288,8 @@
             </div>
             <div class="col-md-4 text-md-end">
                 <div class="export-buttons">
-                    <button class="btn btn-light btn-export" onclick="exportData('excel')">
-                        <i class="fas fa-file-excel me-2"></i>Excel
-                    </button>
-                    <button class="btn btn-light btn-export" onclick="exportData('pdf')">
-                        <i class="fas fa-file-pdf me-2"></i>PDF
+                    <button class="btn btn-danger btn-export" onclick="exportData('pdf')">
+                        <i class="fas fa-download me-2"></i>Exportar Reporte PDF
                     </button>
                 </div>
             </div>
@@ -401,6 +425,15 @@
                                         <div class="progress-bar bg-danger" style="width: {{ course_stat.average_score }}%"></div>
                                     {% endif %}
                                 </div>
+                                
+                                <!-- Botón de exportación por curso -->
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="exportCourse({{ course_stat.course.id }}, 'pdf')"
+                                            title="Exportar este curso a PDF">
+                                        <i class="fas fa-download me-1"></i>Exportar PDF
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {% endfor %}
@@ -525,18 +558,53 @@
 
 {% block extra_js %}
 <script>
-    // Funciones de exportación
+    // Función de exportación
     function exportData(format) {
-        if (format === 'excel') {
-            // Implementar exportación a Excel
-            console.log('Exportando a Excel...');
-            // Aquí iría la lógica para generar y descargar un archivo Excel
-            alert('Funcionalidad de exportación a Excel próximamente disponible');
-        } else if (format === 'pdf') {
-            // Implementar exportación a PDF usando window.print()
-            console.log('Exportando a PDF...');
-            window.print();
+        if (format === 'pdf') {
+            console.log('Exportando reporte completo a PDF...');
+            showExportMessage('Generando reporte PDF...', 'success');
+            window.location.href = "{% url 'reports:export_grades_pdf' %}";
         }
+    }
+
+    // Función para exportar por curso
+    function exportCourse(courseId, format) {
+        console.log(`Exportando curso ${courseId} en formato ${format}...`);
+        showExportMessage(`Generando archivo ${format.toUpperCase()}...`, 'info');
+        window.location.href = `/reports/export/course/${courseId}/?format=${format}`;
+    }
+
+    // Función para mostrar mensajes de exportación
+    function showExportMessage(message, type) {
+        // Crear elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show export-notification`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        
+        notification.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-download me-2"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Agregar al body
+        document.body.appendChild(notification);
+        
+        // Auto-remover después de 3 segundos
+        setTimeout(() => {
+            if (notification && notification.parentNode) {
+                notification.remove();
+            }
+        }, 3000);
     }
 
     // Animaciones cuando la página carga

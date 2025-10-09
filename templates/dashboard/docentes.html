@@ -266,8 +266,12 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="#" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-download me-2"></i>Exportar Calificaciones
+                    <!-- Botones de reportes -->
+                    <a href="{% url 'reports:export_grades_pdf' %}" class="btn btn-danger btn-sm mb-2 w-100" onclick="showExportNotification('PDF')">
+                        <i class="fas fa-download me-2"></i>Exportar Calificaciones PDF
+                    </a>
+                    <a href="{% url 'reports:teacher_reports' %}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-chart-line me-2"></i>Ver Reportes Detallados
                     </a>
                     <a href="#" class="btn btn-outline-warning btn-sm">
                         <i class="fas fa-cog me-2"></i>Configuración IA
@@ -444,5 +448,65 @@
     }
 }
 </style>
+
+<script>
+// Función para mostrar notificación de exportación
+function showExportNotification(format) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show export-notification';
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-download me-2"></i>
+            <span>Generando archivo ${format}...</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification && notification.parentNode) {
+            notification.remove();
+        }
+    }, 4000);
+}
+
+// Agregar event listeners a los enlaces de exportación
+document.addEventListener('DOMContentLoaded', function() {
+    // Enlaces de exportación Excel y PDF
+    document.querySelectorAll('a[href*="export_grades"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            const format = this.href.includes('excel') ? 'Excel' : 'PDF';
+            showExportNotification(format);
+        });
+    });
+});
+
+// CSS para animación
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
 
 {% endblock %}

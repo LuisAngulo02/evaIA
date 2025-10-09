@@ -20,12 +20,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 
+from django.shortcuts import render
+
+def test_export_view(request):
+    return render(request, 'test_export.html')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', lambda request: redirect('auth:dashboard' if request.user.is_authenticated else 'auth:login')),
     path('auth/', include('authentication.urls')),
     path('presentations/', include('apps.presentaciones.urls')),
     path('reports/', include('apps.reportes.urls')),
+    path('help/', include('apps.help.urls')),
+    path('test-export/', test_export_view, name='test_export'),
 ]
 
 if settings.DEBUG:

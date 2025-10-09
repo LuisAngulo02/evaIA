@@ -133,9 +133,45 @@ class AssignmentForm(forms.ModelForm):
             'max_duration', 'due_date', 'max_score', 'instructions', 'is_active'
         ]
         widgets = {
+            'title': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Presentación Final - Límites y Derivadas'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Describe los objetivos y contenido de la asignación...'
+            }),
+            'course': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'assignment_type': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'max_duration': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1,
+                'max': 120,
+                'placeholder': '15'
+            }),
             'due_date': forms.DateTimeInput(attrs={
                 'class': 'form-control',
                 'type': 'datetime-local'
+            }),
+            'max_score': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.01,
+                'max': 999.99,
+                'step': 0.01,
+                'value': 100.00
+            }),
+            'instructions': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Instrucciones específicas para los estudiantes...'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
             }),
         }
     
@@ -143,10 +179,30 @@ class AssignmentForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
+        # Configurar queryset de cursos para el usuario
         if user and user.groups.filter(name='Docente').exists():
             self.fields['course'].queryset = Course.objects.filter(
                 teacher=user,
                 is_active=True
             ).order_by('name')
+            self.fields['course'].empty_label = "Selecciona un curso..."
         else:
             self.fields['course'].queryset = Course.objects.none()
+        
+        # Configurar labels y help_text
+        self.fields['title'].help_text = "Título descriptivo para la asignación"
+        self.fields['max_duration'].help_text = "Duración máxima en minutos (1-120)"
+        self.fields['due_date'].help_text = "Fecha y hora límite para entregar"
+        self.fields['max_score'].help_text = "Puntaje máximo que se puede obtener"
+        
+    def clean_due_date(self):
+        due_date = self.cleaned_data.get('due_date')
+        if due_date and due_date <= timezone.now():
+            raise forms.ValidationError('La fecha límite debe ser futura.')
+        return due_date
+        
+    def clean_max_duration(self):
+        max_duration = self.cleaned_data.get('max_duration')
+        if max_duration and (max_duration < 1 or max_duration > 120):
+            raise forms.ValidationError('La duración debe estar entre 1 y 120 minutos.')
+        return max_duration

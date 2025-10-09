@@ -329,6 +329,11 @@ def create_assignment_view(request):
             assignment = form.save()
             messages.success(request, f'Asignación "{assignment.title}" creada exitosamente.')
             return redirect('presentations:manage_assignments')
+        else:
+            # Mostrar errores del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error en {field}: {error}")
     else:
         form = AssignmentForm(user=request.user)
     

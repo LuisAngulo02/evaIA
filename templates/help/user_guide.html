@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block title %}Guía de Usuario - EvalExpo AI{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="guide-header">
+                    <h1 class="display-4 fw-bold text-white mb-3">
+                        <i class="fas fa-book me-3"></i>Guía de Usuario
+                    </h1>
+                    <p class="lead text-white-50">
+                        Todo lo que necesitas saber para usar EvalExpo AI efectivamente
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Navigation -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-compass me-2 text-primary"></i>Navegación Rápida
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <a href="#estudiantes" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-user-graduate me-2"></i>Para Estudiantes
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="#docentes" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-chalkboard-teacher me-2"></i>Para Docentes
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <a href="#faq" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-question-circle me-2"></i>Preguntas Frecuentes
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estudiantes Section -->
+        <div class="row mb-5" id="estudiantes">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-graduate me-2"></i>Guía para Estudiantes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h5><i class="fas fa-upload me-2 text-primary"></i>1. Subir Presentación</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Ir a "Subir Presentación"</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Completar título y descripción</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Seleccionar asignación</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Cargar video (MP4, AVI, MOV)</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Máximo 100 MB</li>
+                                </ul>
+                                
+                                <h5 class="mt-4"><i class="fas fa-chart-line me-2 text-success"></i>2. Ver Calificaciones</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Dashboard → "Mis Calificaciones"</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Ver promedio general</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Consultar historial completo</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Descargar reporte PDF</li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-6">
+                                <h5><i class="fas fa-robot me-2 text-info"></i>3. Análisis de IA</h5>
+                                <div class="alert alert-info">
+                                    <strong>Métricas Evaluadas:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li><strong>Contenido:</strong> Relevancia y estructura</li>
+                                        <li><strong>Fluidez:</strong> Claridad del discurso</li>
+                                        <li><strong>Lenguaje Corporal:</strong> Postura y gestos</li>
+                                        <li><strong>Voz:</strong> Claridad y audibilidad</li>
+                                    </ul>
+                                </div>
+
+                                <h5 class="mt-4"><i class="fas fa-lightbulb me-2 text-warning"></i>4. Consejos para Mejores Resultados</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-check me-2 text-success"></i>Grabar en buena calidad (HD)</li>
+                                    <li><i class="fas fa-check me-2 text-success"></i>Asegurar audio claro</li>
+                                    <li><i class="fas fa-check me-2 text-success"></i>Mantener contacto visual</li>
+                                    <li><i class="fas fa-check me-2 text-success"></i>Hablar despacio y claro</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Docentes Section -->
+        <div class="row mb-5" id="docentes">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Guía para Docentes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h5><i class="fas fa-book me-2 text-success"></i>1. Gestionar Cursos</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>"Gestionar Cursos" → "Crear Nuevo"</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Código único (ej: PROG101)</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Nombre descriptivo</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Estado activo/inactivo</li>
+                                </ul>
+
+                                <h5 class="mt-4"><i class="fas fa-tasks me-2 text-primary"></i>2. Crear Asignaciones</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Título e instrucciones claras</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Tipo de presentación</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Duración máxima</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Fecha límite realista</li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-6">
+                                <h5><i class="fas fa-star me-2 text-warning"></i>3. Calificar Presentaciones</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>"Calificar Presentaciones"</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Revisar video completo</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Considerar análisis de IA</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Asignar puntaje final</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Escribir retroalimentación</li>
+                                </ul>
+
+                                <h5 class="mt-4"><i class="fas fa-chart-bar me-2 text-info"></i>4. Reportes y Exportación</h5>
+                                <ul class="list-unstyled ms-3">
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Dashboard → "Exportar Calificaciones"</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Reporte general en PDF</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>Reportes por curso individual</li>
+                                    <li><i class="fas fa-arrow-right me-2 text-muted"></i>"Reportes y Analytics" detallados</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estados y Credenciales -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Estados de Presentación</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">Subida</span>
+                            <span>Video cargado exitosamente</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-warning me-2">Procesando</span>
+                            <span>IA analizando contenido</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-info me-2">Analizada</span>
+                            <span>Análisis IA completado</span>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">Calificada</span>
+                            <span>Evaluación final del docente</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-danger me-2">Error</span>
+                            <span>Problema en procesamiento</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-key me-2"></i>Credenciales de Prueba</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6><i class="fas fa-chalkboard-teacher me-2 text-success"></i>Docente:</h6>
+                        <p class="mb-3">
+                            <strong>Usuario:</strong> <code>docente1</code><br>
+                            <strong>Contraseña:</strong> <code>123456</code>
+                        </p>
+                        
+                        <h6><i class="fas fa-user-graduate me-2 text-primary"></i>Estudiantes:</h6>
+                        <p class="mb-0">
+                            <strong>Usuarios:</strong> <code>estudiante1</code> a <code>estudiante5</code><br>
+                            <strong>Contraseña:</strong> <code>123456</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="row mb-5" id="faq">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-question-circle me-2"></i>Preguntas Frecuentes
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        ¿Qué formatos de video puedo subir?
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Puedes subir videos en formato <strong>MP4, AVI, MOV y WMV</strong> con un tamaño máximo de <strong>100 MB</strong>. Recomendamos grabar en calidad HD (1080p) para mejores resultados del análisis.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        ¿Cuánto tarda el análisis de IA?
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        El análisis automático toma entre <strong>5 a 15 minutos</strong> dependiendo de la duración del video y la carga del servidor. Recibirás una notificación cuando esté listo.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        ¿Cómo interpretar los puntajes de IA?
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        <strong>85-100%:</strong> Excelente | <strong>70-84%:</strong> Bueno | <strong>60-69%:</strong> Regular | <strong>Menos de 60%:</strong> Necesita mejora. Estos son puntajes de referencia que complementan la evaluación del docente.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                        ¿Puedo exportar mis calificaciones?
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Sí, tanto estudiantes como docentes pueden exportar reportes en <strong>PDF</strong>. Los estudiantes descargan su historial personal, los docentes pueden exportar calificaciones generales o por curso específico.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Support Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm bg-light">
+                    <div class="card-body text-center">
+                        <h5><i class="fas fa-headset me-2 text-primary"></i>¿Necesitas más ayuda?</h5>
+                        <p class="text-muted mb-3">Nuestro equipo de soporte está aquí para ayudarte</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            <a href="mailto:soporte@evalexpo.ai" class="btn btn-outline-primary">
+                                <i class="fas fa-envelope me-2"></i>Email
+                            </a>
+                            <a href="#" class="btn btn-outline-success">
+                                <i class="fas fa-comments me-2"></i>Chat
+                            </a>
+                            <a href="{% url 'auth:dashboard' %}" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i>Volver al Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.guide-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.content-wrapper {
+    padding: 2rem 0;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .guide-header {
+        padding: 2rem 1rem;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scrolling para navegación
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Animación de entrada para las cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}
