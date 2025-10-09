@@ -4,16 +4,16 @@
 # ===================================================
 
 # DEPENDENCIAS PRINCIPALES
-Django==5.2.1
-psycopg2-binary==2.9.9
+Django>=5.2.1
+psycopg2-binary>=2.9.9
 
 # AUTENTICACIÓN Y USUARIOS
-Pillow==11.0.0
+Pillow>=11.0.0
 
-# INTELIGENCIA ARTIFICIAL - TRANSCRIPCIÓN
-openai-whisper==20240930
-torch==2.5.1
-torchaudio==2.5.1
+# INTELIGENCIA ARTIFICIAL - TRANSCRIPCIÓN (IMPLEMENTADO)
+openai-whisper>=20240930
+torch>=2.5.1
+torchaudio>=2.5.1
 
 # PROCESAMIENTO DE VIDEO Y AUDIO
 moviepy==1.0.3

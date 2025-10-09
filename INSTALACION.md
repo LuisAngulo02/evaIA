@@ -21,8 +21,12 @@ cd evaIA
 
 ### 2. Crear entorno virtual
 ```bash
+# Crear entorno virtual (solo si no existe)
 python -m venv venv
-venv\Scripts\activate
+
+# Activar entorno virtual
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
 ```
 
 ### 3. Instalar dependencias principales
