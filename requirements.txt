@@ -1,0 +1,47 @@
+# ===================================================
+# EVALEXPO AI - SISTEMA DE EVALUACIÓN AUTOMÁTICA 
+# DE EXPOSICIONES ACADÉMICAS CON IA
+# ===================================================
+
+# DEPENDENCIAS PRINCIPALES
+Django==5.2.1
+psycopg2-binary==2.9.9
+
+# AUTENTICACIÓN Y USUARIOS
+Pillow==11.0.0
+
+# INTELIGENCIA ARTIFICIAL - TRANSCRIPCIÓN
+openai-whisper==20240930
+torch==2.5.1
+torchaudio==2.5.1
+
+# PROCESAMIENTO DE VIDEO Y AUDIO
+moviepy==1.0.3
+imageio-ffmpeg==0.6.0
+imageio[ffmpeg]==2.37.0
+librosa==0.11.0
+soundfile==0.13.1
+pydub==0.25.1
+
+# ANÁLISIS DE VIDEO (FUTURO: DETECCIÓN ROSTROS)
+opencv-python==4.10.0.84
+face-recognition==1.3.0
+dlib==19.24.6
+
+# ANÁLISIS DE TEXTO CON IA (FUTURO: COHERENCIA TEMÁTICA)
+openai==1.54.4
+transformers==4.46.3
+scikit-learn==1.7.2
+
+# UTILIDADES ADICIONALES
+numpy==2.3.1
+scipy==1.14.1
+matplotlib==3.9.2
+pandas==2.2.3
+
+# SERVIDOR Y DEPLOYMENT
+gunicorn==23.0.0
+whitenoise==6.8.2
+
+# DESARROLLO
+python-decouple==3.8

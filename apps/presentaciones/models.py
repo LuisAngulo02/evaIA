@@ -226,6 +226,12 @@ class Presentation(models.Model):
         verbose_name="Calificada por"
     )
     
+
+    transcription_text = models.TextField(blank=True, null=True, help_text="Transcripción completa del video")
+    transcription_segments = models.JSONField(blank=True, null=True, help_text="Segmentos de transcripción con timestamps")
+    transcription_completed_at = models.DateTimeField(blank=True, null=True)
+    audio_duration = models.FloatField(blank=True, null=True, help_text="Duración del audio en segundos")
+    
     class Meta:
         verbose_name = 'Presentación'
         verbose_name_plural = 'Presentaciones'

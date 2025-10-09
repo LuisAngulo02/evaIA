@@ -24,9 +24,9 @@ urlpatterns = [
     path('grade/', views.grade_presentations_view, name='grade_presentations'),
     path('grade/<int:presentation_id>/', views.grade_presentation_detail_view, name='grade_presentation_detail'),
     
-    # URLs para administradores
-    path('admin/', views.admin_presentations_view, name='admin_presentations'),
-    
     # APIs AJAX
     path('api/assignment-details/', views.get_assignment_details, name='get_assignment_details'),
+
+    # URL para transcripciones
+    path('transcription/<int:presentation_id>/', views.presentation_transcription, name='presentation_transcription'),
 ]

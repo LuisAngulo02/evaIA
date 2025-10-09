@@ -111,6 +111,17 @@
                             <span>Descargar</span>
                         </a>
                     {% endif %}
+                    {% if presentation.video_file %}
+                        <a href="{% url 'presentations:presentation_transcription' presentation.id %}" class="btn-action secondary">
+                            {% if presentation.transcription_text %}
+                                <i class="fas fa-file-alt"></i>
+                                <span>Ver Transcripción</span>
+                            {% else %}
+                                <i class="fas fa-microphone"></i>
+                                <span>Transcribir Audio</span>
+                            {% endif %}
+                        </a>
+                    {% endif %}
                     <a href="{% url 'presentations:my_presentations' %}" class="btn-action outline">
                         <i class="fas fa-arrow-left"></i>
                         <span>Volver</span>

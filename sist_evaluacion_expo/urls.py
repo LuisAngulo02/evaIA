@@ -25,6 +25,12 @@ from django.shortcuts import render
 def test_export_view(request):
     return render(request, 'test_export.html')
 
+def test_notifications_view(request):
+    return render(request, 'test_notifications.html')
+
+def test_simple_notifications_view(request):
+    return render(request, 'test_simple_notifications.html')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', lambda request: redirect('auth:dashboard' if request.user.is_authenticated else 'auth:login')),
@@ -32,7 +38,10 @@ urlpatterns = [
     path('presentations/', include('apps.presentaciones.urls')),
     path('reports/', include('apps.reportes.urls')),
     path('help/', include('apps.help.urls')),
+    path('notifications/', include('apps.notifications.urls')),
     path('test-export/', test_export_view, name='test_export'),
+    path('test-notifications/', test_notifications_view, name='test_notifications'),
+    path('test-simple/', test_simple_notifications_view, name='test_simple_notifications'),
 ]
 
 if settings.DEBUG:

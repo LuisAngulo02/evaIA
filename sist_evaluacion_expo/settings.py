@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'apps.reportes',
     'apps.ai_processor',
     'apps.help',
+    'apps.notifications',
 ]
 
 MIDDLEWARE = [
@@ -68,6 +69,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.notifications.context_processors.notification_context',
             ],
         },
     },

@@ -34,32 +34,52 @@ def upload_presentation_view(request):
             try:
                 presentation.save()
                 
+                # Agregar placeholder para transcripción si no existe
+                if not presentation.transcription_text and presentation.video_file:
+                    presentation.transcription_text = ""  # Placeholder vacío para que aparezca el botón
+                    presentation.save()
+                
                 # Aquí se integraría con OpenCV, SpeechRecognition y IA para análisis
                 # process_presentation_async.delay(presentation.id)
                 
                 messages.success(
                     request, 
                     f'¡Presentación "{presentation.title}" subida exitosamente! '
-                    f'El análisis de IA comenzará pronto.'
+                    f'Puedes transcribir el audio usando el botón "Transcribir Audio" en los detalles.'
                 )
                 return redirect('presentations:my_presentations')
                 
             except Exception as e:
                 messages.error(request, f'Error al guardar la presentación: {str(e)}')
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Error al guardar: {str(e)}'
-                })
+                # Recargar la página con el mensaje de error
+                form = PresentationUploadForm(user=request.user)
         else:
-            # Retornar errores del formulario
-            errors = {}
+            # Mostrar errores del formulario como mensajes flotantes amigables
+            error_messages = []
+            
             for field, error_list in form.errors.items():
-                errors[field] = error_list
-            return JsonResponse({
-                'success': False,
-                'message': 'Errores en el formulario',
-                'errors': errors
-            })
+                for error in error_list:
+                    if field == 'title':
+                        error_messages.append(f' {error}')
+                    elif field == 'video_file':
+                        error_messages.append(f' {error}')
+                    elif field == 'assignment':
+                        error_messages.append(f' {error}')
+                    elif field == 'description':
+                        error_messages.append(f' {error}')
+                    elif field == '__all__':
+                        error_messages.append(f' {error}')
+                    else:
+                        field_name = field.replace('_', ' ').title()
+                        error_messages.append(f' {field_name}: {error}')
+            
+            # Mostrar todos los errores
+            for msg in error_messages:
+                messages.error(request, msg)
+            
+            # Si no se capturaron errores específicos
+            if not error_messages:
+                messages.error(request, ' Por favor revisa la información ingresada y corrige los errores.')
     else:
         form = PresentationUploadForm(user=request.user)
     
@@ -697,3 +717,221 @@ def get_assignment_details(request):
         return JsonResponse({'error': 'Assignment not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def presentation_transcription(request, presentation_id):
+    """
+    Muestra la transcripción de una presentación y permite transcripción real
+    """
+    presentation = get_object_or_404(Presentation, id=presentation_id)
+    
+    # Verificar permisos
+    if request.user != presentation.student and request.user != presentation.assignment.course.instructor:
+        messages.error(request, "No tienes permiso para ver esta transcripción.")
+        return redirect('presentations:my_presentations')
+    
+    # Procesar transcripción real si se solicita
+    if request.method == 'POST' and 'transcribe_real' in request.POST:
+        try:
+            # Importar librerías necesarias
+            import whisper
+            import numpy as np
+            import tempfile
+            import os
+            
+            messages.info(request, "Iniciando transcripción real del audio...")
+            
+            # Cargar modelo Whisper
+            model = whisper.load_model("base")
+            
+            # Configurar FFmpeg para que Whisper lo encuentre
+            try:
+                import imageio_ffmpeg as ffmpeg
+                import shutil
+                from pathlib import Path
+                
+                ffmpeg_exe = ffmpeg.get_ffmpeg_exe()
+                
+                # Crear directorio local para FFmpeg si no existe
+                local_bin = Path("local_bin")
+                local_bin.mkdir(exist_ok=True)
+                
+                # Copiar FFmpeg al directorio local
+                local_ffmpeg = local_bin / "ffmpeg.exe"
+                if not local_ffmpeg.exists():
+                    shutil.copy2(ffmpeg_exe, local_ffmpeg)
+                
+                # Agregar al PATH
+                local_bin_abs = str(local_bin.absolute())
+                current_path = os.environ.get('PATH', '')
+                if local_bin_abs not in current_path:
+                    os.environ['PATH'] = f"{local_bin_abs};{current_path}"
+                
+                messages.info(request, "FFmpeg configurado correctamente para Whisper")
+            except Exception as e:
+                messages.warning(request, f"Advertencia configurando FFmpeg: {str(e)}")
+            
+            # Verificar si el video tiene audio primero
+            try:
+                from moviepy.editor import VideoFileClip
+                video = VideoFileClip(presentation.video_file.path)
+                
+                if video.audio is None:
+                    video.close()
+                    messages.error(request, "❌ Este video no contiene audio para transcribir. Sube un video que incluya audio/voz.")
+                    return redirect(request.path)
+                else:
+                    video.close()
+                    messages.info(request, "✅ Video con audio detectado, procediendo con la transcripción...")
+            except:
+                # Si no puede verificar, continuar
+                pass
+            
+            # Método 1: Intentar con Whisper directamente
+            try:
+                # Whisper puede manejar MP4 directamente
+                result = model.transcribe(
+                    presentation.video_file.path,
+                    language='es',
+                    task='transcribe',
+                    verbose=False
+                )
+                
+                if result and result.get('text') and len(result['text'].strip()) > 5:
+                    # Guardar transcripción real
+                    presentation.transcription_text = result['text'].strip()
+                    
+                    # Procesar segmentos
+                    segments = []
+                    if 'segments' in result:
+                        for segment in result['segments']:
+                            if segment['text'].strip():
+                                segments.append({
+                                    'start_time': round(segment['start'], 2),
+                                    'end_time': round(segment['end'], 2),
+                                    'text': segment['text'].strip()
+                                })
+                    
+                    presentation.transcription_segments = segments
+                    
+                    # Calcular duración
+                    if segments:
+                        presentation.audio_duration = max(seg['end_time'] for seg in segments)
+                    
+                    presentation.save()
+                    
+                    messages.success(request, f"¡Transcripción real completada! Se transcribieron {len(result['text'])} caracteres de audio real.")
+                    
+                else:
+                    messages.warning(request, "No se detectó texto en el audio del video.")
+                    
+            except Exception as whisper_error:
+                # Método 2: Usar MoviePy como fallback
+                try:
+                    from moviepy.editor import VideoFileClip
+                    
+                    video = VideoFileClip(presentation.video_file.path)
+                    
+                    if video.audio is not None:
+                        # Crear archivo temporal
+                        temp_audio = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+                        temp_audio_path = temp_audio.name
+                        temp_audio.close()
+                        
+                        try:
+                            # Extraer audio con configuración más robusta
+                            audio = video.audio
+                            
+                            # Configurar FFmpeg con imageio
+                            import imageio_ffmpeg as ffmpeg
+                            ffmpeg_path = ffmpeg.get_ffmpeg_exe()
+                            
+                            # Usar el ejecutable de FFmpeg de imageio
+                            import subprocess
+                            cmd = [
+                                ffmpeg_path,
+                                '-i', presentation.video_file.path,
+                                '-vn', '-acodec', 'pcm_s16le', '-ar', '16000', '-ac', '1',
+                                '-y', temp_audio_path
+                            ]
+                            
+                            subprocess.run(cmd, check=True, capture_output=True)
+                            
+                            # Transcribir con Whisper
+                            result = model.transcribe(
+                                temp_audio_path,
+                                language='es',
+                                task='transcribe'
+                            )
+                            
+                            if result and result.get('text') and len(result['text'].strip()) > 5:
+                                # Guardar transcripción real
+                                presentation.transcription_text = result['text'].strip()
+                                
+                                # Procesar segmentos
+                                segments = []
+                                if 'segments' in result:
+                                    for segment in result['segments']:
+                                        if segment['text'].strip():
+                                            segments.append({
+                                                'start_time': round(segment['start'], 2),
+                                                'end_time': round(segment['end'], 2),
+                                                'text': segment['text'].strip()
+                                            })
+                                
+                                presentation.transcription_segments = segments
+                                
+                                # Calcular duración
+                                if segments:
+                                    presentation.audio_duration = max(seg['end_time'] for seg in segments)
+                                
+                                presentation.save()
+                                
+                                messages.success(request, "¡Transcripción real completada con método alternativo!")
+                            else:
+                                messages.warning(request, "No se detectó texto en el audio extraído.")
+                                
+                        finally:
+                            # Limpiar recursos
+                            if 'audio' in locals():
+                                audio.close()
+                            if 'video' in locals():
+                                video.close()
+                            if os.path.exists(temp_audio_path):
+                                os.unlink(temp_audio_path)
+                    else:
+                        messages.error(request, "El video no contiene pista de audio.")
+                        
+                except Exception as moviepy_error:
+                    messages.error(request, f"Error con ambos métodos. Whisper: {str(whisper_error)[:100]}, MoviePy: {str(moviepy_error)[:100]}")
+                
+        except ImportError as e:
+            messages.error(request, f"Librerías no disponibles: {str(e)}")
+        except Exception as e:
+            messages.error(request, f"Error general: {str(e)}")
+    
+    # Preparar contexto
+    context = {
+        'presentation': presentation,
+        'has_transcription': bool(presentation.transcription_text),
+        'formatted_transcription': None
+    }
+    
+    # Formatear transcripción si existe
+    if presentation.transcription_segments:
+        try:
+            from apps.ai_processor.services.transcription_service import TranscriptionService
+            service = TranscriptionService()
+            context['formatted_transcription'] = service.format_transcription_for_display(
+                presentation.transcription_segments
+            )
+        except ImportError:
+            # Fallback cuando MoviePy no está disponible
+            formatted_text = ""
+            for segment in presentation.transcription_segments:
+                start_min = int(segment['start_time'] // 60)
+                start_sec = int(segment['start_time'] % 60)
+                formatted_text += f"[{start_min:02d}:{start_sec:02d}] {segment['text']}\n"
+            context['formatted_transcription'] = formatted_text
+    
+    return render(request, 'presentations/transcription_detail.html', context)

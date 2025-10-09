@@ -63,28 +63,36 @@ class PresentationUploadForm(forms.ModelForm):
     
     def clean_video_file(self):
         video = self.cleaned_data.get('video_file')
+        
+        # Solo validar si no es edición o si se está subiendo un nuevo archivo
+        if not video and not self.instance.pk:
+            raise forms.ValidationError('Debes seleccionar un archivo de video.')
+            
         if video:
             # Validar tamaño (máximo 500MB)
             max_size = 500 * 1024 * 1024  # 500MB en bytes
             if video.size > max_size:
-                raise forms.ValidationError('El archivo es demasiado grande. Máximo 500MB.')
+                size_mb = video.size / (1024 * 1024)
+                raise forms.ValidationError(f'El archivo es demasiado grande ({size_mb:.1f}MB). Máximo permitido: 500MB.')
             
             # Validar extensión
             valid_extensions = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v']
-            ext = video.name.split('.')[-1].lower()
+            ext = video.name.split('.')[-1].lower() if '.' in video.name else ''
             if ext not in valid_extensions:
                 raise forms.ValidationError(
-                    f'Formato no válido. Formatos permitidos: {", ".join(valid_extensions).upper()}'
+                    f'Formato de video no compatible. Usa uno de estos formatos: {", ".join(valid_extensions).upper()}'
                 )
         
         return video
     
     def clean_title(self):
         title = self.cleaned_data.get('title', '').strip()
+        if not title:
+            raise forms.ValidationError('El título es obligatorio.')
         if len(title) < 5:
-            raise forms.ValidationError('El título debe tener al menos 5 caracteres.')
+            raise forms.ValidationError('El título debe tener al menos 5 caracteres. Por ejemplo: "Análisis de Datos"')
         if len(title) > 200:
-            raise forms.ValidationError('El título no puede exceder 200 caracteres.')
+            raise forms.ValidationError('El título es demasiado largo. Máximo 200 caracteres.')
         return title
     
     def clean(self):
