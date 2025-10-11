@@ -935,3 +935,86 @@ def presentation_transcription(request, presentation_id):
             context['formatted_transcription'] = formatted_text
     
     return render(request, 'presentations/transcription_detail.html', context)
+
+
+# =====================================================
+# VISTA PARA GRABACIÓN EN VIVO
+# =====================================================
+
+@student_required
+def live_record_view(request):
+    """
+    Vista para grabar presentaciones en vivo desde la cámara
+    Permite a los estudiantes grabar directamente sin subir archivo
+    """
+    assignment_id = request.GET.get('assignment')
+    assignment = None
+    
+    if assignment_id:
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+        except Assignment.DoesNotExist:
+            messages.error(request, "Asignación no encontrada.")
+            return redirect('presentations:student_upload')
+    
+    if request.method == 'POST':
+        # Procesar video grabado
+        try:
+            video_file = request.FILES.get('video_file')
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            assignment_id = request.POST.get('assignment')
+            
+            if not video_file:
+                return JsonResponse({'success': False, 'error': 'No se recibió el video'}, status=400)
+            
+            if not title:
+                return JsonResponse({'success': False, 'error': 'El título es requerido'}, status=400)
+            
+            # Crear presentación
+            presentation = Presentation(
+                title=title,
+                description=description or "Grabado en vivo",
+                student=request.user,
+                video_file=video_file,
+                file_size=video_file.size,
+                uploaded_at=timezone.now(),
+                status='UPLOADED',
+                is_live_recording=True  # Marcar como grabación en vivo
+            )
+            
+            if assignment_id:
+                try:
+                    assignment = Assignment.objects.get(id=assignment_id)
+                    presentation.assignment = assignment
+                except Assignment.DoesNotExist:
+                    pass
+            
+            presentation.save()
+            
+            # Iniciar análisis de IA en segundo plano
+            from apps.ai_processor.services.ai_service import AIService
+            try:
+                ai_service = AIService()
+                ai_service.analyze_presentation(presentation)
+            except Exception as e:
+                print(f"Error en análisis IA: {str(e)}")
+                # No fallar la subida si el análisis falla
+            
+            messages.success(
+                request,
+                f'✅ Grabación en vivo "{title}" guardada exitosamente! '
+                f'El análisis de IA se procesará automáticamente.'
+            )
+            
+            return JsonResponse({'success': True, 'redirect': '/presentations/my-presentations/'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    # GET request - mostrar interfaz de grabación
+    context = {
+        'assignment': assignment,
+    }
+    
+    return render(request, 'presentations/live_record.html', context)

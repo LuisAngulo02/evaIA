@@ -1,0 +1,507 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Grabar Presentación en Vivo - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recording-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    #videoPreview {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+        background: #000;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .recording-indicator {
+        display: none;
+        color: #dc3545;
+        font-weight: bold;
+        animation: blink 1.5s infinite;
+    }
+    
+    .recording-indicator.active {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    @keyframes blink {
+        0%, 50%, 100% { opacity: 1; }
+        25%, 75% { opacity: 0.3; }
+    }
+    
+    .recording-dot {
+        width: 12px;
+        height: 12px;
+        background-color: #dc3545;
+        border-radius: 50%;
+        margin-right: 8px;
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.7; }
+    }
+    
+    .timer {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #28a745;
+        font-family: 'Courier New', monospace;
+    }
+    
+    .control-btn {
+        min-width: 150px;
+        font-size: 1.1rem;
+        padding: 12px 24px;
+    }
+    
+    .device-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .preview-container {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .countdown-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+    
+    .countdown-overlay.active {
+        display: flex;
+    }
+    
+    .countdown-number {
+        font-size: 120px;
+        color: white;
+        font-weight: bold;
+        text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        animation: countdownPulse 1s ease-in-out;
+    }
+    
+    @keyframes countdownPulse {
+        0% { transform: scale(0.5); opacity: 0; }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid recording-container py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-video"></i> Grabar Presentación en Vivo
+                    </h1>
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        La grabación se realizará directamente desde tu cámara
+                    </p>
+                </div>
+                <a href="{% url 'presentations:student_upload' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </a>
+            </div>
+
+            <!-- Información de la asignación -->
+            {% if assignment %}
+            <div class="alert alert-info">
+                <h5><i class="fas fa-clipboard-list"></i> Asignación: {{ assignment.title }}</h5>
+                <p class="mb-1"><strong>Curso:</strong> {{ assignment.course.name }}</p>
+                <p class="mb-1"><strong>Descripción:</strong> {{ assignment.description }}</p>
+                <p class="mb-0">
+                    <strong>Duración máxima:</strong> {{ assignment.max_duration }} minutos
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Información del dispositivo -->
+            <div class="device-info">
+                <h6><i class="fas fa-camera"></i> Estado de la cámara:</h6>
+                <div id="deviceInfo">
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-circle-notch fa-spin"></i> Inicializando...
+                    </span>
+                </div>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="text-center mb-4">
+                <div class="preview-container">
+                    <video id="videoPreview" autoplay muted playsinline></video>
+                    <div id="countdownOverlay" class="countdown-overlay">
+                        <div class="countdown-number" id="countdownNumber">3</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado y Timer -->
+            <div class="text-center mb-4">
+                <div class="recording-indicator" id="recordingIndicator">
+                    <span class="recording-dot"></span>
+                    GRABANDO
+                </div>
+                <div class="timer" id="timer">00:00:00</div>
+                {% if assignment %}
+                <small class="text-muted">Duración máxima: {{ assignment.max_duration }} minutos</small>
+                {% endif %}
+            </div>
+
+            <!-- Controles -->
+            <div class="text-center mb-4">
+                <button id="startBtn" class="btn btn-success control-btn me-2">
+                    <i class="fas fa-play-circle"></i> Iniciar Grabación
+                </button>
+                <button id="pauseBtn" class="btn btn-warning control-btn me-2" disabled>
+                    <i class="fas fa-pause-circle"></i> Pausar
+                </button>
+                <button id="resumeBtn" class="btn btn-info control-btn me-2" disabled style="display:none;">
+                    <i class="fas fa-play-circle"></i> Reanudar
+                </button>
+                <button id="stopBtn" class="btn btn-danger control-btn" disabled>
+                    <i class="fas fa-stop-circle"></i> Detener y Guardar
+                </button>
+            </div>
+
+            <!-- Consejos -->
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-lightbulb"></i> Consejos para una buena grabación:</h6>
+                <ul class="mb-0">
+                    <li>Asegúrate de tener buena iluminación</li>
+                    <li>Coloca la cámara a la altura de los ojos</li>
+                    <li>Verifica que el micrófono funcione correctamente</li>
+                    <li>Mantén el encuadre estable durante la grabación</li>
+                    <li>La grabación en vivo obtiene mejor puntuación de autenticidad</li>
+                </ul>
+            </div>
+
+            <!-- Formulario oculto para enviar el video -->
+            <form id="uploadForm" method="POST" enctype="multipart/form-data" style="display:none;">
+                {% csrf_token %}
+                <input type="file" id="videoFile" name="video_file" accept="video/*">
+                <input type="text" id="titleInput" name="title" value="">
+                <input type="text" id="descriptionInput" name="description" value="">
+                {% if assignment %}
+                <input type="hidden" name="assignment" value="{{ assignment.id }}">
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let mediaRecorder;
+let recordedChunks = [];
+let stream;
+let startTime;
+let timerInterval;
+let isPaused = false;
+let pausedDuration = 0;
+let pauseStartTime;
+const maxDuration = {{ assignment.max_duration|default:10 }} * 60 * 1000; // Convertir a milisegundos
+
+// Elementos del DOM
+const videoPreview = document.getElementById('videoPreview');
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+const resumeBtn = document.getElementById('resumeBtn');
+const stopBtn = document.getElementById('stopBtn');
+const timer = document.getElementById('timer');
+const recordingIndicator = document.getElementById('recordingIndicator');
+const deviceInfo = document.getElementById('deviceInfo');
+const countdownOverlay = document.getElementById('countdownOverlay');
+const countdownNumber = document.getElementById('countdownNumber');
+
+// Inicializar cámara al cargar la página
+window.addEventListener('load', initializeCamera);
+
+async function initializeCamera() {
+    try {
+        // Solicitar acceso a cámara y micrófono
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: 'user'
+            },
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 44100
+            }
+        });
+        
+        videoPreview.srcObject = stream;
+        
+        // Mostrar información del dispositivo
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+        
+        deviceInfo.innerHTML = `
+            <span class="badge bg-success me-2">
+                <i class="fas fa-check-circle"></i> Cámara: ${videoTrack.label}
+            </span>
+            <span class="badge bg-success">
+                <i class="fas fa-check-circle"></i> Micrófono: ${audioTrack.label}
+            </span>
+        `;
+        
+        startBtn.disabled = false;
+        
+    } catch (error) {
+        console.error('Error accediendo a dispositivos:', error);
+        deviceInfo.innerHTML = `
+            <span class="badge bg-danger">
+                <i class="fas fa-exclamation-triangle"></i> Error: No se pudo acceder a la cámara o micrófono
+            </span>
+        `;
+        alert('⚠️ No se pudo acceder a la cámara o micrófono.\n\nAsegúrate de dar permisos al navegador.');
+    }
+}
+
+// Iniciar grabación con countdown
+startBtn.addEventListener('click', () => {
+    startCountdown();
+});
+
+function startCountdown() {
+    let count = 3;
+    countdownOverlay.classList.add('active');
+    countdownNumber.textContent = count;
+    startBtn.disabled = true;
+    
+    const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownNumber.textContent = count;
+            // Reiniciar animación
+            countdownNumber.style.animation = 'none';
+            setTimeout(() => {
+                countdownNumber.style.animation = 'countdownPulse 1s ease-in-out';
+            }, 10);
+        } else {
+            clearInterval(countdownInterval);
+            countdownOverlay.classList.remove('active');
+            startRecording();
+        }
+    }, 1000);
+}
+
+function startRecording() {
+    recordedChunks = [];
+    
+    // Configurar MediaRecorder
+    const options = {
+        mimeType: 'video/webm;codecs=vp9,opus',
+        videoBitsPerSecond: 2500000 // 2.5 Mbps
+    };
+    
+    try {
+        mediaRecorder = new MediaRecorder(stream, options);
+    } catch (e) {
+        // Fallback a formato más compatible
+        mediaRecorder = new MediaRecorder(stream);
+    }
+    
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+    
+    mediaRecorder.onstop = handleStop;
+    
+    mediaRecorder.start(100); // Guardar datos cada 100ms
+    
+    // UI Updates
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    stopBtn.disabled = false;
+    recordingIndicator.classList.add('active');
+    
+    // Iniciar timer
+    startTime = Date.now();
+    pausedDuration = 0;
+    isPaused = false;
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 100);
+    
+    console.log('✅ Grabación iniciada');
+}
+
+pauseBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.pause();
+        pauseBtn.style.display = 'none';
+        resumeBtn.style.display = 'inline-block';
+        resumeBtn.disabled = false;
+        recordingIndicator.classList.remove('active');
+        isPaused = true;
+        pauseStartTime = Date.now();
+        console.log('⏸️ Grabación pausada');
+    }
+});
+
+resumeBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'paused') {
+        mediaRecorder.resume();
+        pauseBtn.style.display = 'inline-block';
+        resumeBtn.style.display = 'none';
+        pauseBtn.disabled = false;
+        recordingIndicator.classList.add('active');
+        isPaused = false;
+        pausedDuration += Date.now() - pauseStartTime;
+        console.log('▶️ Grabación reanudada');
+    }
+});
+
+stopBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        clearInterval(timerInterval);
+        
+        // UI Updates
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        resumeBtn.disabled = true;
+        stopBtn.disabled = true;
+        recordingIndicator.classList.remove('active');
+        
+        console.log('⏹️ Grabación detenida');
+    }
+});
+
+function updateTimer() {
+    if (isPaused) return;
+    
+    const elapsed = Date.now() - startTime - pausedDuration;
+    
+    // Verificar si se excedió el tiempo máximo
+    if (elapsed >= maxDuration) {
+        stopBtn.click();
+        alert('⏰ Se alcanzó el tiempo máximo de grabación.');
+        return;
+    }
+    
+    const hours = Math.floor(elapsed / 3600000);
+    const minutes = Math.floor((elapsed % 3600000) / 60000);
+    const seconds = Math.floor((elapsed % 60000) / 1000);
+    
+    timer.textContent = 
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Cambiar color si se acerca al límite
+    if (elapsed > maxDuration * 0.9) {
+        timer.style.color = '#dc3545'; // Rojo
+    } else if (elapsed > maxDuration * 0.75) {
+        timer.style.color = '#ffc107'; // Amarillo
+    }
+}
+
+async function handleStop() {
+    // Crear blob del video
+    const blob = new Blob(recordedChunks, {
+        type: 'video/webm'
+    });
+    
+    console.log(`📹 Video grabado: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+    
+    // Solicitar título y descripción
+    const title = prompt('📝 Título de la presentación:', `Presentación ${new Date().toLocaleDateString()}`);
+    if (!title) {
+        alert('❌ Grabación cancelada: se requiere un título');
+        location.reload();
+        return;
+    }
+    
+    const description = prompt('📄 Notas o descripción (opcional):', '');
+    
+    // Preparar formulario
+    const file = new File([blob], `recording_${Date.now()}.webm`, { type: 'video/webm' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    document.getElementById('videoFile').files = dataTransfer.files;
+    document.getElementById('titleInput').value = title;
+    document.getElementById('descriptionInput').value = description || '';
+    
+    // Mostrar progreso
+    const uploadingAlert = document.createElement('div');
+    uploadingAlert.className = 'alert alert-info alert-dismissible fade show position-fixed bottom-0 end-0 m-3';
+    uploadingAlert.style.zIndex = '9999';
+    uploadingAlert.innerHTML = `
+        <strong><i class="fas fa-cloud-upload-alt fa-spin"></i> Subiendo video...</strong>
+        <p class="mb-0 small">Por favor espera, esto puede tomar unos minutos.</p>
+    `;
+    document.body.appendChild(uploadingAlert);
+    
+    // Deshabilitar botones durante la subida
+    startBtn.disabled = true;
+    stopBtn.disabled = true;
+    
+    // Enviar formulario
+    try {
+        const formData = new FormData(document.getElementById('uploadForm'));
+        
+        const response = await fetch('{% url "presentations:live_record" %}{% if assignment %}?assignment={{ assignment.id }}{% endif %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        if (response.ok) {
+            uploadingAlert.remove();
+            alert('✅ ¡Video subido exitosamente!\n\nEl análisis de IA comenzará automáticamente.');
+            window.location.href = '{% url "presentations:student_dashboard" %}';
+        } else {
+            throw new Error('Error en la respuesta del servidor');
+        }
+    } catch (error) {
+        console.error('Error subiendo video:', error);
+        uploadingAlert.remove();
+        alert('❌ Error al subir el video. Por favor, intenta nuevamente.');
+        location.reload();
+    }
+}
+
+// Limpiar recursos al salir
+window.addEventListener('beforeunload', (e) => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        e.preventDefault();
+        e.returnValue = '¿Estás seguro? La grabación se perderá.';
+    }
+    
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+{% endblock %}

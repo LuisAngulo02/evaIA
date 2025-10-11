@@ -6,6 +6,7 @@ app_name = 'presentations'
 urlpatterns = [
     # URLs para estudiantes
     path('upload/', views.upload_presentation_view, name='upload_presentation'),
+    path('live-record/', views.live_record_view, name='live_record'),  # Nueva: Grabación en vivo
     path('my-presentations/', views.my_presentations_view, name='my_presentations'),
     path('presentation/<int:presentation_id>/', views.presentation_detail_view, name='presentation_detail'),
     path('presentation/<int:presentation_id>/edit/', views.edit_presentation_view, name='edit_presentation'),

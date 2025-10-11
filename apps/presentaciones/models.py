@@ -232,6 +232,49 @@ class Presentation(models.Model):
     transcription_completed_at = models.DateTimeField(blank=True, null=True)
     audio_duration = models.FloatField(blank=True, null=True, help_text="Duración del audio en segundos")
     
+    # Análisis de participación con detección de rostros
+    participation_data = models.JSONField(
+        blank=True, 
+        null=True, 
+        help_text="Datos de participación detectados mediante análisis de rostros (Persona 1, Persona 2, etc.)"
+    )
+    analyzed_at = models.DateTimeField(blank=True, null=True, help_text="Fecha de análisis completo de IA")
+    
+    # Análisis de liveness (video en vivo vs pregrabado)
+    is_live_recording = models.BooleanField(
+        default=False,
+        help_text="Indica si el video fue grabado en vivo"
+    )
+    liveness_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.00), MaxValueValidator(100.00)],
+        help_text="Score de liveness (0-100, mayor = más probable en vivo)"
+    )
+    liveness_confidence = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.00), MaxValueValidator(100.00)],
+        help_text="Confianza del análisis de liveness"
+    )
+    recording_type = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        choices=[
+            ('LIVE', 'En Vivo'),
+            ('LIKELY_LIVE', 'Probablemente en Vivo'),
+            ('LIKELY_RECORDED', 'Probablemente Pregrabado'),
+            ('RECORDED', 'Pregrabado'),
+            ('UNKNOWN', 'Desconocido'),
+        ],
+        help_text="Tipo de grabación detectado"
+    )
+    
     class Meta:
         verbose_name = 'Presentación'
         verbose_name_plural = 'Presentaciones'

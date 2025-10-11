@@ -55,17 +55,25 @@
             </div>
             <div class="card-body">
                 <div class="quick-actions">
+                    <a href="{% url 'presentations:upload_presentation' %}?tab=record" class="quick-action">
+                        <div class="quick-action-icon bg-success">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Grabar en Vivo</h6>
+                        <p class="text-muted small mb-0">Grabar directamente desde tu cámara</p>
+                    </a>
+                    
                     <a href="{% url 'presentations:upload_presentation' %}" class="quick-action">
                         <div class="quick-action-icon">
                             <i class="fas fa-upload"></i>
                         </div>
-                        <h6 class="fw-bold mb-1">Subir Presentación</h6>
-                        <p class="text-muted small mb-0">Cargar video de tu exposición</p>
+                        <h6 class="fw-bold mb-1">Subir Video</h6>
+                        <p class="text-muted small mb-0">Cargar video pregrabado</p>
                     </a>
                     
                     <a href="{% url 'presentations:my_presentations' %}" class="quick-action">
                         <div class="quick-action-icon">
-                            <i class="fas fa-video"></i>
+                            <i class="fas fa-film"></i>
                         </div>
                         <h6 class="fw-bold mb-1">Mis Presentaciones</h6>
                         <p class="text-muted small mb-0">Ver historial de exposiciones</p>
@@ -119,6 +127,9 @@
                                     {% if assignment.due_date|timeuntil %}
                                         <span class="badge bg-info">{{ assignment.due_date|timeuntil }}</span>
                                     {% endif %}
+                                    <a href="{% url 'presentations:upload_presentation' %}?tab=record&assignment={{ assignment.id }}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-video"></i> Grabar en Vivo
+                                    </a>
                                     <a href="{% url 'presentations:upload_presentation' %}?assignment={{ assignment.id }}" class="btn btn-sm btn-primary">
                                         <i class="fas fa-upload me-1"></i>Subir
                                     </a>
