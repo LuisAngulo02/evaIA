@@ -1,0 +1,911 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configuración IA - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Gradientes y colores principales */
+    .config-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .config-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-left: 5px solid #667eea;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .config-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Tipografía mejorada */
+    .section-title {
+        color: #2c3e50;
+        font-weight: 700;
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .section-subtitle {
+        color: #6c757d;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    /* Controles de formulario */
+    .form-control, .form-select {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-1px);
+    }
+    
+    /* Ayudas y tooltips */
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+        line-height: 1.4;
+    }
+    
+    .tooltip-icon {
+        color: #667eea;
+        cursor: help;
+        font-size: 0.875rem;
+        margin-left: 0.25rem;
+    }
+    
+    .info-box {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #1565c0;
+    }
+    
+    .warning-box {
+        background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 30%);
+        border: none;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        color: #e65100;
+    }
+    
+    /* Botones mejorados */
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        border: 2px solid #6c757d;
+        background: transparent;
+        color: #6c757d;
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-secondary:hover {
+        background: #6c757d;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    /* Configuración actual */
+    .current-config {
+        background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        border-left: 5px solid #28a745;
+        margin-bottom: 2rem;
+    }
+    
+    /* Grid de pesos mejorado */
+    .weight-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .weight-item {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 2px solid #dee2e6;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .weight-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: var(--accent-color, #667eea);
+    }
+    
+    .weight-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border-color: var(--accent-color, #667eea);
+    }
+    
+    .weight-item.coherence::before { background: #667eea; }
+    .weight-item.face::before { background: #28a745; }
+    .weight-item.duration::before { background: #ffc107; }
+    .weight-item.manual::before { background: #17a2b8; }
+    
+    /* Iconos animados */
+    .ai-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .section-icon {
+        font-size: 1.5rem;
+        margin-right: 0.5rem;
+        color: #667eea;
+    }
+    
+    /* Medidores visuales */
+    .range-visual {
+        height: 8px;
+        background: linear-gradient(90deg, #ff4444 0%, #ffaa00 50%, #00cc44 100%);
+        border-radius: 4px;
+        margin-top: 0.5rem;
+        position: relative;
+    }
+    
+    .range-indicator {
+        position: absolute;
+        top: -2px;
+        width: 4px;
+        height: 12px;
+        background: #333;
+        border-radius: 2px;
+        transition: left 0.3s ease;
+    }
+    
+    /* Estados de validación */
+    .validation-valid {
+        border-color: #28a745 !important;
+        background-color: #f8fff8;
+    }
+    
+    .validation-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff8f8;
+    }
+    
+    /* Responsivo */
+    @media (max-width: 768px) {
+        .config-section {
+            padding: 1.5rem;
+        }
+        
+        .weight-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .btn-primary, .btn-secondary {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Tooltips personalizados */
+    .custom-tooltip {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .custom-tooltip .tooltip-text {
+        visibility: hidden;
+        width: 300px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -150px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    
+    .custom-tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+                <div class="card config-card">
+                <div class="card-body text-center py-5">
+                    <div class="ai-icon"><i class="fas fa-brain"></i></div>
+                    <h1 class="card-title mb-2">Configuración de Inteligencia Artificial</h1>
+                    <p class="card-text mt-3 fs-5">Personaliza cómo la IA evalúa las presentaciones de tus estudiantes</p>
+                    <small class="d-block mt-2 opacity-75">
+                        Estos parámetros se aplicarán a todas las evaluaciones futuras de tus cursos
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información importante -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="info-box">
+                <h5><i class="fas fa-info-circle me-2"></i>¿Qué estás configurando?</h5>
+                <p class="mb-2">Esta configuración personaliza cómo la inteligencia artificial evalúa las presentaciones:</p>
+                <ul class="mb-0">
+                    <li><i class="fas fa-robot text-primary me-2"></i><strong>Modelo de IA:</strong> Qué tan "inteligente" y preciso será el análisis de coherencia</li>
+                    <li><i class="fas fa-user-check text-success me-2"></i><strong>Detección Facial:</strong> Qué tan sensible será para detectar rostros en los videos</li>
+                    <li><i class="fas fa-balance-scale text-info me-2"></i><strong>Pesos de Evaluación:</strong> Qué porcentaje de la nota final representa cada criterio</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuración actual -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="current-config">
+                <h5>Configuración Actual</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Modelo:</strong> {{ current_config.model }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Temperatura:</strong> {{ current_config.temperature }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Confianza Facial:</strong> {{ current_config.confidence }}
+                    </div>
+                </div>
+                {% if last_updated %}
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <small class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            Última actualización: {{ last_updated|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <form method="post">
+        {% csrf_token %}
+        
+        <!-- Configuración del Modelo de IA -->
+        <div class="config-section">
+            <h4 class="section-title">
+                <i class="fas fa-brain section-icon"></i>Modelo de Inteligencia Artificial
+                <span class="custom-tooltip">
+                    <i class="fas fa-question-circle tooltip-icon"></i>
+                    <span class="tooltip-text">
+                        El modelo de IA analiza el contenido hablado de las presentaciones para evaluar coherencia, 
+                        fluidez y calidad del discurso. Modelos más grandes son más precisos pero pueden ser más lentos.
+                    </span>
+                </span>
+            </h4>
+            <p class="section-subtitle">
+                <i class="fas fa-microphone-alt me-2 text-primary"></i>
+                Configura qué modelo analizará el <strong>contenido hablado</strong> de las presentaciones
+            </p>
+            
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>¿Qué hace esto?</strong> El modelo de IA "escucha" las presentaciones y evalúa:
+                <ul class="mt-2 mb-0">
+                    <li><i class="fas fa-bullseye text-primary me-2"></i><strong>Coherencia:</strong> Si las ideas tienen sentido y están bien conectadas</li>
+                    <li><i class="fas fa-volume-up text-success me-2"></i><strong>Fluidez:</strong> Si el estudiante habla de manera natural y clara</li>
+                    <li><i class="fas fa-book-open text-info me-2"></i><strong>Contenido:</strong> Si demuestra conocimiento del tema</li>
+                </ul>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label for="{{ form.ai_model.id_for_label }}" class="form-label">
+                        <i class="fas fa-robot text-primary"></i>
+                        {{ form.ai_model.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>Llama 3.3 70B:</strong> El más avanzado, mejor comprensión del lenguaje<br>
+                                <strong>Llama 3.1 70B:</strong> Muy bueno, más rápido<br>
+                                <strong>Mixtral 8x7B:</strong> Rápido, ideal para evaluaciones básicas
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.ai_model }}
+                    <div class="help-text">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Llama 3.3 70B es recomendado para máxima precisión en el análisis
+                    </div>
+                    {% if form.ai_model.errors %}
+                        <div class="text-danger">{{ form.ai_model.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <label for="{{ form.ai_temperature.id_for_label }}" class="form-label">
+                        <i class="fas fa-thermometer-half text-warning"></i>
+                        {{ form.ai_temperature.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>0.0 - 0.3:</strong> Evaluaciones muy consistentes y conservadoras<br>
+                                <strong>0.3 - 0.7:</strong> Balance entre consistencia y flexibilidad (recomendado)<br>
+                                <strong>0.7 - 1.0:</strong> Más variabilidad, considera aspectos creativos
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.ai_temperature }}
+                    <div class="range-visual">
+                        <div class="range-indicator" style="left: 30%"></div>
+                    </div>
+                    <div class="help-text">
+                        <i class="fas fa-balance-scale me-1"></i>
+                        0.3 ofrece un buen balance entre precisión y flexibilidad
+                    </div>
+                    {% if form.ai_temperature.errors %}
+                        <div class="text-danger">{{ form.ai_temperature.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración de Detección Facial -->
+        <div class="config-section">
+            <h4 class="section-title">
+                <i class="fas fa-user-check section-icon"></i>Detección Facial
+                <span class="custom-tooltip">
+                    <i class="fas fa-question-circle tooltip-icon"></i>
+                    <span class="tooltip-text">
+                        La detección facial verifica que el estudiante esté presente y visible durante la presentación.
+                        No identifica personas, solo detecta presencia de rostros humanos.
+                    </span>
+                </span>
+            </h4>
+            <p class="section-subtitle">
+                <i class="fas fa-eye me-2 text-success"></i>
+                Controla qué tan <strong>estricto</strong> será el sistema para detectar rostros en los videos
+            </p>
+            
+            <div class="info-box">
+                <i class="fas fa-shield-alt me-2"></i>
+                <strong>Privacidad garantizada:</strong> El sistema solo detecta la <em>presencia</em> de rostros humanos,
+                no identifica personas ni almacena información biométrica. Es completamente anónimo.
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8 mb-4">
+                    <label for="{{ form.face_detection_confidence.id_for_label }}" class="form-label">
+                        <i class="fas fa-crosshairs text-success"></i>
+                        {{ form.face_detection_confidence.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>0.1 - 0.4:</strong> Muy sensible - detecta rostros borrosos, de perfil, con mala iluminación<br>
+                                <strong>0.5 - 0.7:</strong> Balance - rostros claros y medianamente visibles (recomendado)<br>
+                                <strong>0.8 - 1.0:</strong> Muy estricto - solo rostros perfectamente visibles y frontales
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.face_detection_confidence }}
+                    <div class="range-visual">
+                        <div class="range-indicator" style="left: 70%"></div>
+                    </div>
+                    <div class="help-text">
+                        <i class="fas fa-eye me-1"></i>
+                        <strong>Recomendación:</strong> 0.7 funciona bien para la mayoría de presentaciones. 
+                        Baja el valor si los estudiantes usan cámaras de baja calidad.
+                    </div>
+                    {% if form.face_detection_confidence.errors %}
+                        <div class="text-danger">{{ form.face_detection_confidence.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="info-box h-100 d-flex flex-column justify-content-center">
+                        <h6><i class="fas fa-video me-2"></i>Casos comunes:</h6>
+                        <small>
+                            <i class="fas fa-signal text-danger me-2" style="transform: scaleX(0.5);"></i><strong>0.3:</strong> Cámaras web básicas<br>
+                            <i class="fas fa-signal text-warning me-2"></i><strong>0.7:</strong> Cámaras HD normales<br>
+                            <i class="fas fa-signal text-success me-2"></i><strong>0.9:</strong> Cámaras profesionales
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración de Pesos -->
+        <div class="config-section">
+            <h4 class="section-title">
+                <i class="fas fa-balance-scale section-icon"></i>Distribución de Pesos de Evaluación
+                <span class="custom-tooltip">
+                    <i class="fas fa-question-circle tooltip-icon"></i>
+                    <span class="tooltip-text">
+                        Estos porcentajes determinan cómo se calcula la nota final de cada presentación.
+                        La suma DEBE ser exactamente 100% para que las calificaciones sean válidas.
+                    </span>
+                </span>
+            </h4>
+            <p class="section-subtitle">
+                <i class="fas fa-calculator me-2 text-info"></i>
+                Define <strong>qué porcentaje</strong> de la nota final representa cada criterio de evaluación
+            </p>
+            
+            <div class="warning-box">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>¡Importante!</strong> Estos pesos determinan cómo se calcula la nota final:
+                <br><strong><i class="fas fa-calculator me-2"></i>Nota Final = (Coherencia × %) + (Rostro × %) + (Duración × %) + (Manual × %)</strong>
+            </div>
+            
+            <div class="info-box">
+                <i class="fas fa-lightbulb me-2"></i>
+                <strong>Sugerencias por tipo de curso:</strong>
+                <div class="row mt-2">
+                    <div class="col-md-4">
+                        <i class="fas fa-comments text-primary me-2"></i><strong>Comunicación:</strong><br>
+                        <small>Coherencia 50%, Manual 30%, Rostro 15%, Duración 5%</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-flask text-success me-2"></i><strong>Técnico/Científico:</strong><br>
+                        <small>Coherencia 40%, Manual 40%, Rostro 15%, Duración 5%</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-user-tie text-info me-2"></i><strong>Presentación Formal:</strong><br>
+                        <small>Manual 40%, Coherencia 30%, Rostro 20%, Duración 10%</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="weight-container">
+                <div class="weight-item coherence">
+                    <label for="{{ form.coherence_weight.id_for_label }}" class="form-label">
+                        <i class="fas fa-comments text-primary me-1"></i>{{ form.coherence_weight.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>Analiza automáticamente:</strong><br>
+                                <i class="fas fa-link me-1"></i> Coherencia y lógica del discurso<br>
+                                <i class="fas fa-water me-1"></i> Fluidez y naturalidad al hablar<br>
+                                <i class="fas fa-spell-check me-1"></i> Uso correcto del lenguaje<br>
+                                <i class="fas fa-sitemap me-1"></i> Estructura y organización de ideas
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.coherence_weight }}
+                    <div class="help-text">
+                        <i class="fas fa-robot me-1"></i>
+                        <strong>Evaluación automática</strong> del contenido hablado por la IA
+                    </div>
+                    {% if form.coherence_weight.errors %}
+                        <div class="text-danger">{{ form.coherence_weight.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="weight-item face">
+                    <label for="{{ form.face_detection_weight.id_for_label }}" class="form-label">
+                        <i class="fas fa-eye text-success me-1"></i>{{ form.face_detection_weight.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>Verifica automáticamente:</strong><br>
+                                <i class="fas fa-desktop me-1"></i> Presencia del estudiante en pantalla<br>
+                                <i class="fas fa-hourglass-half me-1"></i> Tiempo que el rostro está visible<br>
+                                <i class="fas fa-user-circle me-1"></i> Postura y presencia visual<br>
+                                <i class="fas fa-user-secret me-1"></i> No identifica personas (solo detecta)
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.face_detection_weight }}
+                    <div class="help-text">
+                        <i class="fas fa-user-check me-1"></i>
+                        <strong>Presencia visual</strong> del estudiante durante la presentación
+                    </div>
+                    {% if form.face_detection_weight.errors %}
+                        <div class="text-danger">{{ form.face_detection_weight.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="weight-item duration">
+                    <label for="{{ form.duration_weight.id_for_label }}" class="form-label">
+                        <i class="fas fa-clock text-warning me-1"></i>{{ form.duration_weight.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>Evalúa automáticamente:</strong><br>
+                                <i class="fas fa-play-circle me-1"></i> Si cumple el tiempo mínimo asignado<br>
+                                <i class="fas fa-stop-circle me-1"></i> Si no se excede del tiempo máximo<br>
+                                <i class="fas fa-arrow-down me-1"></i> Penalización por presentaciones muy cortas<br>
+                                <i class="fas fa-award me-1"></i> Bonificación por duración apropiada
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.duration_weight }}
+                    <div class="help-text">
+                        <i class="fas fa-stopwatch me-1"></i>
+                        <strong>Cumplimiento del tiempo</strong> asignado para la presentación
+                    </div>
+                    {% if form.duration_weight.errors %}
+                        <div class="text-danger">{{ form.duration_weight.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="weight-item manual">
+                    <label for="{{ form.manual_weight.id_for_label }}" class="form-label">
+                        <i class="fas fa-user-edit text-info me-1"></i>{{ form.manual_weight.label }}
+                        <span class="custom-tooltip">
+                            <i class="fas fa-info-circle tooltip-icon"></i>
+                            <span class="tooltip-text">
+                                <strong>Tu evaluación personal:</strong><br>
+                                <i class="fas fa-graduation-cap me-1"></i> Conocimiento del tema<br>
+                                <i class="fas fa-question-circle me-1"></i> Calidad de respuestas a preguntas<br>
+                                <i class="fas fa-lightbulb me-1"></i> Creatividad y originalidad<br>
+                                <i class="fas fa-user-tie me-1"></i> Aspectos que solo tú puedes evaluar
+                            </span>
+                        </span>
+                    </label>
+                    {{ form.manual_weight }}
+                    <div class="help-text">
+                        <i class="fas fa-chalkboard-teacher me-1"></i>
+                        <strong>Tu criterio profesional</strong> como docente experto
+                    </div>
+                    {% if form.manual_weight.errors %}
+                        <div class="text-danger">{{ form.manual_weight.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Mostrar errores de validación del formulario -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger mt-3">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Resumen y Botones -->
+        <div class="config-section">
+            <h5 class="section-title">
+                <i class="fas fa-check-circle section-icon text-success"></i>Resumen de tu Configuración
+            </h5>
+            <div id="configuration-summary" class="info-box">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-robot text-primary me-2"></i>Modelo:</strong> <span id="summary-model">{{ current_config.model }}</span><br>
+                        <strong><i class="fas fa-thermometer-half text-warning me-2"></i>Temperatura:</strong> <span id="summary-temperature">{{ current_config.temperature }}</span><br>
+                        <strong><i class="fas fa-user-check text-success me-2"></i>Confianza Facial:</strong> <span id="summary-confidence">{{ current_config.confidence }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong><i class="fas fa-chart-pie text-info me-2"></i>Distribución de Pesos:</strong><br>
+                        <span id="summary-weights">
+                            <i class="fas fa-comments text-primary me-1"></i>Coherencia: <span id="weight-coherence">40</span>% • 
+                            <i class="fas fa-eye text-success me-1"></i>Facial: <span id="weight-face">20</span>% • 
+                            <i class="fas fa-clock text-warning me-1"></i>Duración: <span id="weight-duration">20</span>% • 
+                            <i class="fas fa-user-edit text-info me-1"></i>Manual: <span id="weight-manual">20</span>%
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <button type="submit" class="btn btn-primary me-3" id="save-button">
+                        <i class="fas fa-save me-2"></i>Guardar Configuración
+                    </button>
+                    <a href="{% url 'presentations:teacher_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                    </a>
+                </div>
+                
+                <div class="col-12 mt-3 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Los cambios se aplicarán inmediatamente a todas las evaluaciones futuras
+                    </small>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript mejorado para interactividad y validación -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del formulario
+    const weightInputs = [
+        document.getElementById('{{ form.coherence_weight.id_for_label }}'),
+        document.getElementById('{{ form.face_detection_weight.id_for_label }}'),
+        document.getElementById('{{ form.duration_weight.id_for_label }}'),
+        document.getElementById('{{ form.manual_weight.id_for_label }}')
+    ];
+    
+    const modelSelect = document.getElementById('{{ form.ai_model.id_for_label }}');
+    const temperatureInput = document.getElementById('{{ form.ai_temperature.id_for_label }}');
+    const confidenceInput = document.getElementById('{{ form.face_detection_confidence.id_for_label }}');
+    const saveButton = document.getElementById('save-button');
+    
+    // Función para validar y actualizar pesos
+    function updateWeightValidation() {
+        const values = weightInputs.map(input => parseFloat(input.value) || 0);
+        const total = values.reduce((sum, val) => sum + val, 0);
+        const isValid = Math.abs(total - 100) < 0.1;
+        
+        // Actualizar estilos de validación
+        weightInputs.forEach((input, index) => {
+            input.classList.remove('validation-valid', 'validation-invalid');
+            input.classList.add(isValid ? 'validation-valid' : 'validation-invalid');
+        });
+        
+        // Actualizar resumen en tiempo real
+        document.getElementById('weight-coherence').textContent = values[0].toFixed(1);
+        document.getElementById('weight-face').textContent = values[1].toFixed(1);
+        document.getElementById('weight-duration').textContent = values[2].toFixed(1);
+        document.getElementById('weight-manual').textContent = values[3].toFixed(1);
+        
+        // Mostrar total actual
+        let totalDisplay = document.getElementById('weight-total');
+        if (!totalDisplay) {
+            totalDisplay = document.createElement('div');
+            totalDisplay.id = 'weight-total';
+            totalDisplay.className = 'mt-3 text-center p-3 rounded';
+            document.querySelector('.weight-container').parentNode.appendChild(totalDisplay);
+        }
+        
+        totalDisplay.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center">
+                <i class="fas ${isValid ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-danger'} me-2"></i>
+                <strong>Total: ${total.toFixed(1)}%</strong>
+                ${!isValid ? '<span class="ms-2 small">(Debe sumar exactamente 100%)</span>' : ''}
+            </div>
+        `;
+        totalDisplay.style.backgroundColor = isValid ? '#d4edda' : '#f8d7da';
+        totalDisplay.style.borderColor = isValid ? '#c3e6cb' : '#f5c6cb';
+        totalDisplay.style.border = '1px solid';
+        
+        // Habilitar/deshabilitar botón de guardado
+        saveButton.disabled = !isValid;
+        saveButton.classList.toggle('btn-success', isValid);
+        saveButton.classList.toggle('btn-primary', !isValid);
+        
+        return isValid;
+    }
+    
+    // Actualizar resumen de configuración
+    function updateConfigSummary() {
+        document.getElementById('summary-model').textContent = modelSelect.selectedOptions[0].text;
+        document.getElementById('summary-temperature').textContent = parseFloat(temperatureInput.value).toFixed(1);
+        document.getElementById('summary-confidence').textContent = parseFloat(confidenceInput.value).toFixed(1);
+    }
+    
+    // Actualizar indicador visual de temperatura
+    function updateTemperatureIndicator() {
+        const value = parseFloat(temperatureInput.value) || 0;
+        const percentage = (value / 1.0) * 100;
+        const indicator = document.querySelector('.range-indicator');
+        if (indicator) {
+            indicator.style.left = percentage + '%';
+        }
+    }
+    
+    // Actualizar indicador visual de confianza
+    function updateConfidenceIndicator() {
+        const value = parseFloat(confidenceInput.value) || 0;
+        const percentage = (value / 1.0) * 100;
+        const indicators = document.querySelectorAll('.range-indicator');
+        if (indicators.length > 1) {
+            indicators[1].style.left = percentage + '%';
+        }
+    }
+    
+    // Función para mostrar explicaciones dinámicas
+    function showDynamicHelp(inputType, value) {
+        const helpTexts = {
+            temperature: {
+                low: 'Evaluaciones muy consistentes y conservadoras. Ideal para criterios estrictos.',
+                medium: 'Balance perfecto entre consistencia y flexibilidad. Recomendado para la mayoría de casos.',
+                high: 'Más variabilidad en las evaluaciones. Considera aspectos creativos y únicos.'
+            },
+            confidence: {
+                low: 'Muy sensible - detectará rostros incluso en condiciones difíciles (cámaras básicas).',
+                medium: 'Balance ideal - detecta rostros claros sin ser demasiado estricto.',
+                high: 'Muy estricto - solo detecta rostros perfectamente visibles (cámaras profesionales).'
+            }
+        };
+        
+        let category;
+        if (value <= 0.3) category = 'low';
+        else if (value <= 0.7) category = 'medium';
+        else category = 'high';
+        
+        return helpTexts[inputType][category];
+    }
+    
+    // Event listeners
+    weightInputs.forEach(input => {
+        if (input) {
+            input.addEventListener('input', updateWeightValidation);
+        }
+    });
+    
+    if (modelSelect) {
+        modelSelect.addEventListener('change', updateConfigSummary);
+    }
+    
+    if (temperatureInput) {
+        temperatureInput.addEventListener('input', function() {
+            updateConfigSummary();
+            updateTemperatureIndicator();
+            
+            // Actualizar ayuda dinámica
+            const helpDiv = this.parentNode.querySelector('.help-text');
+            const value = parseFloat(this.value);
+            if (helpDiv) {
+                const icon = value <= 0.3 ? 'fa-shield-alt' : value <= 0.7 ? 'fa-balance-scale' : 'fa-fire';
+                const color = value <= 0.3 ? 'text-info' : value <= 0.7 ? 'text-success' : 'text-warning';
+                helpDiv.innerHTML = `
+                    <i class="fas ${icon} ${color} me-1"></i>
+                    ${showDynamicHelp('temperature', value)}
+                `;
+            }
+        });
+    }
+    
+    if (confidenceInput) {
+        confidenceInput.addEventListener('input', function() {
+            updateConfigSummary();
+            updateConfidenceIndicator();
+            
+            // Actualizar ayuda dinámica
+            const helpDiv = this.parentNode.querySelector('.help-text');
+            const value = parseFloat(this.value);
+            if (helpDiv) {
+                const icon = value <= 0.4 ? 'fa-search-plus' : value <= 0.7 ? 'fa-eye' : 'fa-bullseye';
+                const color = value <= 0.4 ? 'text-success' : value <= 0.7 ? 'text-primary' : 'text-warning';
+                helpDiv.innerHTML = `
+                    <i class="fas ${icon} ${color} me-1"></i>
+                    ${showDynamicHelp('confidence', value)}
+                `;
+            }
+        });
+    }
+    
+    // Presets rápidos para diferentes tipos de curso
+    function createPresetButtons() {
+        const presetsContainer = document.createElement('div');
+        presetsContainer.className = 'mt-3 text-center';
+        presetsContainer.innerHTML = `
+            <small class="d-block mb-2 text-muted"><i class="fas fa-magic me-1"></i>Configuraciones rápidas:</small>
+            <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="applyPreset('communication')">
+                <i class="fas fa-comments me-1"></i>Comunicación
+            </button>
+            <button type="button" class="btn btn-outline-success btn-sm me-2" onclick="applyPreset('technical')">
+                <i class="fas fa-flask me-1"></i>Técnico
+            </button>
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="applyPreset('formal')">
+                <i class="fas fa-user-tie me-1"></i>Formal
+            </button>
+        `;
+        
+        const weightContainer = document.querySelector('.weight-container');
+        if (weightContainer && weightContainer.parentNode) {
+            weightContainer.parentNode.insertBefore(presetsContainer, weightContainer);
+        }
+    }
+    
+    // Función global para aplicar presets
+    window.applyPreset = function(type) {
+        const presets = {
+            communication: [50, 15, 5, 30],  // Coherencia, Facial, Duración, Manual
+            technical: [40, 15, 5, 40],
+            formal: [30, 20, 10, 40]
+        };
+        
+        if (presets[type]) {
+            weightInputs.forEach((input, index) => {
+                if (input) {
+                    input.value = presets[type][index];
+                }
+            });
+            updateWeightValidation();
+        }
+    };
+    
+    // Inicialización
+    updateWeightValidation();
+    updateConfigSummary();
+    updateTemperatureIndicator();
+    updateConfidenceIndicator();
+    createPresetButtons();
+    
+    // Animación de carga completada
+    setTimeout(() => {
+        document.querySelectorAll('.config-section').forEach((section, index) => {
+            section.style.opacity = '0';
+            section.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                section.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                section.style.opacity = '1';
+                section.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    }, 100);
+});
+</script>
+{% endblock %}

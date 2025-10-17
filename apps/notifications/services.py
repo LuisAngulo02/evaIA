@@ -88,6 +88,11 @@ class NotificationService:
     def notify_new_assignment(assignment, students):
         """Notificar nueva asignación a estudiantes"""
         notifications = []
+        
+        # Calcular días hasta la fecha límite
+        days_until_due = (assignment.due_date - timezone.now()).days
+        expires_days = max(days_until_due, 7)  # Al menos 7 días o hasta la fecha límite
+        
         for student in students:
             notification = NotificationService.create_notification(
                 recipient=student,
@@ -99,7 +104,7 @@ class NotificationService:
                 action_text="Subir presentación",
                 related_assignment=assignment,
                 related_course=assignment.course,
-                expires_at=assignment.due_date
+                expires_in_days=expires_days
             )
             if notification:
                 notifications.append(notification)

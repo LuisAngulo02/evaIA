@@ -191,3 +191,59 @@ class LoginForm(forms.Form):
             'autocomplete': 'current-password'
         })
     )
+
+
+class PasswordResetForm(forms.Form):
+    """Formulario para solicitar recuperación de contraseña"""
+    email = forms.EmailField(
+        label="Correo electrónico",
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Ingresa tu correo electrónico',
+            'autocomplete': 'email'
+        }),
+        help_text="Te enviaremos un enlace para restablecer tu contraseña."
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not User.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                'No existe una cuenta con este correo electrónico.'
+            )
+        return email
+
+
+class SetPasswordForm(forms.Form):
+    """Formulario para establecer nueva contraseña"""
+    new_password1 = forms.CharField(
+        label="Nueva contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Nueva contraseña',
+            'autocomplete': 'new-password'
+        }),
+        help_text="Tu contraseña debe tener al menos 8 caracteres."
+    )
+    
+    new_password2 = forms.CharField(
+        label="Confirmar nueva contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Confirma tu nueva contraseña',
+            'autocomplete': 'new-password'
+        })
+    )
+
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError('Las contraseñas no coinciden.')
+            if len(password1) < 8:
+                raise forms.ValidationError('La contraseña debe tener al menos 8 caracteres.')
+        
+        return password2

@@ -223,8 +223,10 @@
                         <span class="small fw-semibold">Promedio General</span>
                         <span class="small text-muted">{{ stats.average_score|default:0|floatformat:1 }}%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: {{ stats.average_score|default:0 }}%"></div>
+                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                        <div class="progress-bar dynamic-progress-bar" 
+                             data-percentage="{{ stats.average_score|default:0 }}" 
+                             style="width: {{ stats.average_score|default:0 }}%; transition: all 0.3s ease;"></div>
                     </div>
                 </div>
                 
@@ -233,8 +235,10 @@
                         <span class="small fw-semibold">Tasa de Entrega</span>
                         <span class="small text-muted">{{ stats.completion_rate|default:0|floatformat:1 }}%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-primary" style="width: {{ stats.completion_rate|default:0 }}%"></div>
+                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                        <div class="progress-bar dynamic-progress-bar" 
+                             data-percentage="{{ stats.completion_rate|default:0 }}" 
+                             style="width: {{ stats.completion_rate|default:0 }}%; transition: all 0.3s ease;"></div>
                     </div>
                 </div>
                 
@@ -243,8 +247,10 @@
                         <span class="small fw-semibold">Calidad Promedio IA</span>
                         <span class="small text-muted">{{ stats.ai_average|default:0|floatformat:1 }}%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-info" style="width: {{ stats.ai_average|default:0 }}%"></div>
+                    <div class="progress" style="height: 10px; border-radius: 5px;">
+                        <div class="progress-bar dynamic-progress-bar" 
+                             data-percentage="{{ stats.ai_average|default:0 }}" 
+                             style="width: {{ stats.ai_average|default:0 }}%; transition: all 0.3s ease;"></div>
                     </div>
                 </div>
                 
@@ -273,7 +279,7 @@
                     <a href="{% url 'reports:teacher_reports' %}" class="btn btn-outline-info btn-sm w-100">
                         <i class="fas fa-chart-line me-2"></i>Ver Reportes Detallados
                     </a>
-                    <a href="#" class="btn btn-outline-warning btn-sm">
+                    <a href="{% url 'presentations:ai_configuration' %}" class="btn btn-outline-warning btn-sm">
                         <i class="fas fa-cog me-2"></i>Configuración IA
                     </a>
                 </div>
@@ -492,6 +498,89 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Función para obtener color según porcentaje
+function getProgressColor(percentage) {
+    const percent = parseFloat(percentage) || 0;
+    
+    if (percent >= 90) {
+        return 'linear-gradient(45deg, #28a745, #20c997)'; // Verde excelente
+    } else if (percent >= 80) {
+        return 'linear-gradient(45deg, #20c997, #17a2b8)'; // Verde-azul muy bueno
+    } else if (percent >= 70) {
+        return 'linear-gradient(45deg, #17a2b8, #007bff)'; // Azul bueno
+    } else if (percent >= 60) {
+        return 'linear-gradient(45deg, #007bff, #6f42c1)'; // Azul-púrpura regular
+    } else if (percent >= 50) {
+        return 'linear-gradient(45deg, #6f42c1, #fd7e14)'; // Púrpura-naranja medio
+    } else if (percent >= 40) {
+        return 'linear-gradient(45deg, #fd7e14, #ffc107)'; // Naranja-amarillo bajo
+    } else if (percent >= 30) {
+        return 'linear-gradient(45deg, #ffc107, #dc3545)'; // Amarillo-rojo muy bajo
+    } else {
+        return 'linear-gradient(45deg, #dc3545, #6c757d)'; // Rojo-gris crítico
+    }
+}
+
+// Función para obtener descripción del nivel
+function getProgressDescription(percentage) {
+    const percent = parseFloat(percentage) || 0;
+    
+    if (percent >= 90) return 'Excelente';
+    else if (percent >= 80) return 'Muy Bueno';
+    else if (percent >= 70) return 'Bueno';
+    else if (percent >= 60) return 'Regular';
+    else if (percent >= 50) return 'Medio';
+    else if (percent >= 40) return 'Bajo';
+    else if (percent >= 30) return 'Muy Bajo';
+    else return 'Crítico';
+}
+
+// Aplicar colores dinámicos a las barras de progreso
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBars = document.querySelectorAll('.dynamic-progress-bar');
+    
+    progressBars.forEach(function(bar) {
+        const percentage = bar.getAttribute('data-percentage');
+        const color = getProgressColor(percentage);
+        const description = getProgressDescription(percentage);
+        
+        // Aplicar el gradiente de color
+        bar.style.background = color;
+        bar.style.borderRadius = '5px';
+        
+        // Agregar efecto de brillo
+        bar.style.boxShadow = `0 0 10px ${color.includes('#28a745') ? 'rgba(40, 167, 69, 0.3)' : 
+                                         color.includes('#dc3545') ? 'rgba(220, 53, 69, 0.3)' : 
+                                         'rgba(0, 123, 255, 0.3)'}`;
+        
+        // Agregar tooltip con descripción
+        bar.setAttribute('title', `${percentage}% - ${description}`);
+        
+        // Animación de carga
+        setTimeout(function() {
+            bar.style.transform = 'scaleX(1)';
+            bar.style.transformOrigin = 'left';
+        }, 100);
+    });
+    
+    // Animación de entrada
+    setTimeout(function() {
+        progressBars.forEach(function(bar, index) {
+            setTimeout(function() {
+                bar.style.opacity = '0';
+                bar.style.transform = 'scaleX(0)';
+                bar.style.transformOrigin = 'left';
+                bar.style.transition = 'all 0.8s ease-out';
+                
+                setTimeout(function() {
+                    bar.style.opacity = '1';
+                    bar.style.transform = 'scaleX(1)';
+                }, 50);
+            }, index * 200);
+        });
+    }, 300);
+});
+
 // CSS para animación
 const style = document.createElement('style');
 style.textContent = `
@@ -504,6 +593,32 @@ style.textContent = `
             transform: translateX(0);
             opacity: 1;
         }
+    }
+    
+    .dynamic-progress-bar {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dynamic-progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shine 2s infinite;
+    }
+    
+    @keyframes shine {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    .progress {
+        background-color: rgba(0,0,0,0.1) !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 `;
 document.head.appendChild(style);

@@ -27,7 +27,16 @@ urlpatterns = [
     
     # APIs AJAX
     path('api/assignment-details/', views.get_assignment_details, name='get_assignment_details'),
+    path('api/presentation-progress/<int:presentation_id>/', views.get_presentation_progress, name='presentation_progress'),
 
     # URL para transcripciones
     path('transcription/<int:presentation_id>/', views.presentation_transcription, name='presentation_transcription'),
+    
+    # URLs para configuración de IA (profesores)
+    path('ai-config/', views.ai_configuration_view, name='ai_configuration'),
+    
+    # URLs para calificación y edición (profesores)
+    path('participant/<int:participant_id>/grade/', views.edit_participant_grade, name='edit_participant_grade'),
+    path('presentation/<int:presentation_id>/bulk-grade/', views.bulk_grade_presentation, name='bulk_grade_presentation'),
+    path('participant/<int:participant_id>/reset-grade/', views.reset_participant_grade, name='reset_participant_grade'),
 ]

@@ -2,6 +2,7 @@ from django import forms
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from .models import Presentation, Assignment, Course
+from .validators import validate_video_file
 
 class PresentationUploadForm(forms.ModelForm):
     """Formulario para subir presentaciones"""
@@ -23,7 +24,7 @@ class PresentationUploadForm(forms.ModelForm):
             }),
             'video_file': forms.FileInput(attrs={
                 'class': 'form-control d-none',
-                'accept': 'video/*',
+                'accept': 'video/mp4,video/webm,video/quicktime,video/x-msvideo',
                 'id': 'id_video_file'
             }),
             'description': forms.Textarea(attrs={
@@ -69,19 +70,8 @@ class PresentationUploadForm(forms.ModelForm):
             raise forms.ValidationError('Debes seleccionar un archivo de video.')
             
         if video:
-            # Validar tamaño (máximo 500MB)
-            max_size = 500 * 1024 * 1024  # 500MB en bytes
-            if video.size > max_size:
-                size_mb = video.size / (1024 * 1024)
-                raise forms.ValidationError(f'El archivo es demasiado grande ({size_mb:.1f}MB). Máximo permitido: 500MB.')
-            
-            # Validar extensión
-            valid_extensions = ['mp4', 'avi', 'mov', 'mkv', 'webm', 'm4v']
-            ext = video.name.split('.')[-1].lower() if '.' in video.name else ''
-            if ext not in valid_extensions:
-                raise forms.ValidationError(
-                    f'Formato de video no compatible. Usa uno de estos formatos: {", ".join(valid_extensions).upper()}'
-                )
+            # Usar validador avanzado
+            validate_video_file(video)
         
         return video
     
@@ -214,3 +204,123 @@ class AssignmentForm(forms.ModelForm):
         if max_duration and (max_duration < 1 or max_duration > 120):
             raise forms.ValidationError('La duración debe estar entre 1 y 120 minutos.')
         return max_duration
+
+
+class AIConfigurationForm(forms.Form):
+    """Formulario para configurar parámetros de IA"""
+    
+    # Configuración de detección de rostros
+    face_detection_confidence = forms.FloatField(
+        label="Confianza de Detección de Rostros",
+        initial=0.7,
+        min_value=0.1,
+        max_value=1.0,
+        step_size=0.1,
+        help_text="Umbral de confianza para detectar rostros (0.1 = más sensible, 1.0 = menos sensible)",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.1',
+            'min': '0.1',
+            'max': '1.0'
+        })
+    )
+    
+    # Configuración del modelo de IA
+    ai_model = forms.ChoiceField(
+        label="Modelo de IA",
+        choices=[
+            ('llama-3.3-70b-versatile', 'Llama 3.3 70B (Recomendado)'),
+            ('llama-3.1-70b-versatile', 'Llama 3.1 70B'),
+            ('mixtral-8x7b-32768', 'Mixtral 8x7B'),
+        ],
+        initial='llama-3.3-70b-versatile',
+        help_text="Modelo de inteligencia artificial para análisis de coherencia",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    # Temperatura del modelo
+    ai_temperature = forms.FloatField(
+        label="Creatividad del Análisis",
+        initial=0.3,
+        min_value=0.0,
+        max_value=1.0,
+        step_size=0.1,
+        help_text="Creatividad en el análisis (0.0 = muy conservador, 1.0 = muy creativo)",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.1',
+            'min': '0.0',
+            'max': '1.0'
+        })
+    )
+    
+    # Pesos de evaluación
+    coherence_weight = forms.FloatField(
+        label="Peso de Coherencia (%)",
+        initial=40,
+        min_value=0,
+        max_value=100,
+        help_text="Porcentaje de la calificación basado en coherencia del discurso",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'max': '100'
+        })
+    )
+    
+    face_detection_weight = forms.FloatField(
+        label="Peso de Detección Facial (%)",
+        initial=20,
+        min_value=0,
+        max_value=100,
+        help_text="Porcentaje de la calificación basado en detección de rostro",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'max': '100'
+        })
+    )
+    
+    duration_weight = forms.FloatField(
+        label="Peso de Duración (%)",
+        initial=20,
+        min_value=0,
+        max_value=100,
+        help_text="Porcentaje de la calificación basado en duración apropiada",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'max': '100'
+        })
+    )
+    
+    manual_weight = forms.FloatField(
+        label="Peso de Calificación Manual (%)",
+        initial=20,
+        min_value=0,
+        max_value=100,
+        help_text="Porcentaje de la calificación basado en evaluación manual del docente",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '0',
+            'max': '100'
+        })
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        
+        # Validar que los pesos sumen 100%
+        coherence = cleaned_data.get('coherence_weight', 0)
+        face = cleaned_data.get('face_detection_weight', 0)
+        duration = cleaned_data.get('duration_weight', 0)
+        manual = cleaned_data.get('manual_weight', 0)
+        
+        total_weight = coherence + face + duration + manual
+        
+        if abs(total_weight - 100) > 0.1:  # Permitir pequeña tolerancia por decimales
+            raise forms.ValidationError(
+                f'Los pesos deben sumar exactamente 100%. Suma actual: {total_weight}%'
+            )
+        
+        return cleaned_data

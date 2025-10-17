@@ -48,15 +48,17 @@ def handle_presentation_updates(sender, instance, created, **kwargs):
 def handle_new_assignment(sender, instance, created, **kwargs):
     """Notificar sobre nuevas asignaciones"""
     if created and instance.is_active:
-        # Obtener estudiantes del curso
+        # Obtener estudiantes inscritos en el curso
         from django.contrib.auth.models import User
+        
+        # Obtener estudiantes que están inscritos en este curso
         students = User.objects.filter(
             groups__name='Estudiante',
-            presentation__assignment__course=instance.course
+            enrolled_courses=instance.course
         ).distinct()
         
         if not students.exists():
-            # Si no hay estudiantes específicos, notificar a todos los estudiantes
+            # Si no hay estudiantes específicos en el curso, notificar a todos los estudiantes
             students = User.objects.filter(groups__name='Estudiante')
         
         NotificationService.notify_new_assignment(instance, students)

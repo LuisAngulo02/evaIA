@@ -10,9 +10,15 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb-modern">
                     <li class="breadcrumb-item">
+                        {% if is_teacher %}
+                        <a href="{% url 'presentations:grade_presentations' %}">
+                            <i class="fas fa-star me-2"></i>Calificar Presentaciones
+                        </a>
+                        {% else %}
                         <a href="{% url 'presentations:my_presentations' %}">
                             <i class="fas fa-video me-2"></i>Mis Presentaciones
                         </a>
+                        {% endif %}
                     </li>
                     <li class="breadcrumb-item active">{{ presentation.title|truncatechars:40 }}</li>
                 </ol>
@@ -198,6 +204,144 @@
             </div>
             {% endif %}
         </div>
+        
+        <!-- NUEVO: Evaluación Individual de Participantes -->
+        {% if has_individual_analysis %}
+        <div class="participants-analysis-section">
+            <div class="analysis-header">
+                <h2><i class="fas fa-users me-2"></i>Evaluación Individual de Participantes</h2>
+                <p class="text-muted">Análisis automático de coherencia para cada participante detectado</p>
+            </div>
+            
+            <div class="participants-grid">
+                {% for participant in participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-avatar">
+                            {% if participant.photo %}
+                                <img src="{{ participant.photo.url }}" alt="{{ participant.label }}" class="participant-photo">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                                <span>{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <h3>{{ participant.label }}</h3>
+                            <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="participant-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Tiempo</span>
+                                    <span class="metric-value">{{ participant.time_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Aporte</span>
+                                    <span class="metric-value">{{ participant.contribution_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coherence-breakdown">
+                            <h4>Desglose de Evaluación</h4>
+                            <div class="breakdown-item">
+                                <span>Coherencia semántica</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.semantic_coherence }}%"></div>
+                                </div>
+                                <span>{{ participant.semantic_coherence|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Palabras clave</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.keywords_score }}%"></div>
+                                </div>
+                                <span>{{ participant.keywords_score|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Profundidad</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.depth_score }}%"></div>
+                                </div>
+                                <span>{{ participant.depth_score|floatformat:1 }}/100</span>
+                            </div>
+                        </div>
+                        
+                        {% if participant.keywords_found %}
+                        <div class="keywords-section">
+                            <h5><i class="fas fa-key me-1"></i>Palabras clave detectadas:</h5>
+                            <div class="keywords-list">
+                                {% for keyword in participant.keywords_found|slice:":8" %}
+                                    <span class="keyword-badge">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="observations-section">
+                            <div class="observations-header" style="cursor: pointer;" onclick="toggleObservation(this)">
+                                <h5><i class="fas fa-comment-alt me-1"></i>Observación <i class="fas fa-chevron-down float-end"></i></h5>
+                            </div>
+                            <div class="observations-content" style="display: none; margin-top: 10px;">
+                                <p style="white-space: pre-wrap;">{{ participant.ai_feedback|default:participant.observations }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant-stats">
+                            <span><i class="fas fa-align-left"></i> {{ participant.word_count }} palabras</span>
+                            <span><i class="fas fa-stopwatch"></i> {{ participant.participation_time|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+         
+            
+            <!-- Calificación Grupal Sugerida por IA -->
+            <div class="group-grade-suggestion mt-5">
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <h3><i class="fas fa-robot me-2"></i>Calificación Grupal Sugerida por IA</h3>
+                        <p class="text-muted">Basada en el análisis conjunto de todos los participantes</p>
+                    </div>
+                    <div class="suggestion-content">
+                        <div class="group-score-display">
+                            <div class="score-circle-group">
+                                <span class="score-number-large">{{ overall_ai_score|floatformat:1 }}</span>
+                                <span class="score-max">/{{ max_score|floatformat:0 }}</span>
+                            </div>
+                            <div class="score-details">
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Coherencia promedio:</span>
+                                    <span class="breakdown-value">{{ average_coherence|floatformat:1 }}%</span>
+                                </div>
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Distribución del tiempo:</span>
+                                    <span class="breakdown-value">{{ time_distribution_quality }}</span>
+                                </div>
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Cobertura del tema:</span>
+                                    <span class="breakdown-value">{{ topic_coverage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="group-feedback">
+                            <h5><i class="fas fa-lightbulb me-2"></i>Retroalimentación Grupal:</h5>
+                            <p>{{ group_feedback|default:"La presentación demuestra un nivel adecuado de comprensión del tema. Se recomienda mejorar la distribución equitativa del tiempo entre participantes y profundizar en los conceptos clave." }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
         
         <!-- Information Sidebar -->
         <div class="info-sidebar">
@@ -637,9 +781,11 @@
 /* Main Content Layout */
 .presentation-content {
     display: grid;
-    grid-template-columns: 1fr 350px;
+    grid-template-columns: 1fr; /* Una sola columna para que todo esté abajo */
     gap: 2rem;
     margin-bottom: 2rem;
+    max-width: 1400px; /* Ancho máximo más amplio */
+    margin: 0 auto 2rem auto; /* Centrado */
 }
 
 .video-section {
@@ -648,6 +794,7 @@
     overflow: hidden;
     box-shadow: 0 10px 40px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
+    width: 100%; /* Ancho completo */
 }
 
 .video-section:hover {
@@ -684,8 +831,10 @@
 .modern-video-player {
     width: 100%;
     height: auto;
-    max-height: 500px;
+    max-height: 700px; /* Aumentado de 500px a 700px */
+    min-height: 400px; /* Altura mínima */
     display: block;
+    object-fit: contain; /* Mantener proporción del video */
 }
 
 .video-overlay {
@@ -829,9 +978,10 @@
 
 /* Info Sidebar */
 .info-sidebar {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Grid responsivo */
     gap: 1.5rem;
+    width: 100%;
 }
 
 .info-card {
@@ -973,6 +1123,262 @@
     line-height: 1.6;
 }
 
+/* NUEVO: Estilos para Evaluación Individual */
+.participants-analysis-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.analysis-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.analysis-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.participant-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.participant-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.participant-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.participant-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.participant-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.participant-info {
+    flex: 1;
+}
+
+.participant-info h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.3rem;
+}
+
+.participant-info .badge {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.8rem;
+}
+
+.participant-grade {
+    text-align: center;
+}
+
+.grade-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(255,255,255,0.5);
+}
+
+.grade-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.grade-max {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.participant-metrics {
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.metric-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metric-item i {
+    font-size: 1.5rem;
+}
+
+.metric-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.coherence-breakdown {
+    margin: 1.5rem 0;
+}
+
+.coherence-breakdown h4 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+}
+
+.breakdown-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: rgba(255,255,255,0.8);
+    border-radius: 10px;
+    transition: width 1s ease;
+}
+
+.keywords-section {
+    margin: 1.5rem 0;
+}
+
+.keywords-section h5 {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.9;
+}
+
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-badge {
+    background: rgba(255,255,255,0.25);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.observations-section {
+    margin: 1.5rem 0;
+}
+
+.observations-section h5 {
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.9;
+}
+
+.observations-section p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    opacity: 0.95;
+    background: rgba(255,255,255,0.1);
+    padding: 0.8rem;
+    border-radius: 8px;
+}
+
+.participant-stats {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.chart-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.chart-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .participants-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-row {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Animations */
 @keyframes rotate {
     from { transform: translate(-50%, -50%) rotate(0deg); }
@@ -1024,6 +1430,157 @@
     .video-stats {
         justify-content: center;
         flex-wrap: wrap;
+    }
+}
+
+/* Observaciones desplegables */
+.observations-header {
+    background: rgba(255,255,255,0.1);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: background 0.3s ease;
+}
+
+.observations-header:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.observations-header h5 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.observations-content {
+    background: rgba(255,255,255,0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Calificación grupal sugerida */
+.group-grade-suggestion {
+    margin-top: 3rem;
+}
+
+.suggestion-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 2.5rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.suggestion-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.suggestion-header h3 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-content {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.group-score-display {
+    flex: 0 0 300px;
+    text-align: center;
+}
+
+.score-circle-group {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    border: 5px solid rgba(255,255,255,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.score-number-large {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.score-max {
+    font-size: 1.5rem;
+    opacity: 0.8;
+    margin-top: 0.25rem;
+}
+
+.score-details {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.score-breakdown {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.score-breakdown:last-child {
+    border-bottom: none;
+}
+
+.breakdown-label {
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.breakdown-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.group-feedback {
+    flex: 1;
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.group-feedback h5 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.group-feedback p {
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 992px) {
+    .suggestion-content {
+        flex-direction: column;
+    }
+    
+    .group-score-display {
+        flex: 1;
+        width: 100%;
     }
 }
 </style>
@@ -1131,6 +1688,168 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.style.pointerEvents = 'auto';
         });
     }
+    
+    // Inicializar gráfica de participantes si existe
+    {% if has_individual_analysis %}
+    if (typeof initParticipantsChart === 'function') {
+        initParticipantsChart();
+    }
+    {% endif %}
 });
+
+// Función para inicializar Chart.js
+{% if has_individual_analysis %}
+function initParticipantsChart() {
+    const ctx = document.getElementById('participantsChart');
+    if (!ctx) return;
+    
+    const participants = [
+        {% for participant in participants %}
+        {
+            label: '{{ participant.label }}',
+            timePercentage: {{ participant.time_percentage }},
+            contribution: {{ participant.contribution_percentage }},
+            grade: {{ participant.final_grade }},
+            coherence: {{ participant.coherence_score }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: participants.map(p => p.label),
+            datasets: [
+                {
+                    label: 'Porcentaje de Tiempo (%)',
+                    data: participants.map(p => p.timePercentage),
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Aporte (%)',
+                    data: participants.map(p => p.contribution),
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Calificación (/20)',
+                    data: participants.map(p => p.grade),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 2,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Coherencia (/100)',
+                    data: participants.map(p => p.coherence),
+                    backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Comparativa de Participantes',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.parsed.y.toFixed(2);
+                            if (context.datasetIndex === 2) {
+                                label += '/20';
+                            } else if (context.datasetIndex === 3) {
+                                label += '/100';
+                            } else {
+                                label += '%';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Porcentaje / Score'
+                    }
+                },
+                y1: {
+                    beginAtZero: true,
+                    max: 20,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Calificación (/20)'
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                }
+            }
+        }
+    });
+}
+{% endif %}
+
+</script>
+
+<!-- Script separado para toggleObservation (scope global garantizado) -->
+<script>
+window.toggleObservation = function(header) {
+    console.log('toggleObservation llamado', header);
+    
+    const content = header.nextElementSibling;
+    console.log('Contenido encontrado:', content);
+    
+    if (!content) {
+        console.error('❌ No se encontró el contenido de observaciones');
+        alert('Error: No se encontró el contenido. Por favor recarga la página.');
+        return;
+    }
+    
+    const chevronIcon = header.querySelector('.fa-chevron-down') || header.querySelector('.fa-chevron-up');
+    const currentDisplay = window.getComputedStyle(content).display;
+    const isHidden = currentDisplay === 'none';
+    
+    console.log('Estado actual:', { display: currentDisplay, isHidden: isHidden });
+    
+    if (isHidden) {
+        content.style.display = 'block';
+        console.log('✅ Mostrando contenido');
+        if (chevronIcon) {
+            chevronIcon.classList.remove('fa-chevron-down');
+            chevronIcon.classList.add('fa-chevron-up');
+        }
+    } else {
+        content.style.display = 'none';
+        console.log('✅ Ocultando contenido');
+        if (chevronIcon) {
+            chevronIcon.classList.remove('fa-chevron-up');
+            chevronIcon.classList.add('fa-chevron-down');
+        }
+    }
+};
 </script>
 {% endblock %}

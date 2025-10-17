@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Calificar: {{ presentation.title }}{% endblock %}
+{% block title %}{% if is_review_mode %}Ver: {{ presentation.title }}{% else %}{% if is_already_graded %}Revisar: {{ presentation.title }}{% else %}Calificar: {{ presentation.title }}{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="content-wrapper fade-in">
@@ -21,7 +21,16 @@
         
         <div class="header-content">
             <div class="presentation-info">
-                <h1 class="presentation-title">{{ presentation.title }}</h1>
+                <h1 class="presentation-title">
+                    {{ presentation.title }}
+                    {% if is_review_mode %}
+                    <span class="badge bg-info ms-3"><i class="fas fa-eye me-1"></i>Vista Solo Lectura</span>
+                    {% elif is_already_graded %}
+                    <span class="badge bg-warning ms-3"><i class="fas fa-edit me-1"></i>Revisando</span>
+                    {% else %}
+                    <span class="badge bg-primary ms-3"><i class="fas fa-star me-1"></i>Calificando</span>
+                    {% endif %}
+                </h1>
                 <div class="student-info">
                     <div class="student-avatar">
                         <img src="https://ui-avatars.com/api/?name={{ presentation.student.get_full_name|default:presentation.student.username }}&background=6366f1&color=ffffff" 
@@ -55,7 +64,7 @@
                         </div>
                         <div class="detail-row">
                             <span>Estado:</span>
-                            <span class="badge bg-{{ presentation.status|lower == 'analyzed' and 'success' or 'secondary' }}">
+                            <span class="badge {{ presentation.status_badge_class }}">
                                 {{ presentation.get_status_display }}
                             </span>
                         </div>
@@ -76,7 +85,17 @@
                         <span class="video-duration">
                             {% if presentation.duration %}{{ presentation.duration }}{% else %}--:--{% endif %}
                         </span>
-                        <span class="video-size">{{ presentation.video_file.size|filesizeformat }}</span>
+                        <span class="video-size">
+                            {% if presentation.video_file %}
+                                {% if presentation.file_size %}
+                                    {{ presentation.file_size|filesizeformat }}
+                                {% else %}
+                                    Tamaño no disponible
+                                {% endif %}
+                            {% else %}
+                                Archivo no encontrado
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
                 
@@ -110,6 +129,107 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- NUEVO: Evaluación Individual de Participantes -->
+        {% if has_individual_analysis %}
+        <div class="participants-analysis-section">
+            <div class="analysis-header">
+                <h2><i class="fas fa-users me-2"></i>Evaluación Individual de Participantes</h2>
+                <p class="text-muted">Análisis automático de coherencia para cada participante detectado</p>
+            </div>
+            
+            <div class="participants-grid">
+                {% for participant in participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-avatar">
+                            {% if participant.photo %}
+                                <img src="{{ participant.photo.url }}" alt="{{ participant.label }}" class="participant-photo">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                                <span>{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <h3>{{ participant.label }}</h3>
+                            <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="participant-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Tiempo</span>
+                                    <span class="metric-value">{{ participant.time_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Aporte</span>
+                                    <span class="metric-value">{{ participant.contribution_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coherence-breakdown">
+                            <h4>Desglose de Evaluación</h4>
+                            <div class="breakdown-item">
+                                <span>Coherencia semántica</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.semantic_coherence }}%"></div>
+                                </div>
+                                <span>{{ participant.semantic_coherence|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Palabras clave</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.keywords_score }}%"></div>
+                                </div>
+                                <span>{{ participant.keywords_score|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Profundidad</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.depth_score }}%"></div>
+                                </div>
+                                <span>{{ participant.depth_score|floatformat:1 }}/100</span>
+                            </div>
+                        </div>
+                        
+                        {% if participant.keywords_found %}
+                        <div class="keywords-section">
+                            <h5><i class="fas fa-key me-1"></i>Palabras clave detectadas:</h5>
+                            <div class="keywords-list">
+                                {% for keyword in participant.keywords_found|slice:":8" %}
+                                    <span class="keyword-badge">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="observations-section">
+                            <div class="observations-header" style="cursor: pointer;" onclick="toggleObservation(this)">
+                                <h5><i class="fas fa-comment-alt me-1"></i>Observación <i class="fas fa-chevron-down float-end"></i></h5>
+                            </div>
+                            <div class="observations-content" style="display: none; margin-top: 10px;">
+                                <p>{{ participant.observations }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant-stats">
+                            <span><i class="fas fa-align-left"></i> {{ participant.word_count }} palabras</span>
+                            <span><i class="fas fa-stopwatch"></i> {{ participant.participation_time|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        
+        </div>
+        {% endif %}
 
         <!-- AI Analysis Results -->
         {% if presentation.overall_ai_score %}
@@ -182,6 +302,74 @@
                 <p class="text-muted">Proporciona tu evaluación y retroalimentación</p>
             </div>
             
+            {% if is_review_mode %}
+            <!-- VISTA DE REVISIÓN - SOLO LECTURA -->
+            <div class="review-mode">
+                <div class="review-grid">
+                    {% if presentation.final_score is not None %}
+                    <!-- Calificación Final (Solo Lectura) -->
+                    <div class="score-display-section">
+                        <div class="score-card">
+                            <h5 class="score-label">
+                                <i class="fas fa-trophy me-2 text-warning"></i>Puntuación Final
+                            </h5>
+                            <div class="score-display">
+                                <span class="score-value">{{ presentation.final_score|floatformat:1 }}</span>
+                                <span class="score-max-display">/ {{ presentation.assignment.max_score }}</span>
+                            </div>
+                            <div class="score-percentage-display">
+                                {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%
+                            </div>
+                            <div class="score-bar-display">
+                                <div class="score-fill-display" style="width: {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%"></div>
+                            </div>
+                            {% if presentation.graded_by %}
+                            <div class="grading-info mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user-check me-1"></i>Calificado por: {{ presentation.graded_by.get_full_name|default:presentation.graded_by.username }}
+                                    <br><i class="fas fa-calendar me-1"></i>Fecha: {{ presentation.graded_at|date:"d M Y H:i" }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Presentación No Calificada -->
+                    <div class="score-display-section">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Esta presentación aún no ha sido calificada.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if presentation.final_score is not None %}
+                    <!-- Retroalimentación (Solo Lectura) -->
+                    <div class="feedback-display-section">
+                        <h5 class="feedback-label">
+                            <i class="fas fa-comment-alt me-2 text-primary"></i>Retroalimentación del Profesor
+                        </h5>
+                        <div class="feedback-display">
+                            {% if presentation.teacher_feedback %}
+                                {{ presentation.teacher_feedback|linebreaks }}
+                            {% else %}
+                                <em class="text-muted">No se proporcionó retroalimentación adicional.</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Botones de Acción - Solo Volver -->
+                <div class="form-actions">
+                    <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                </div>
+            </div>
+            
+            {% else %}
+            <!-- VISTA DE CALIFICACIÓN - EDITABLE -->
             <form method="post" class="grading-form">
                 {% csrf_token %}
                 
@@ -200,14 +388,16 @@
                                    max="{{ presentation.assignment.max_score }}" 
                                    step="0.1"
                                    placeholder="0.0"
-                                   value="{{ presentation.final_score|default:'' }}"
+                                   value="{% if presentation.final_score %}{{ presentation.final_score }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
                                    required>
                             <span class="score-max">/ {{ presentation.assignment.max_score }}</span>
                         </div>
                         <div class="score-helper">
                             <small class="text-muted">
                                 Puntuación de 0 a {{ presentation.assignment.max_score }} puntos
-                                {% if presentation.overall_ai_score %}
+                                {% if suggested_grade and not presentation.final_score %}
+                                    <br><span class="text-success">✨ Calificación sugerida por IA: {{ suggested_grade }} puntos</span>
+                                {% elif presentation.overall_ai_score %}
                                     <br>Sugerencia IA: {{ presentation.overall_ai_score|floatformat:1 }}%
                                 {% endif %}
                             </small>
@@ -231,26 +421,13 @@
                                   id="teacher_feedback" 
                                   name="teacher_feedback" 
                                   rows="8" 
-                                  placeholder="Proporciona comentarios constructivos sobre la presentación...">{{ presentation.teacher_feedback|default:'' }}</textarea>
+                                  placeholder="Proporciona comentarios constructivos sobre la presentación...">{% if presentation.teacher_feedback %}{{ presentation.teacher_feedback }}{% elif suggested_feedback %}{{ suggested_feedback }}{% endif %}</textarea>
                         
-                        <!-- Feedback Suggestions -->
-                        <div class="feedback-suggestions">
-                            <h6 class="small fw-bold mb-2">Sugerencias de retroalimentación:</h6>
-                            <div class="suggestion-buttons">
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Excelente organización del contenido y claridad en la exposición.')">
-                                    <i class="fas fa-plus"></i> Organización clara
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Buen dominio del tema, pero podría mejorar la fluidez al hablar.')">
-                                    <i class="fas fa-plus"></i> Mejorar fluidez
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Mantener mejor contacto visual con la audiencia.')">
-                                    <i class="fas fa-plus"></i> Contacto visual
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Incluir más ejemplos prácticos para apoyar los conceptos.')">
-                                    <i class="fas fa-plus"></i> Más ejemplos
-                                </button>
-                            </div>
-                        </div>
+                        {% if suggested_feedback and not presentation.teacher_feedback %}
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-magic me-1"></i>Retroalimentación generada por IA. Puedes editarla antes de guardar.
+                        </small>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -260,10 +437,15 @@
                         <i class="fas fa-arrow-left me-2"></i>Volver
                     </a>
                     <button type="submit" class="btn btn-success btn-lg">
-                        <i class="fas fa-star me-2"></i>Guardar Calificación
+                        {% if request.path == '/presentations/detail/'|add:presentation.id|add:'/' %}
+                            <i class="fas fa-save me-2"></i>Actualizar Calificación
+                        {% else %}
+                            <i class="fas fa-star me-2"></i>Guardar Calificación
+                        {% endif %}
                     </button>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -539,31 +721,7 @@
     resize: vertical;
 }
 
-.feedback-suggestions {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
-}
 
-.suggestion-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.suggestion-btn {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 20px;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.suggestion-btn:hover {
-    background: #e9ecef;
-}
 
 .form-actions {
     display: flex;
@@ -613,10 +771,685 @@
         font-size: 1.5rem;
     }
 }
+
+/* Estilos para participantes */
+.participants-analysis-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.participant-card-grading {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    color: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.participant-card-grading:hover {
+    transform: translateY(-5px);
+}
+
+.participant-header-grading {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.participant-avatar-grading {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.participant-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.2rem;
+}
+
+.participant-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.participant-info-grading h5 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.participant-metrics-grading {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.metric-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.metric-item i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.metric-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.grade-display-grading {
+    background: rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.grade-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.grade-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.feedback-section-grading {
+    margin: 1rem 0;
+}
+
+.feedback-header {
+    background: rgba(255,255,255,0.1);
+    padding: 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.feedback-header:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.feedback-header h6 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.feedback-content {
+    background: rgba(255,255,255,0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.participant-actions {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.participant-actions .btn {
+    width: 100%;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.participant-actions .btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .participants-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .metric-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Estilos adicionales para tarjetas de participantes */
+.participant-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.participant-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.participant-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.participant-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.participant-avatar i {
+    font-size: 1.2rem;
+}
+
+.participant-avatar span {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    background: white;
+    color: #667eea;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border: 2px solid #667eea;
+}
+
+.participant-info h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+.participant-info .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    font-weight: 600;
+}
+
+.participant-metrics {
+    margin-top: 1rem;
+}
+
+.metric-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.metric-item {
+    flex: 1;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.metric-item i {
+    font-size: 1.5rem;
+}
+
+.metric-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.coherence-breakdown {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.coherence-breakdown h4 {
+    font-size: 0.95rem;
+    color: #495057;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.breakdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.breakdown-item span:first-child {
+    flex: 0 0 130px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.breakdown-item span:last-child {
+    flex: 0 0 70px;
+    text-align: right;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #495057;
+}
+
+.progress-bar-container {
+    flex: 1;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.keywords-section {
+    margin-bottom: 1rem;
+}
+
+.keywords-section h5 {
+    font-size: 0.9rem;
+    color: #495057;
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+.keywords-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.keyword-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.observations-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.observations-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.observations-header:hover {
+    opacity: 0.8;
+}
+
+.observations-header h5 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: 700;
+}
+
+.observations-content p {
+    margin: 0;
+    color: #6c757d;
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
+.participant-stats {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 1rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.participant-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-section {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    margin-top: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.chart-section h3 {
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+.group-grade-suggestion {
+    margin-top: 2rem;
+}
+
+.suggestion-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    color: white;
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.3);
+}
+
+.suggestion-header h3 {
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.suggestion-header p {
+    color: rgba(255,255,255,0.9);
+    margin: 0;
+}
+
+.suggestion-content {
+    margin-top: 1.5rem;
+}
+
+.group-score-display {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.score-circle-group {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255,255,255,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.score-number-large {
+    font-size: 2.5rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.score-max {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.score-details {
+    flex: 1;
+}
+
+.score-breakdown {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.score-breakdown:last-child {
+    border-bottom: none;
+}
+
+.breakdown-label {
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.breakdown-value {
+    font-weight: 700;
+}
+
+.group-feedback {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.group-feedback h5 {
+    color: white;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.group-feedback p {
+    color: rgba(255,255,255,0.95);
+    line-height: 1.7;
+    margin: 0;
+}
+
+.analysis-header {
+    margin-bottom: 2rem;
+}
+
+.analysis-header h2 {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.analysis-header p {
+    color: #6c757d;
+    margin: 0;
+}
+
+/* ===== ESTILOS PARA VISTA DE REVISIÓN ===== */
+.review-mode {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.review-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.score-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border: 2px solid #28a745;
+}
+
+.score-label {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.score-display {
+    margin-bottom: 1rem;
+}
+
+.score-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.score-max-display {
+    font-size: 1.5rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.score-percentage-display {
+    font-size: 1.25rem;
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.score-bar-display {
+    width: 100%;
+    height: 12px;
+    background: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.score-fill-display {
+    height: 100%;
+    background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+    transition: width 0.3s ease;
+}
+
+.grading-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    border-left: 4px solid #007bff;
+}
+
+.feedback-display-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.feedback-label {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.feedback-display {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border-left: 4px solid #007bff;
+    line-height: 1.6;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 992px) {
+    .review-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .review-mode {
+        padding: 1.5rem;
+    }
+    
+    .score-value {
+        font-size: 2.5rem;
+    }
+}
+
 </style>
 
 <script>
-// Score input handling
+// Score input handling - Solo en modo edición
+{% if not is_review_mode %}
 document.addEventListener('DOMContentLoaded', function() {
     const scoreInput = document.getElementById('final_score');
     const scoreFill = document.getElementById('scoreFill');
@@ -645,6 +1478,7 @@ document.addEventListener('DOMContentLoaded', function() {
     scoreInput.addEventListener('input', updateScorePreview);
     updateScorePreview(); // Initial update
 });
+{% endif %}
 
 // Video controls
 function togglePlayPause() {
@@ -676,19 +1510,28 @@ function toggleFullscreen() {
     }
 }
 
-// Feedback suggestions
-function addSuggestion(text) {
-    const textarea = document.getElementById('teacher_feedback');
-    const currentValue = textarea.value;
+
+// Toggle participant feedback
+function toggleParticipantFeedback(header) {
+    const content = header.nextElementSibling;
+    const icon = header.querySelector('.fa-chevron-down, .fa-chevron-up');
     
-    if (currentValue.trim() === '') {
-        textarea.value = text;
+    const isHidden = content.style.display === 'none' || 
+                     window.getComputedStyle(content).display === 'none';
+    
+    if (isHidden) {
+        content.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
     } else {
-        textarea.value = currentValue + '\n\n' + text;
+        content.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
     }
-    
-    textarea.focus();
-    textarea.scrollTop = textarea.scrollHeight;
 }
 
 // Video event listeners
@@ -710,6 +1553,88 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Toggle observation for participants
+function toggleObservation(element) {
+    const content = element.nextElementSibling;
+    const icon = element.querySelector('.fa-chevron-down, .fa-chevron-up');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        content.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
+// Participants comparison chart
+{% if has_individual_analysis %}
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('participantsChart');
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        
+        const participantsData = [
+            {% for participant in participants %}
+            {
+                name: '{{ participant.label }}',
+                coherence: {{ participant.coherence_score }},
+                time: {{ participant.time_percentage }},
+                contribution: {{ participant.contribution_percentage }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        
+        // Simple bar chart
+        const barWidth = canvas.width / participantsData.length - 20;
+        const maxValue = 100;
+        const chartHeight = canvas.height - 80;
+        
+        participantsData.forEach((participant, index) => {
+            const x = index * (barWidth + 20) + 20;
+            const barHeight = (participant.coherence / maxValue) * chartHeight;
+            const y = canvas.height - barHeight - 30;
+            
+            // Draw bar
+            const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(x, y, barWidth, barHeight);
+            
+            // Draw value on top
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(participant.coherence.toFixed(1) + '%', x + barWidth/2, y - 5);
+            
+            // Draw label
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '12px Arial';
+            ctx.fillText(participant.name, x + barWidth/2, canvas.height - 10);
+        });
+        
+        // Draw axis
+        ctx.strokeStyle = '#dee2e6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(10, canvas.height - 30);
+        ctx.lineTo(canvas.width - 10, canvas.height - 30);
+        ctx.stroke();
+    }
+});
+{% endif %}
+
+
+
 </script>
 
 {% endblock %}
