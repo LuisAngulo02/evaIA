@@ -161,3 +161,19 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'clinicpro0@gmail.com'  
+EMAIL_HOST_PASSWORD = 'rzif kxlo igwh ivvs'  
+
+DEFAULT_FROM_EMAIL = 'noreply@evalexpo.com'
+
+# Password Reset Token Expiration
+PASSWORD_RESET_TIMEOUT = 600  

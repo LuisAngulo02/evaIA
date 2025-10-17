@@ -21,64 +21,142 @@
 
                     <!-- Body del formulario -->
                     <div class="card-body p-4">
-                        <div class="text-center mb-4">
-                            <h4 class="fw-bold text-dark">Iniciar Sesión</h4>
-                            <p class="text-muted">Ingresa a tu cuenta para continuar</p>
-                        </div>
-
-                        <form method="post" id="loginForm" novalidate>
-                            {% csrf_token %}
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold text-dark">
-                                    <i class="fas fa-user me-2 text-primary"></i>Usuario
-                                </label>
-                                <div class="input-group">
-                                    {{ form.username }}
-                                    <span class="input-group-text bg-transparent border-start-0">
-                                        <i class="fas fa-user text-muted"></i>
-                                    </span>
+                        {% if show_reset_form %}
+                            <!-- Formulario de Restablecer Contraseña -->
+                            <div class="text-center mb-4">
+                                <div class="mb-3">
+                                    <i class="fas fa-key fa-3x text-primary"></i>
                                 </div>
-                                {% if form.username.errors %}
-                                    <div class="text-danger small mt-1">
-                                        <i class="fas fa-exclamation-circle me-1"></i>
-                                        {{ form.username.errors.0 }}
-                                    </div>
-                                {% endif %}
+                                <h4 class="fw-bold text-dark">Nueva Contraseña</h4>
+                                <p class="text-muted">Ingresa tu nueva contraseña</p>
                             </div>
 
-                            <div class="mb-4">
-                                <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold text-dark">
-                                    <i class="fas fa-lock me-2 text-primary"></i>Contraseña
-                                </label>
-                                <div class="input-group">
-                                    {{ form.password }}
-                                    <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
-                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                            <form method="post" id="resetPasswordForm" novalidate>
+                                {% csrf_token %}
+                                <input type="hidden" name="reset_password" value="1">
+                                <input type="hidden" name="uid" value="{{ uid }}">
+                                <input type="hidden" name="token" value="{{ token }}">
+                                
+                                <div class="mb-3">
+                                    <label for="new_password1" class="form-label fw-semibold text-dark">
+                                        <i class="fas fa-lock me-2 text-primary"></i>Nueva Contraseña
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="new_password1" name="new_password1" required>
+                                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword1">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Mínimo 8 caracteres, debe contener letras y números
+                                    </small>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="new_password2" class="form-label fw-semibold text-dark">
+                                        <i class="fas fa-lock me-2 text-primary"></i>Confirmar Contraseña
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="new_password2" name="new_password2" required>
+                                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword2">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-lg fw-semibold" style="border-radius: 12px; background: var(--primary-gradient); border: none;">
+                                        <i class="fas fa-check me-2"></i>Cambiar Contraseña
                                     </button>
                                 </div>
-                                {% if form.password.errors %}
-                                    <div class="text-danger small mt-1">
-                                        <i class="fas fa-exclamation-circle me-1"></i>
-                                        {{ form.password.errors.0 }}
+
+                                <div class="text-center">
+                                    <a href="{% url 'auth:login' %}" class="text-muted text-decoration-none small">
+                                        <i class="fas fa-arrow-left me-1"></i>Volver al inicio de sesión
+                                    </a>
+                                </div>
+                            </form>
+                        {% else %}
+                            <!-- Formulario de Inicio de Sesión -->
+                            <div class="text-center mb-4">
+                                <h4 class="fw-bold text-dark">Iniciar Sesión</h4>
+                                <p class="text-muted">Ingresa a tu cuenta para continuar</p>
+                            </div>
+
+                            <form method="post" id="loginForm" novalidate>
+                                {% csrf_token %}
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold text-dark">
+                                        <i class="fas fa-user me-2 text-primary"></i>Usuario
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.username }}
+                                        <span class="input-group-text bg-transparent border-start-0">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </span>
+                                    </div>
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small mt-1">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            {{ form.username.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold text-dark">
+                                        <i class="fas fa-lock me-2 text-primary"></i>Contraseña
+                                    </label>
+                                    <div class="input-group">
+                                        {{ form.password }}
+                                        <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
+                                            <i class="fas fa-eye" id="toggleIcon"></i>
+                                        </button>
+                                    </div>
+                                    {% if form.password.errors %}
+                                        <div class="text-danger small mt-1">
+                                            <i class="fas fa-exclamation-circle me-1"></i>
+                                            {{ form.password.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-grid mb-3">
+                                    <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="submitBtn" style="border-radius: 12px; background: var(--primary-gradient); border: none;">
+                                        <i class="fas fa-sign-in-alt me-2"></i>
+                                        <span class="btn-text">Iniciar Sesión</span>
+                                    </button>
+                                </div>
+
+                                {% if show_recovery %}
+                                    <!-- Sección de Recuperación de Contraseña -->
+                                    <div class="alert alert-info border-0 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-info-circle text-primary me-2"></i>
+                                            <strong>¿Olvidaste tu contraseña?</strong>
+                                        </div>
+                                        <p class="mb-3 small">Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.</p>
+                                        
+                                        <div class="mb-3">
+                                            <input type="email" class="form-control" id="recovery_email" name="email" placeholder="tu@correo.com" required>
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-primary w-100 fw-semibold" id="sendRecoveryBtn" style="border-radius: 12px;">
+                                            <i class="fas fa-paper-plane me-2"></i>Enviar Enlace de Recuperación
+                                        </button>
                                     </div>
                                 {% endif %}
-                            </div>
 
-                            <div class="d-grid mb-3">
-                                <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="submitBtn" style="border-radius: 12px; background: var(--primary-gradient); border: none;">
-                                    <i class="fas fa-sign-in-alt me-2"></i>
-                                    <span class="btn-text">Iniciar Sesión</span>
-                                </button>
-                            </div>
-
-                            <div class="text-center">
-                                <p class="text-muted mb-2">¿No tienes una cuenta?</p>
-                                <a href="{% url 'auth:register' %}" class="btn btn-outline-primary fw-semibold" style="border-radius: 12px;">
-                                    <i class="fas fa-user-plus me-2"></i>Crear Cuenta
-                                </a>
-                            </div>
-                        </form>
+                                <div class="text-center">
+                                    <p class="text-muted mb-2">¿No tienes una cuenta?</p>
+                                    <a href="{% url 'auth:register' %}" class="btn btn-outline-primary fw-semibold" style="border-radius: 12px;">
+                                        <i class="fas fa-user-plus me-2"></i>Crear Cuenta
+                                    </a>
+                                </div>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -239,7 +317,7 @@ body {
 {% block extra_js %}
 <script>
 $(document).ready(function() {
-    // Toggle password visibility
+    // Toggle password visibility for login form
     $('#togglePassword').click(function() {
         const passwordField = $('#id_password');
         const passwordFieldType = passwordField.attr('type');
@@ -254,7 +332,84 @@ $(document).ready(function() {
         }
     });
 
-    // Add loading state on form submit
+    // Toggle password visibility for reset form (new password 1)
+    $('#togglePassword1').click(function() {
+        const passwordField = $('#new_password1');
+        const passwordFieldType = passwordField.attr('type');
+        const toggleIcon = $(this).find('i');
+        
+        if (passwordFieldType === 'password') {
+            passwordField.attr('type', 'text');
+            toggleIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            passwordField.attr('type', 'password');
+            toggleIcon.removeClass('fa-eye-slash').addClass('fa-eye');
+        }
+    });
+
+    // Toggle password visibility for reset form (new password 2)
+    $('#togglePassword2').click(function() {
+        const passwordField = $('#new_password2');
+        const passwordFieldType = passwordField.attr('type');
+        const toggleIcon = $(this).find('i');
+        
+        if (passwordFieldType === 'password') {
+            passwordField.attr('type', 'text');
+            toggleIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+        } else {
+            passwordField.attr('type', 'password');
+            toggleIcon.removeClass('fa-eye-slash').addClass('fa-eye');
+        }
+    });
+
+    // Handle recovery email submission
+    $('#sendRecoveryBtn').click(function(e) {
+        e.preventDefault();
+        const email = $('#recovery_email').val().trim();
+        
+        if (!email) {
+            showToast('Por favor ingresa tu correo electrónico', 'warning');
+            return;
+        }
+        
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showToast('Por favor ingresa un correo electrónico válido', 'warning');
+            return;
+        }
+        
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Enviando...').prop('disabled', true);
+        
+        // Enviar solicitud de recuperación
+        $.ajax({
+            url: '{% url "auth:login" %}',
+            method: 'POST',
+            data: {
+                'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val(),
+                'recover_password': '1',
+                'email': email
+            },
+            success: function(response) {
+                showToast('Enlace de recuperación enviado. Revisa tu correo electrónico.', 'success');
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2000);
+            },
+            error: function(xhr) {
+                let message = 'Error al enviar el enlace de recuperación';
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    message = xhr.responseJSON.error;
+                }
+                showToast(message, 'error');
+                btn.html(originalHtml).prop('disabled', false);
+            }
+        });
+    });
+
+    // Add loading state on form submit (login form)
     $('#loginForm').on('submit', function() {
         const submitBtn = $(this).find('button[type="submit"]');
         const originalText = submitBtn.html();
@@ -271,6 +426,34 @@ $(document).ready(function() {
                 submitBtn.prop('disabled', false);
             }
         }, 5000);
+    });
+
+    // Add loading state on form submit (reset password form)
+    $('#resetPasswordForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const password1 = $('#new_password1').val();
+        const password2 = $('#new_password2').val();
+        
+        // Validar que las contraseñas coincidan
+        if (password1 !== password2) {
+            showToast('Las contraseñas no coinciden', 'error');
+            return;
+        }
+        
+        // Validar longitud mínima
+        if (password1.length < 8) {
+            showToast('La contraseña debe tener al menos 8 caracteres', 'error');
+            return;
+        }
+        
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Cambiando contraseña...').prop('disabled', true);
+        
+        // Submit the form
+        this.submit();
     });
 
     // Focus effects
