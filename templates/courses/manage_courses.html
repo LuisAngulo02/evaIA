@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Gestionar Cursos - EvalExpo AI{% endblock %}
 
@@ -30,23 +31,40 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <div class="row align-items-center">
-                            <div class="col-md-8">
+                            <div class="col-md-7">
                                 <h5 class="mb-2">{{ course.name }}</h5>
                                 <p class="text-muted mb-2">{{ course.code }} - {{ course.description }}</p>
                                 <small class="text-muted">
                                     <i class="fas fa-user me-1"></i>{{ course.teacher.get_full_name }}
                                     <i class="fas fa-calendar ms-3 me-1"></i>Creado: {{ course.created_at|date:"d M Y" }}
                                 </small>
+                                <div class="mt-2">
+                                    <span class="badge bg-info text-white">
+                                        <i class="fas fa-user-graduate me-1"></i>{{ course.students.count }} Estudiante{{ course.students.count|pluralize }}
+                                    </span>
+                                    <span class="badge bg-secondary ms-1">
+                                        <i class="fas fa-tasks me-1"></i>{{ course.assignments_count }} Asignacion{{ course.assignments_count|pluralize:"es" }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="col-md-4 text-end">
+                            <div class="col-md-5 text-end">
                                 <span class="badge {{ course.is_active|yesno:'bg-success,bg-secondary' }} me-2">
                                     {{ course.is_active|yesno:'Activo,Inactivo' }}
                                 </span>
                                 <div class="btn-group">
-                                    <button class="btn btn-outline-primary btn-sm">
+                                    <a href="{% url 'presentations:manage_course_students' course.id %}" 
+                                       class="btn btn-outline-info btn-sm" 
+                                       title="Gestionar estudiantes">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                    <a href="{% url 'presentations:edit_course' course.id %}" 
+                                       class="btn btn-outline-primary btn-sm" 
+                                       title="Editar curso">
                                         <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm">
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            onclick="confirmDelete('{{ course.name }}', '{% url 'presentations:delete_course' course.id %}')" 
+                                            title="Eliminar curso">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -76,4 +94,41 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">¿Estás seguro de que deseas eliminar el curso <strong id="courseName"></strong>?</p>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Esta acción desactivará el curso y todas sus asignaciones relacionadas.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar Curso
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/manage-courses.js' %}"></script>
 {% endblock %}

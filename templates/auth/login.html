@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Iniciar Sesión - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="min-vh-100 d-flex align-items-center justify-content-center">
@@ -72,6 +77,12 @@
                                 </button>
                             </div>
 
+                            <div class="text-center mb-3">
+                                <a href="{% url 'auth:password_reset' %}" class="text-decoration-none">
+                                    <i class="fas fa-key me-1"></i>¿Olvidaste tu contraseña?
+                                </a>
+                            </div>
+
                             <div class="text-center">
                                 <p class="text-muted mb-2">¿No tienes una cuenta?</p>
                                 <a href="{% url 'auth:register' %}" class="btn btn-outline-primary fw-semibold" style="border-radius: 12px;">
@@ -114,207 +125,8 @@
     </div>
 </div>
 
-<style>
-body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-}
-
-.form-control {
-    border-right: none;
-    border-radius: 12px 0 0 12px !important;
-    padding: 14px 18px;
-    border: 2px solid #e2e8f0;
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.form-control:focus {
-    border-color: #6366f1;
-    box-shadow: none;
-    background: white;
-}
-
-.input-group-text {
-    border-radius: 0 12px 12px 0 !important;
-    border: 2px solid #e2e8f0;
-    border-left: none;
-}
-
-.form-control:focus + .input-group-text {
-    border-color: #6366f1;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    border: none;
-    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
-}
-
-.btn-outline-primary {
-    border-color: #6366f1;
-    color: #6366f1;
-    border-width: 2px;
-}
-
-.btn-outline-primary:hover {
-    background: #6366f1;
-    border-color: #6366f1;
-    transform: translateY(-1px);
-}
-
-.card {
-    backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.95) !important;
-    animation: fadeInUp 0.6s ease-out;
-}
-
-/* Feature icons con efectos */
-.feature-item {
-    transition: all 0.3s ease;
-}
-
-.feature-item:hover {
-    transform: translateY(-5px);
-}
-
-.feature-icon {
-    width: 60px;
-    height: 60px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Efectos adicionales para el loading */
-.btn-loading {
-    position: relative;
-    color: transparent !important;
-}
-
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    top: 50%;
-    left: 50%;
-    margin-left: -10px;
-    margin-top: -10px;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-</style>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-$(document).ready(function() {
-    // Toggle password visibility
-    $('#togglePassword').click(function() {
-        const passwordField = $('#id_password');
-        const passwordFieldType = passwordField.attr('type');
-        const toggleIcon = $(this).find('i');
-        
-        if (passwordFieldType === 'password') {
-            passwordField.attr('type', 'text');
-            toggleIcon.removeClass('fa-eye').addClass('fa-eye-slash');
-        } else {
-            passwordField.attr('type', 'password');
-            toggleIcon.removeClass('fa-eye-slash').addClass('fa-eye');
-        }
-    });
-
-    // Add loading state on form submit
-    $('#loginForm').on('submit', function() {
-        const submitBtn = $(this).find('button[type="submit"]');
-        const originalText = submitBtn.html();
-        
-        submitBtn.addClass('btn-loading');
-        submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...');
-        submitBtn.prop('disabled', true);
-        
-        // Si hay un error de validación, restaurar el botón
-        setTimeout(function() {
-            if (submitBtn.hasClass('btn-loading')) {
-                submitBtn.removeClass('btn-loading');
-                submitBtn.html(originalText);
-                submitBtn.prop('disabled', false);
-            }
-        }, 5000);
-    });
-
-    // Focus effects
-    $('.form-control').on('focus', function() {
-        $(this).parent().addClass('focused');
-    }).on('blur', function() {
-        $(this).parent().removeClass('focused');
-    });
-
-    // Animación de entrada para las features
-    $('.feature-item').each(function(index) {
-        $(this).css('animation-delay', (index * 0.1) + 's');
-        $(this).addClass('fadeInUp');
-    });
-});
-
-// Función para mostrar notificaciones personalizadas
-function showToast(message, type = 'info') {
-    const toastId = 'toast-' + Date.now();
-    const iconMap = {
-        'success': 'fa-check-circle',
-        'error': 'fa-exclamation-circle',
-        'warning': 'fa-exclamation-triangle',
-        'info': 'fa-info-circle'
-    };
-    
-    const toast = `
-        <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0 show" role="alert" style="position: fixed; top: 100px; right: 20px; z-index: 9999;">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas ${iconMap[type]} me-2"></i>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="$('#${toastId}').remove()"></button>
-            </div>
-        </div>
-    `;
-    
-    $('body').append(toast);
-    
-    setTimeout(() => {
-        $('#' + toastId).fadeOut(() => {
-            $('#' + toastId).remove();
-        });
-    }, 5000);
-}
-</script>
+<script src="{% static 'js/login.js' %}"></script>
 {% endblock %}

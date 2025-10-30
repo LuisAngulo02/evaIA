@@ -39,6 +39,7 @@ urlpatterns = [
     path('reports/', include('apps.reportes.urls')),
     path('help/', include('apps.help.urls')),
     path('notifications/', include('apps.notifications.urls')),
+    path('notificaciones/', include('apps.notifications.urls')),  # Alias en español
     path('test-export/', test_export_view, name='test_export'),
     path('test-notifications/', test_notifications_view, name='test_notifications'),
     path('test-simple/', test_simple_notifications_view, name='test_simple_notifications'),

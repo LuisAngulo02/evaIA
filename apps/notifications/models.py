@@ -104,6 +104,26 @@ class Notification(models.Model):
             self.read_at = timezone.now()
             self.save(update_fields=['is_read', 'read_at'])
     
+    def get_action_url(self):
+        """Obtener la URL de acción, generándola automáticamente si es necesario"""
+        if self.action_url:
+            return self.action_url
+        
+        # Generar URL basada en relaciones
+        from django.urls import reverse
+        
+        if self.related_presentation:
+            return reverse('presentations:presentation_detail', args=[self.related_presentation.id])
+        elif self.related_assignment:
+            # Incluir el ID de la asignación como parámetro GET para pre-seleccionarla
+            base_url = reverse('presentations:upload_presentation')
+            return f"{base_url}?assignment={self.related_assignment.id}"
+        elif self.related_course:
+            return reverse('presentations:manage_courses')
+        
+        # URL por defecto
+        return reverse('notifications:list')
+    
     def is_expired(self):
         """Verificar si la notificación ha expirado"""
         if self.expires_at:

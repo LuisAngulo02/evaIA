@@ -1,5 +1,6 @@
 <!-- templates/presentations/transcription_detail.html -->
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Transcripción - {{ presentation.title }}{% endblock %}
 
@@ -79,9 +80,7 @@
                     <div>
                         <form method="post" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit" name="transcribe_real" class="btn btn-sm btn-success me-2" onclick="return confirm('¿Transcribir el audio real del video? Esto puede tomar unos minutos y reemplazará la transcripción actual.')">
-                                <i class="fas fa-microphone me-1"></i>Transcribir Audio Real
-                            </button>
+                            
                         </form>
                         {% if has_transcription %}
                         <button class="btn btn-sm btn-outline-primary" onclick="copyTranscription()">
@@ -172,40 +171,8 @@
     </div>
 </div>
 
-<script>
-function copyTranscription() {
-    const text = document.getElementById('full-transcription').textContent;
-    
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(() => {
-            // Mostrar notificación de éxito
-            const toast = document.createElement('div');
-            toast.className = 'alert alert-success alert-dismissible fade show';
-            toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-            toast.innerHTML = `
-                <i class="fas fa-check me-2"></i>Transcripción copiada al portapapeles
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast && toast.parentNode) {
-                    toast.remove();
-                }
-            }, 3000);
-        }).catch(() => {
-            alert('Error al copiar. Selecciona el texto manualmente.');
-        });
-    } else {
-        // Fallback para navegadores antiguos
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Transcripción copiada al portapapeles');
-    }
-}
-</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/transcription-detail.js' %}"></script>
 {% endblock %}

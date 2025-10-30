@@ -12,6 +12,12 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,12 +44,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # Apps propias
     'authentication',
     'apps.presentaciones',
     'apps.reportes',
     'apps.ai_processor',
     'apps.help',
     'apps.notifications',
+    # Terceros
+    'cloudinary',
+    'cloudinary_storage',
 ]
 
 MIDDLEWARE = [
@@ -161,3 +171,78 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
+
+
+# IA AVANZADA - GROQ API (ANÁLISIS DE COHERENCIA)
+
+# Obtener API key desde variable de entorno
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
+
+# Activar IA avanzada si hay API key configurada
+USE_ADVANCED_COHERENCE = bool(GROQ_API_KEY)
+
+# Configuración del análisis de coherencia
+COHERENCE_CONFIG = {
+    'model': 'llama-3.3-70b-versatile',  # Modelo Llama 3.3 70B (actualizado - llama-3.1 fue descontinuado)
+    'temperature': 0.3,  # Bajo para consistencia
+    'max_tokens': 2000,  # Tokens para respuesta detallada
+    'timeout': 45,  # Segundos antes de timeout
+}
+
+
+# CONFIGURACIÓN DE EMAIL
+
+# Para producción con Gmail (comentado por defecto)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+
+# Configuración básica
+DEFAULT_FROM_EMAIL = f'EvalExpo AI <{os.getenv("EMAIL_HOST_USER", "noreply@evalexpo.ai")}>'
+EMAIL_SUBJECT_PREFIX = '[EvalExpo AI] '
+EMAIL_USE_SSL = False
+EMAIL_TIMEOUT = 30
+
+# Configuración adicional para recuperación de contraseña
+PASSWORD_RESET_TIMEOUT = 3600  # 1 hora para que expire el link
+
+
+# CONFIGURACIÓN DE CLOUDINARY
+
+
+# Cargar configuración desde variables de entorno
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
+CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
+CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
+
+if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    # Configurar Cloudinary
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
+    
+    # Usar Cloudinary para archivos multimedia
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    
+    # Configuración adicional de Cloudinary Storage
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+    }
+    
+    print(f" Cloudinary configurado: {CLOUDINARY_CLOUD_NAME}")
+    print(f" Los archivos multimedia se almacenarán en la nube")
+else:
+    print(" Cloudinary NO configurado - usando almacenamiento local")
+    print("   Para usar Cloudinary, configura las variables en .env:")
+    print("   - CLOUDINARY_CLOUD_NAME")
+    print("   - CLOUDINARY_API_KEY")
+    print("   - CLOUDINARY_API_SECRET")
+

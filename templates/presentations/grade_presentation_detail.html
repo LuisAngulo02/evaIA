@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
 
-{% block title %}Calificar: {{ presentation.title }}{% endblock %}
+{% block title %}{% if is_review_mode %}Ver: {{ presentation.title }}{% else %}{% if is_already_graded %}Revisar: {{ presentation.title }}{% else %}Calificar: {{ presentation.title }}{% endif %}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grade-presentation-detail.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/grading.js' %}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="content-wrapper fade-in">
@@ -21,7 +31,16 @@
         
         <div class="header-content">
             <div class="presentation-info">
-                <h1 class="presentation-title">{{ presentation.title }}</h1>
+                <h1 class="presentation-title">
+                    {{ presentation.title }}
+                    {% if is_review_mode %}
+                    <span class="badge bg-info ms-3"><i class="fas fa-eye me-1"></i>Vista Solo Lectura</span>
+                    {% elif is_already_graded %}
+                    <span class="badge bg-warning ms-3"><i class="fas fa-edit me-1"></i>Revisando</span>
+                    {% else %}
+                    <span class="badge bg-primary ms-3"><i class="fas fa-star me-1"></i>Calificando</span>
+                    {% endif %}
+                </h1>
                 <div class="student-info">
                     <div class="student-avatar">
                         <img src="https://ui-avatars.com/api/?name={{ presentation.student.get_full_name|default:presentation.student.username }}&background=6366f1&color=ffffff" 
@@ -55,7 +74,7 @@
                         </div>
                         <div class="detail-row">
                             <span>Estado:</span>
-                            <span class="badge bg-{{ presentation.status|lower == 'analyzed' and 'success' or 'secondary' }}">
+                            <span class="badge {{ presentation.status_badge_class }}">
                                 {{ presentation.get_status_display }}
                             </span>
                         </div>
@@ -76,7 +95,17 @@
                         <span class="video-duration">
                             {% if presentation.duration %}{{ presentation.duration }}{% else %}--:--{% endif %}
                         </span>
-                        <span class="video-size">{{ presentation.video_file.size|filesizeformat }}</span>
+                        <span class="video-size">
+                            {% if presentation.video_file %}
+                                {% if presentation.file_size %}
+                                    {{ presentation.file_size|filesizeformat }}
+                                {% else %}
+                                    Tamaño no disponible
+                                {% endif %}
+                            {% else %}
+                                Archivo no encontrado
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
                 
@@ -102,6 +131,25 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Timeline de Participación por Persona -->
+            {% if has_individual_analysis %}
+            <div class="participants-timeline-container mt-4">
+                <div class="timeline-header">
+                    <h3><i class="fas fa-users-line me-2"></i>Línea de Tiempo de Participación</h3>
+                    <p class="text-muted small">Segmentos donde aparece cada participante</p>
+                </div>
+                <div id="participantsTimeline" class="participants-timeline">
+                    <!-- Se renderizará dinámicamente con JavaScript -->
+                </div>
+                <div class="timeline-legend">
+                    <div class="legend-items" id="timelineLegend">
+                        <!-- Se renderizará dinámicamente con JavaScript -->
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
             {% else %}
             <div class="no-video-message">
                 <i class="fas fa-video-slash"></i>
@@ -110,6 +158,107 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- NUEVO: Evaluación Individual de Participantes -->
+        {% if has_individual_analysis %}
+        <div class="participants-analysis-section">
+            <div class="analysis-header">
+                <h2><i class="fas fa-users me-2"></i>Evaluación Individual de Participantes</h2>
+                <p class="text-muted">Análisis automático de coherencia para cada participante detectado</p>
+            </div>
+            
+            <div class="participants-grid">
+                {% for participant in participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-avatar">
+                            {% if participant.photo %}
+                                <img src="{{ participant.photo.url }}" alt="{{ participant.label }}" class="participant-photo">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                                <span>{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <h3>{{ participant.label }}</h3>
+                            <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="participant-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Tiempo</span>
+                                    <span class="metric-value">{{ participant.time_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Aporte</span>
+                                    <span class="metric-value">{{ participant.contribution_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coherence-breakdown">
+                            <h4>Desglose de Evaluación</h4>
+                            <div class="breakdown-item">
+                                <span>Coherencia semántica</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.semantic_coherence }}%"></div>
+                                </div>
+                                <span>{{ participant.semantic_coherence|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Palabras clave</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.keywords_score }}%"></div>
+                                </div>
+                                <span>{{ participant.keywords_score|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Profundidad</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.depth_score }}%"></div>
+                                </div>
+                                <span>{{ participant.depth_score|floatformat:1 }}/100</span>
+                            </div>
+                        </div>
+                        
+                        {% if participant.keywords_found %}
+                        <div class="keywords-section">
+                            <h5><i class="fas fa-key me-1"></i>Palabras clave detectadas:</h5>
+                            <div class="keywords-list">
+                                {% for keyword in participant.keywords_found|slice:":8" %}
+                                    <span class="keyword-badge">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="observations-section">
+                            <div class="observations-header" style="cursor: pointer;" data-observation-toggle>
+                                <h5><i class="fas fa-comment-alt me-1"></i>Observación <i class="fas fa-chevron-down float-end"></i></h5>
+                            </div>
+                            <div class="observations-content" style="display: none; margin-top: 10px;">
+                                <p style="white-space: pre-wrap;">{{ participant.ai_feedback|default:participant.observations }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant-stats">
+                            <span><i class="fas fa-align-left"></i> {{ participant.word_count }} palabras</span>
+                            <span><i class="fas fa-stopwatch"></i> {{ participant.participation_time|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        
+        </div>
+        {% endif %}
 
         <!-- AI Analysis Results -->
         {% if presentation.overall_ai_score %}
@@ -182,6 +331,74 @@
                 <p class="text-muted">Proporciona tu evaluación y retroalimentación</p>
             </div>
             
+            {% if is_review_mode %}
+            <!-- VISTA DE REVISIÓN - SOLO LECTURA -->
+            <div class="review-mode">
+                <div class="review-grid">
+                    {% if presentation.final_score is not None %}
+                    <!-- Calificación Final (Solo Lectura) -->
+                    <div class="score-display-section">
+                        <div class="score-card">
+                            <h5 class="score-label">
+                                <i class="fas fa-trophy me-2 text-warning"></i>Puntuación Final
+                            </h5>
+                            <div class="score-display">
+                                <span class="score-value">{{ presentation.final_score|floatformat:1 }}</span>
+                                <span class="score-max-display">/ {{ presentation.assignment.max_score }}</span>
+                            </div>
+                            <div class="score-percentage-display">
+                                {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%
+                            </div>
+                            <div class="score-bar-display">
+                                <div class="score-fill-display" style="width: {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%"></div>
+                            </div>
+                            {% if presentation.graded_by %}
+                            <div class="grading-info mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user-check me-1"></i>Calificado por: {{ presentation.graded_by.get_full_name|default:presentation.graded_by.username }}
+                                    <br><i class="fas fa-calendar me-1"></i>Fecha: {{ presentation.graded_at|date:"d M Y H:i" }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Presentación No Calificada -->
+                    <div class="score-display-section">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Esta presentación aún no ha sido calificada.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if presentation.final_score is not None %}
+                    <!-- Retroalimentación (Solo Lectura) -->
+                    <div class="feedback-display-section">
+                        <h5 class="feedback-label">
+                            <i class="fas fa-comment-alt me-2 text-primary"></i>Retroalimentación del Profesor
+                        </h5>
+                        <div class="feedback-display">
+                            {% if presentation.teacher_feedback %}
+                                {{ presentation.teacher_feedback|linebreaks }}
+                            {% else %}
+                                <em class="text-muted">No se proporcionó retroalimentación adicional.</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Botones de Acción - Solo Volver -->
+                <div class="form-actions">
+                    <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                </div>
+            </div>
+            
+            {% else %}
+            <!-- VISTA DE CALIFICACIÓN - EDITABLE -->
             <form method="post" class="grading-form">
                 {% csrf_token %}
                 
@@ -200,14 +417,16 @@
                                    max="{{ presentation.assignment.max_score }}" 
                                    step="0.1"
                                    placeholder="0.0"
-                                   value="{{ presentation.final_score|default:'' }}"
+                                   value="{% if presentation.final_score %}{{ presentation.final_score }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
                                    required>
                             <span class="score-max">/ {{ presentation.assignment.max_score }}</span>
                         </div>
                         <div class="score-helper">
                             <small class="text-muted">
                                 Puntuación de 0 a {{ presentation.assignment.max_score }} puntos
-                                {% if presentation.overall_ai_score %}
+                                {% if suggested_grade and not presentation.final_score %}
+                                    <br><span class="text-success">✨ Calificación sugerida por IA: {{ suggested_grade }} puntos</span>
+                                {% elif presentation.overall_ai_score %}
                                     <br>Sugerencia IA: {{ presentation.overall_ai_score|floatformat:1 }}%
                                 {% endif %}
                             </small>
@@ -231,26 +450,13 @@
                                   id="teacher_feedback" 
                                   name="teacher_feedback" 
                                   rows="8" 
-                                  placeholder="Proporciona comentarios constructivos sobre la presentación...">{{ presentation.teacher_feedback|default:'' }}</textarea>
+                                  placeholder="Proporciona comentarios constructivos sobre la presentación...">{% if presentation.teacher_feedback %}{{ presentation.teacher_feedback }}{% elif suggested_feedback %}{{ suggested_feedback }}{% endif %}</textarea>
                         
-                        <!-- Feedback Suggestions -->
-                        <div class="feedback-suggestions">
-                            <h6 class="small fw-bold mb-2">Sugerencias de retroalimentación:</h6>
-                            <div class="suggestion-buttons">
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Excelente organización del contenido y claridad en la exposición.')">
-                                    <i class="fas fa-plus"></i> Organización clara
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Buen dominio del tema, pero podría mejorar la fluidez al hablar.')">
-                                    <i class="fas fa-plus"></i> Mejorar fluidez
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Mantener mejor contacto visual con la audiencia.')">
-                                    <i class="fas fa-plus"></i> Contacto visual
-                                </button>
-                                <button type="button" class="suggestion-btn" onclick="addSuggestion('Incluir más ejemplos prácticos para apoyar los conceptos.')">
-                                    <i class="fas fa-plus"></i> Más ejemplos
-                                </button>
-                            </div>
-                        </div>
+                        {% if suggested_feedback and not presentation.teacher_feedback %}
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-magic me-1"></i>Retroalimentación generada por IA. Puedes editarla antes de guardar.
+                        </small>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -260,456 +466,216 @@
                         <i class="fas fa-arrow-left me-2"></i>Volver
                     </a>
                     <button type="submit" class="btn btn-success btn-lg">
-                        <i class="fas fa-star me-2"></i>Guardar Calificación
+                        {% if request.path == '/presentations/detail/'|add:presentation.id|add:'/' %}
+                            <i class="fas fa-save me-2"></i>Actualizar Calificación
+                        {% else %}
+                            <i class="fas fa-star me-2"></i>Guardar Calificación
+                        {% endif %}
                     </button>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </div>
 
-<style>
-.grading-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    padding: 2rem;
-    color: white;
-    margin-bottom: 2rem;
-}
-
-.breadcrumb-modern {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 0.75rem 1.25rem;
-    margin-bottom: 1.5rem;
-}
-
-.breadcrumb-modern .breadcrumb-item a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 2rem;
-}
-
-.presentation-title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-}
-
-.student-info {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.student-avatar img {
-    width: 60px;
-    height: 60px;
-}
-
-.student-details h5 {
-    color: white;
-    margin-bottom: 0.5rem;
-}
-
-.assignment-card {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 1.5rem;
-    min-width: 300px;
-}
-
-.assignment-details {
-    margin-top: 1rem;
-}
-
-.detail-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-}
-
-.grading-content {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 2rem;
-}
-
-.video-container-grading {
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-}
-
-.video-header {
-    padding: 1.5rem;
-    background: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.video-controls {
-    display: flex;
-    gap: 1rem;
-    color: #6c757d;
-    font-size: 0.9rem;
-}
-
-.grading-video {
-    width: 100%;
-    height: auto;
-    max-height: 500px;
-}
-
-.video-tools {
-    padding: 1rem;
-    background: #f8f9fa;
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-}
-
-.video-tool-btn {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.video-tool-btn:hover {
-    background: #e9ecef;
-    transform: translateY(-1px);
-}
-
-.ai-analysis-section {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-}
-
-.section-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.ai-scores {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.score-card {
-    background: #f8f9fa;
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-    border-left: 4px solid #007bff;
-    transition: all 0.3s ease;
-}
-
-.score-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-}
-
-.score-card.content { border-left-color: #28a745; }
-.score-card.fluency { border-left-color: #17a2b8; }
-.score-card.body-language { border-left-color: #ffc107; }
-.score-card.voice { border-left-color: #dc3545; }
-.score-card.overall { 
-    border-left-color: #6f42c1;
-    background: linear-gradient(135deg, #667eea15, #764ba215);
-}
-
-.score-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #007bff;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-}
-
-.score-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-}
-
-.score-label {
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-}
-
-.score-description {
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.ai-feedback-card {
-    background: #e3f2fd;
-    border-radius: 12px;
-    padding: 1.5rem;
-    border-left: 4px solid #2196f3;
-}
-
-.grading-form-section {
-    background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-}
-
-.grading-grid {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
-}
-
-.score-input-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.score-input {
-    font-size: 1.5rem;
-    font-weight: 700;
-    text-align: center;
-    max-width: 120px;
-}
-
-.score-max {
-    font-size: 1.25rem;
-    color: #6c757d;
-    font-weight: 600;
-}
-
-.score-preview {
-    margin-top: 1rem;
-}
-
-.score-bar {
-    width: 100%;
-    height: 12px;
-    background: #e9ecef;
-    border-radius: 6px;
-    overflow: hidden;
-    margin-bottom: 0.5rem;
-}
-
-.score-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.score-percentage {
-    text-align: center;
-    font-weight: 600;
-    color: #495057;
-}
-
-.feedback-textarea {
-    min-height: 200px;
-    resize: vertical;
-}
-
-.feedback-suggestions {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid #dee2e6;
-}
-
-.suggestion-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.suggestion-btn {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 20px;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.suggestion-btn:hover {
-    background: #e9ecef;
-}
-
-.form-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 2rem;
-    border-top: 2px solid #f8f9fa;
-}
-
-.no-video-message {
-    text-align: center;
-    padding: 3rem;
-    color: #6c757d;
-}
-
-.no-video-message i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.5;
-}
-
-@media (max-width: 992px) {
-    .header-content {
-        flex-direction: column;
+<script>
+// Función para inicializar el timeline de participantes
+{% if has_individual_analysis %}
+function initParticipantsTimeline() {
+    const participantsSegmentsData = {{ participants_segments_json|safe }};
+    const video = document.getElementById('presentationVideo');
+    const timelineContainer = document.getElementById('participantsTimeline');
+    const legendContainer = document.getElementById('timelineLegend');
+    
+    if (!video || !timelineContainer || !legendContainer) {
+        return;
     }
     
-    .grading-grid {
-        grid-template-columns: 1fr;
+    if (!participantsSegmentsData || participantsSegmentsData.length === 0) {
+        return;
     }
     
-    .student-info {
-        flex-direction: column;
-        text-align: center;
-    }
+    const videoDuration = video.duration || 100;
+    
+    // Limpiar contenedores primero
+    timelineContainer.innerHTML = '';
+    legendContainer.innerHTML = '';
+    
+    // Colores para cada participante
+    const colors = [
+        '#3498db', '#2ecc71', '#f39c12', '#9b59b6', 
+        '#e74c3c', '#1abc9c', '#34495e', '#e67e22'
+    ];
+    
+    participantsSegmentsData.forEach((participant, index) => {
+        participant.color = colors[index % colors.length];
+    });
+    
+    // Renderizar timeline
+    const timelineTrack = document.createElement('div');
+    timelineTrack.className = 'timeline-track';
+    
+    participantsSegmentsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        participant.segments.forEach(segment => {
+            const startPercent = (segment.start / videoDuration) * 100;
+            const endPercent = (segment.end / videoDuration) * 100;
+            const widthPercent = endPercent - startPercent;
+            
+            const segmentDiv = document.createElement('div');
+            segmentDiv.className = 'timeline-segment';
+            segmentDiv.style.left = `${startPercent}%`;
+            segmentDiv.style.width = `${widthPercent}%`;
+            segmentDiv.style.backgroundColor = participant.color;
+            segmentDiv.title = `${participant.label}: ${segment.start.toFixed(1)}s - ${segment.end.toFixed(1)}s`;
+            
+            if (widthPercent > 5) {
+                const label = document.createElement('span');
+                label.className = 'timeline-segment-label';
+                label.textContent = participant.label;
+                segmentDiv.appendChild(label);
+            }
+            
+            // Click para saltar al tiempo del video
+            segmentDiv.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTime = parseFloat(segment.start);
+                if (!isNaN(targetTime)) {
+                    video.currentTime = targetTime;
+                    if (video.paused) {
+                        video.play();
+                    }
+                }
+            });
+            
+            timelineTrack.appendChild(segmentDiv);
+        });
+    });
+    
+    timelineContainer.appendChild(timelineTrack);
+    
+    // Renderizar leyenda
+    participantsSegmentsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        const totalTime = participant.segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+        const minutes = Math.floor(totalTime / 60);
+        const seconds = Math.floor(totalTime % 60);
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${participant.color};"></div>
+            <span class="legend-label">${participant.label}</span>
+            <span class="legend-time">(${minutes}:${seconds.toString().padStart(2, '0')})</span>
+        `;
+        
+        legendItem.addEventListener('click', () => {
+            document.querySelectorAll('.timeline-segment').forEach(seg => {
+                seg.style.opacity = '0.3';
+            });
+            
+            document.querySelectorAll(`[title^="${participant.label}:"]`).forEach(seg => {
+                seg.style.opacity = '1';
+                seg.style.transform = 'scaleY(1.1)';
+            });
+            
+            setTimeout(() => {
+                document.querySelectorAll('.timeline-segment').forEach(seg => {
+                    seg.style.opacity = '1';
+                    seg.style.transform = 'scaleY(1)';
+                });
+            }, 2000);
+        });
+        
+        legendContainer.appendChild(legendItem);
+    });
+    
+    // Actualizar cuando el video se cargue
+    video.addEventListener('loadedmetadata', () => {
+        timelineContainer.innerHTML = '';
+        legendContainer.innerHTML = '';
+        initParticipantsTimeline();
+    });
 }
+{% endif %}
 
-@media (max-width: 768px) {
-    .ai-scores {
-        grid-template-columns: 1fr;
-    }
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize video controls
+    initVideoControls();
     
-    .grading-header {
-        padding: 1.5rem;
-    }
+    {% if not is_review_mode %}
+    // Initialize score preview (only in edit mode)
+    const maxScore = {{ presentation.assignment.max_score|unlocalize|default:"100" }};
+    initScorePreview(maxScore);
+    {% endif %}
     
-    .presentation-title {
-        font-size: 1.5rem;
+    {% if has_individual_analysis %}
+    // Initialize participants chart
+    const participantsData = [
+        {% for participant in participants %}
+        {
+            name: '{{ participant.label }}',
+            coherence: {{ participant.coherence_score|unlocalize|default:"0" }},
+            time: {{ participant.time_percentage|unlocalize|default:"0" }},
+            contribution: {{ participant.contribution_percentage|unlocalize|default:"0" }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    initParticipantsChart(participantsData);
+    
+    // Initialize timeline
+    if (typeof initParticipantsTimeline === 'function') {
+        initParticipantsTimeline();
     }
-}
-</style>
+    {% endif %}
+});
+</script>
 
 <script>
-// Score input handling
-document.addEventListener('DOMContentLoaded', function() {
-    const scoreInput = document.getElementById('final_score');
-    const scoreFill = document.getElementById('scoreFill');
-    const scorePercentage = document.getElementById('scorePercentage');
-    const maxScore = {{ presentation.assignment.max_score }};
-    
-    function updateScorePreview() {
-        const value = parseFloat(scoreInput.value) || 0;
-        const percentage = Math.min((value / maxScore) * 100, 100);
+// Toggle observation sections
+(function() {
+    function setupObservationToggles() {
+        const headers = document.querySelectorAll('[data-observation-toggle]');
         
-        scoreFill.style.width = percentage + '%';
-        scorePercentage.textContent = percentage.toFixed(1) + '%';
-        
-        // Change color based on score
-        if (percentage >= 90) {
-            scoreFill.style.background = '#28a745';
-        } else if (percentage >= 70) {
-            scoreFill.style.background = '#28a745';
-        } else if (percentage >= 50) {
-            scoreFill.style.background = '#ffc107';
-        } else {
-            scoreFill.style.background = '#dc3545';
-        }
+        headers.forEach((header) => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                
+                if (!content || !content.classList.contains('observations-content')) {
+                    return;
+                }
+                
+                const chevronIcon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+                const currentDisplay = window.getComputedStyle(content).display;
+                const isHidden = currentDisplay === 'none';
+                
+                if (isHidden) {
+                    content.style.display = 'block';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-down');
+                        chevronIcon.classList.add('fa-chevron-up');
+                    }
+                } else {
+                    content.style.display = 'none';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-up');
+                        chevronIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
     }
     
-    scoreInput.addEventListener('input', updateScorePreview);
-    updateScorePreview(); // Initial update
-});
-
-// Video controls
-function togglePlayPause() {
-    const video = document.getElementById('presentationVideo');
-    const icon = document.getElementById('playPauseIcon');
-    
-    if (video.paused) {
-        video.play();
-        icon.className = 'fas fa-pause';
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupObservationToggles);
     } else {
-        video.pause();
-        icon.className = 'fas fa-play';
+        setupObservationToggles();
     }
-}
-
-function skipTime(seconds) {
-    const video = document.getElementById('presentationVideo');
-    video.currentTime += seconds;
-}
-
-function toggleFullscreen() {
-    const video = document.getElementById('presentationVideo');
-    if (video.requestFullscreen) {
-        video.requestFullscreen();
-    } else if (video.webkitRequestFullscreen) {
-        video.webkitRequestFullscreen();
-    } else if (video.msRequestFullscreen) {
-        video.msRequestFullscreen();
-    }
-}
-
-// Feedback suggestions
-function addSuggestion(text) {
-    const textarea = document.getElementById('teacher_feedback');
-    const currentValue = textarea.value;
-    
-    if (currentValue.trim() === '') {
-        textarea.value = text;
-    } else {
-        textarea.value = currentValue + '\n\n' + text;
-    }
-    
-    textarea.focus();
-    textarea.scrollTop = textarea.scrollHeight;
-}
-
-// Video event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    const video = document.getElementById('presentationVideo');
-    const icon = document.getElementById('playPauseIcon');
-    
-    if (video) {
-        video.addEventListener('play', () => {
-            icon.className = 'fas fa-pause';
-        });
-        
-        video.addEventListener('pause', () => {
-            icon.className = 'fas fa-play';
-        });
-        
-        video.addEventListener('ended', () => {
-            icon.className = 'fas fa-play';
-        });
-    }
-});
+})();
 </script>
 
 {% endblock %}

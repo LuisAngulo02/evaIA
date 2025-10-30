@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ form.instance.pk|yesno:"Editar,Crear" }} Asignación - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/assignment-form.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/assignment-form.js' %}?v=2.0" data-improve-url="{% url 'presentations:improve_instructions_ai' %}"></script>
+{% endblock %}
 
 {% block content %}
 <div class="content-wrapper fade-in">
@@ -111,12 +120,57 @@
                             </div>
                         </div>
                         
+                        <!-- Strictness Level Section -->
+                        <div class="mb-4">
+                            <label for="{{ form.strictness_level.id_for_label }}" class="form-label">
+                                <i class="fas fa-sliders-h me-2"></i>{{ form.strictness_level.label }}
+                            </label>
+                            {{ form.strictness_level }}
+                            {% if form.strictness_level.help_text %}
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>{{ form.strictness_level.help_text }}
+                                </div>
+                            {% endif %}
+                            {% if form.strictness_level.errors %}
+                                <div class="text-danger">{{ form.strictness_level.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
                         <div class="mb-3">
-                            <label for="{{ form.instructions.id_for_label }}" class="form-label">{{ form.instructions.label }}</label>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="{{ form.instructions.id_for_label }}" class="form-label mb-0">{{ form.instructions.label }}</label>
+                                <button type="button" class="btn btn-sm btn-gradient" id="improveInstructionsBtn" onclick="improveInstructions()">
+                                    <i class="fas fa-sparkles me-2"></i>Mejorar con IA
+                                </button>
+                            </div>
                             {{ form.instructions }}
                             {% if form.instructions.errors %}
                                 <div class="text-danger">{{ form.instructions.errors }}</div>
                             {% endif %}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Escribe instrucciones básicas y usa IA para mejorarlas y hacerlas más claras y profesionales.
+                            </div>
+                            
+                            <!-- Loading & Result indicators -->
+                            <div id="aiLoadingIndicator" class="alert alert-info mt-2" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                    <span>🤖 Mejorando instrucciones con IA Grok...</span>
+                                </div>
+                            </div>
+                            
+                            <div id="aiSuccessIndicator" class="alert alert-success mt-2" style="display: none;">
+                                <i class="fas fa-check-circle me-2"></i>
+                                ¡Instrucciones mejoradas! Revisa y ajusta si es necesario.
+                            </div>
+                            
+                            <div id="aiErrorIndicator" class="alert alert-danger mt-2" style="display: none;">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <span id="aiErrorMessage"></span>
+                            </div>
                         </div>
                         
                         <div class="mb-3">

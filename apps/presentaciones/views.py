@@ -6,17 +6,23 @@ from django.http import JsonResponse, Http404
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Avg
 from django.views.decorators.http import require_http_methods
+from django.urls import reverse
 import json
 import os
+import logging
 
 from authentication.models import Profile
-from authentication.decoradores import student_required, teacher_required, admin_required
-from .models import Presentation, Assignment, Course, AIAnalysis
+from authentication.decoradores import student_required, teacher_required, admin_required, group_required
+from .models import Presentation, Assignment, Course, AIAnalysis, AIConfiguration
 from .forms import PresentationUploadForm, CourseForm, AssignmentForm
+from .validators import VideoValidator
 
-# =====================================================
+# Configurar logger
+logger = logging.getLogger(__name__)
+
+
 # VISTAS PARA ESTUDIANTES
-# =====================================================
+
 
 @student_required
 def upload_presentation_view(request):
@@ -34,18 +40,57 @@ def upload_presentation_view(request):
             try:
                 presentation.save()
                 
-                # Agregar placeholder para transcripción si no existe
-                if not presentation.transcription_text and presentation.video_file:
-                    presentation.transcription_text = ""  # Placeholder vacío para que aparezca el botón
+                # Ejecutar validaciones avanzadas después de guardar (necesitamos la ruta del archivo)
+                try:
+                    validator = VideoValidator()
+                    validation_result = validator.validate_all(presentation.video_file.path)
+                    
+                    # Guardar metadatos del video
+                    if validation_result['properties_valid']:
+                        props = validation_result['video_properties']
+                        presentation.duration_seconds = props.get('duration')
+                        presentation.video_fps = props.get('fps')
+                        presentation.video_width = props.get('width')
+                        presentation.video_height = props.get('height')
+                    
+                    # Guardar miniatura si se generó
+                    if validation_result['thumbnail_generated']:
+                        from django.core.files import File
+                        thumb_path = validation_result['thumbnail_path']
+                        with open(thumb_path, 'rb') as f:
+                            presentation.video_thumbnail.save(
+                                os.path.basename(thumb_path),
+                                File(f),
+                                save=False
+                            )
+                    
                     presentation.save()
+                    
+                except Exception as val_error:
+                    # Si falla la validación avanzada, no bloqueamos pero registramos
+                    print(f"Validación avanzada falló (no crítico): {str(val_error)}")
                 
-                # Aquí se integraría con OpenCV, SpeechRecognition y IA para análisis
-                # process_presentation_async.delay(presentation.id)
+                # Subir a Cloudinary automáticamente
+                try:
+                    from apps.ai_processor.services import CloudinaryService
+                    if CloudinaryService.is_configured():
+                        cloudinary_result = presentation.upload_to_cloudinary()
+                        if cloudinary_result:
+                            messages.info(request, '☁️ Video subido a Cloudinary exitosamente')
+                        else:
+                            messages.warning(request, '⚠️ No se pudo subir a Cloudinary, usando almacenamiento local')
+                except Exception as cloud_error:
+                    print(f"Error subiendo a Cloudinary (no crítico): {str(cloud_error)}")
+                    messages.warning(request, '⚠️ No se pudo subir a Cloudinary, usando almacenamiento local')
+                
+                # Iniciar análisis asíncrono en segundo plano
+                from .tasks import process_presentation_async
+                process_presentation_async(presentation.id)
                 
                 messages.success(
                     request, 
-                    f'¡Presentación "{presentation.title}" subida exitosamente! '
-                    f'Puedes transcribir el audio usando el botón "Transcribir Audio" en los detalles.'
+                    f'✅ Presentación "{presentation.title}" subida exitosamente! '
+                    f'El análisis de IA se está procesando en segundo plano.'
                 )
                 return redirect('presentations:my_presentations')
                 
@@ -81,19 +126,38 @@ def upload_presentation_view(request):
             if not error_messages:
                 messages.error(request, ' Por favor revisa la información ingresada y corrige los errores.')
     else:
-        form = PresentationUploadForm(user=request.user)
+        # Verificar si viene el parámetro de asignación (cuando se elimina una presentación)
+        assignment_id = request.GET.get('assignment')
+        
+        if assignment_id:
+            # Pre-seleccionar la asignación en el formulario
+            form = PresentationUploadForm(
+                user=request.user,
+                initial={'assignment': assignment_id}
+            )
+        else:
+            form = PresentationUploadForm(user=request.user)
     
-    # Obtener asignaciones disponibles para el contexto
+    # Obtener IDs de asignaciones donde el estudiante ya subió presentación
+    asignaciones_con_presentacion = Presentation.objects.filter(
+        student=request.user
+    ).values_list('assignment_id', flat=True)
+    
+    # Filtrar asignaciones disponibles (activas, no vencidas y SIN presentación previa)
     available_assignments = Assignment.objects.filter(
         is_active=True,
         due_date__gte=timezone.now()
+    ).exclude(
+        id__in=asignaciones_con_presentacion
     ).select_related('course', 'course__teacher').order_by('due_date')
     
+    # Agregar parámetros al contexto para el template
     context = {
         'form': form,
         'available_assignments': available_assignments,
         'user': request.user,
         'profile': request.user.profile,
+        'preselected_assignment_id': request.GET.get('assignment'),
     }
     
     return render(request, 'presentations/presentations_upload.html', context)
@@ -136,26 +200,192 @@ def my_presentations_view(request):
     
     return render(request, 'presentations/my_presentations.html', context)
 
-@student_required
+@login_required
 def presentation_detail_view(request, presentation_id):
-    """Vista detallada de una presentación específica"""
-    presentation = get_object_or_404(
-        Presentation.objects.select_related(
-            'assignment', 
-            'assignment__course', 
-            'graded_by'
-        ).prefetch_related('ai_analysis'),
-        id=presentation_id,
-        student=request.user  # Solo puede ver sus propias presentaciones
-    )
+    """Vista detallada de una presentación específica con análisis individual"""
+    # Verificar si el usuario es estudiante o profesor
+    is_student = request.user.groups.filter(name='Estudiante').exists()
+    is_teacher = request.user.groups.filter(name='Docente').exists() or request.user.is_superuser
+    
+    if not (is_student or is_teacher):
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('auth:dashboard')
+    
+    # Construir el filtro según el tipo de usuario
+    if is_student:
+        # Los estudiantes solo pueden ver sus propias presentaciones
+        presentation = get_object_or_404(
+            Presentation.objects.select_related(
+                'assignment', 
+                'assignment__course', 
+                'graded_by'
+            ).prefetch_related('ai_analysis', 'participants'),
+            id=presentation_id,
+            student=request.user
+        )
+    else:
+        # Los profesores pueden ver presentaciones de sus cursos
+        presentation = get_object_or_404(
+            Presentation.objects.select_related(
+                'assignment', 
+                'assignment__course', 
+                'graded_by'
+            ).prefetch_related('ai_analysis', 'participants'),
+            id=presentation_id,
+            assignment__course__teacher=request.user
+        )
+    
+    # Obtener participantes
+    participants_queryset = presentation.participants.all()
+    
+    # Ordenar por número de persona (Persona 1, Persona 2, etc.) para mostrar en orden de aparición
+    participants = sorted(participants_queryset, key=lambda p: int(p.label.split()[-1]) if p.label.split()[-1].isdigit() else 0)
+    
+    # Calcular estadísticas grupales
+    max_score = float(presentation.assignment.max_score) if presentation.assignment else 20.0
+    average_coherence = 0
+    topic_coverage = 0
+    time_distribution_quality = "No disponible"
+    group_feedback = None
+    overall_ai_score = 0
+    
+    if participants_queryset.exists():
+        # Coherencia promedio
+        avg_coherence = participants_queryset.aggregate(avg=Avg('ai_grade'))['avg']
+        if avg_coherence:
+            average_coherence = (avg_coherence / max_score) * 100
+            overall_ai_score = round(avg_coherence, 1)
+        
+        # Cobertura del tema (basada en coherencia promedio)
+        topic_coverage = average_coherence
+        
+        # Calidad de distribución del tiempo (MENOS ESTRICTO)
+        time_percentages = [p.time_percentage for p in participants if hasattr(p, 'time_percentage') and p.time_percentage]
+        if time_percentages:
+            max_diff = max(time_percentages) - min(time_percentages)
+            # Umbrales más tolerantes
+            if max_diff < 25:  # Antes era 15
+                time_distribution_quality = "Equilibrada"
+            elif max_diff < 40:  # Antes era 30
+                time_distribution_quality = "Aceptable"
+            else:
+                time_distribution_quality = "Variable"  # Antes era "Desigual"
+        
+        # Generar conclusión grupal con IA de GROQ
+        try:
+            from apps.ai_processor.services.coherence_analyzer import CoherenceAnalyzer
+            
+            # Preparar datos de participantes
+            resultados_participantes = []
+            for p in participants:
+                resultados_participantes.append({
+                    'etiqueta': p.label,
+                    'nota_coherencia': p.coherence_score or 0,
+                    'calificacion_final': p.ai_grade or 0,
+                    'porcentaje_tiempo': p.time_percentage or 0,
+                    'tiempo_participacion': p.participation_time or 0
+                })
+            
+            # Obtener tema y descripción
+            tema = presentation.assignment.title if presentation.assignment else "Presentación"
+            descripcion_tema = presentation.assignment.description if presentation.assignment else ""
+            
+            # Generar conclusión con IA
+            analyzer = CoherenceAnalyzer()
+            group_feedback = analyzer.generar_conclusion_grupal(
+                resultados_participantes, 
+                tema, 
+                descripcion_tema
+            )
+            
+        except Exception as e:
+            logger.error(f"Error al generar conclusión grupal en detail: {str(e)}")
+            # Fallback básico
+            group_feedback = None
+    
+    # Preparar datos de segmentos de tiempo para JavaScript
+    import json
+    from decimal import Decimal
+    
+    participants_segments = []
+    current_time = 0
+    
+    # Si solo hay un participante, usar la duración completa del video
+    single_participant = len(participants) == 1
+    
+    # Intentar obtener duración del video de varias fuentes
+    video_duration = None
+    if presentation.duration_seconds:
+        video_duration = presentation.duration_seconds
+    elif single_participant and participants[0].participation_time:
+        # Si solo hay un participante, usar su participation_time como duración total
+        video_duration = float(participants[0].participation_time)
+    
+    for p in participants:
+        # Si tiene segmentos guardados, usarlos
+        if p.time_segments and len(p.time_segments) > 0:
+            segments = p.time_segments
+        else:
+            # Crear un segmento ficticio basado en participation_time
+            # Esto es temporal hasta que el procesamiento guarde los segmentos reales
+            if p.participation_time and p.participation_time > 0:
+                # Convertir Decimal a float para evitar problemas de JSON
+                participation_time_float = float(p.participation_time) if isinstance(p.participation_time, Decimal) else p.participation_time
+                
+                # Si es el único participante, el segmento debe cubrir todo el timeline
+                if single_participant:
+                    # Usar la duración del video o el participation_time (lo que sea mayor)
+                    end_time = max(video_duration, participation_time_float) if video_duration else participation_time_float
+                    segments = [{
+                        'start': 0.0,
+                        'end': float(end_time)
+                    }]
+                else:
+                    # Múltiples participantes: distribuir secuencialmente
+                    segments = [{
+                        'start': float(current_time),
+                        'end': float(current_time + participation_time_float)
+                    }]
+                    current_time += participation_time_float + 2  # +2 segundos de espacio
+            else:
+                segments = []
+        
+        participants_segments.append({
+            'label': p.label,
+            'segments': segments,
+            'color': None  # Se asignará en JavaScript
+        })
+    
+    participants_segments_json = json.dumps(participants_segments, ensure_ascii=False)
     
     context = {
         'presentation': presentation,
+        'participants': participants,
+        'has_individual_analysis': participants_queryset.exists(),
+        'max_score': max_score,
+        'overall_ai_score': overall_ai_score,
+        'average_coherence': average_coherence,
+        'topic_coverage': topic_coverage,
+        'time_distribution_quality': time_distribution_quality,
+        'group_feedback': group_feedback,
         'user': request.user,
         'profile': request.user.profile,
+        'is_teacher': is_teacher,
+        'is_student': is_student,
+        'participants_segments_json': participants_segments_json,  # Datos para timeline del video
     }
     
-    return render(request, 'presentations/presentation_detail.html', context)
+    # Si es profesor, usar el template de calificación en modo solo lectura
+    if is_teacher:
+        context.update({
+            'is_review_mode': True,  # Modo solo lectura
+            'suggested_grade': 0,
+            'suggested_feedback': '',
+        })
+        return render(request, 'presentations/grade_presentation_detail.html', context)
+    else:
+        # Si es estudiante, usar el template normal
+        return render(request, 'presentations/presentation_detail.html', context)
 
 @student_required
 def delete_presentation_view(request, presentation_id):
@@ -184,6 +414,43 @@ def delete_presentation_view(request, presentation_id):
     }
     
     return render(request, 'presentations/confirm_delete.html', context)
+
+@student_required
+@require_http_methods(["POST"])
+def delete_presentation_video_view(request, presentation_id):
+    """Vista para eliminar toda la presentación y redirigir a subir nueva (AJAX)"""
+    try:
+        presentation = get_object_or_404(
+            Presentation,
+            id=presentation_id,
+            student=request.user
+        )
+        
+        # Solo se puede eliminar si no ha sido calificada
+        if presentation.status == 'GRADED' or presentation.final_score is not None:
+            return JsonResponse({
+                'success': False,
+                'message': 'No puedes eliminar una presentación que ya ha sido calificada.'
+            })
+        
+        # Guardar el ID de la asignación antes de eliminar
+        assignment_id = presentation.assignment.id
+        
+        # Eliminar toda la presentación (el método delete del modelo se encarga de los archivos)
+        presentation.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Presentación eliminada exitosamente.',
+            'redirect_url': f'/presentations/upload/?assignment={assignment_id}'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error en delete_presentation_video_view: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al eliminar la presentación: {str(e)}'
+        })
 
 @student_required
 def edit_presentation_view(request, presentation_id):
@@ -411,14 +678,63 @@ def grade_presentations_view(request):
 
 @teacher_required
 def grade_presentation_detail_view(request, presentation_id):
-    """Vista para calificar una presentación específica"""
+    """Vista para calificar una presentación específica con análisis individual"""
     presentation = get_object_or_404(
         Presentation.objects.select_related(
             'student', 'assignment', 'assignment__course', 'graded_by'
-        ).prefetch_related('ai_analysis'),
+        ).prefetch_related('ai_analysis', 'participants'),  # Agregar participants
         id=presentation_id,
         assignment__course__teacher=request.user
     )
+    
+    # Obtener participantes
+    participants_queryset = presentation.participants.all()
+    
+    # Ordenar por número de persona (Persona 1, Persona 2, etc.) para mostrar en orden de aparición
+    participants_list = sorted(participants_queryset, key=lambda p: int(p.label.split()[-1]) if p.label.split()[-1].isdigit() else 0)
+    
+    # Calcular calificación grupal sugerida por IA
+    suggested_grade = 0
+    suggested_feedback = ""
+    
+    if participants_queryset.exists():
+        # Calificación sugerida = promedio de las calificaciones individuales
+        avg_grade = participants_queryset.aggregate(avg=Avg('ai_grade'))['avg']
+        if avg_grade:
+            suggested_grade = round(avg_grade, 1)
+        
+        # Generar conclusión grupal dinámica con IA de GROQ
+        try:
+            from apps.ai_processor.services.coherence_analyzer import CoherenceAnalyzer
+            
+            # Preparar datos de participantes para el análisis
+            resultados_participantes = []
+            for p in participants_list:  # Usar la lista ordenada
+                resultados_participantes.append({
+                    'etiqueta': p.label,
+                    'nota_coherencia': p.coherence_score or 0,
+                    'calificacion_final': p.ai_grade or 0,
+                    'porcentaje_tiempo': p.time_percentage or 0,
+                    'tiempo_participacion': p.participation_time or 0
+                })
+            
+            # Obtener tema y descripción
+            tema = presentation.assignment.title if presentation.assignment else "Presentación"
+            descripcion_tema = presentation.assignment.description if presentation.assignment else ""
+            
+            # Generar conclusión con IA
+            analyzer = CoherenceAnalyzer()
+            suggested_feedback = analyzer.generar_conclusion_grupal(
+                resultados_participantes, 
+                tema, 
+                descripcion_tema
+            )
+            
+        except Exception as e:
+            logger.error(f"Error al generar conclusión grupal: {str(e)}")
+            # Fallback a mensaje básico
+            avg_coherence = sum([p.coherence_score for p in participants_list]) / len(participants_list)
+            suggested_feedback = f"La presentación demuestra un nivel adecuado de comprensión del tema con {avg_coherence:.1f}% de coherencia promedio."
     
     if request.method == 'POST':
         final_score = request.POST.get('final_score')
@@ -441,8 +757,73 @@ def grade_presentation_detail_view(request, presentation_id):
         except ValueError:
             messages.error(request, 'Puntuación inválida')
     
+    # Esta vista siempre es editable (para Calificar/Revisar)
+    is_review_mode = False  # Modo editable
+    is_already_graded = presentation.status == 'GRADED'
+    
+    # Preparar datos de segmentos de tiempo para JavaScript (timeline)
+    import json
+    from decimal import Decimal
+    
+    participants_segments = []
+    current_time = 0
+    
+    # Si solo hay un participante, usar la duración completa del video
+    single_participant = len(participants_list) == 1
+    
+    # Intentar obtener duración del video de varias fuentes
+    video_duration = None
+    if presentation.duration_seconds:
+        video_duration = presentation.duration_seconds
+    elif single_participant and participants_list[0].participation_time:
+        # Si solo hay un participante, usar su participation_time como duración total
+        video_duration = float(participants_list[0].participation_time)
+    
+    for p in participants_list:
+        # Si tiene segmentos guardados, usarlos
+        if p.time_segments and len(p.time_segments) > 0:
+            segments = p.time_segments
+        else:
+            # Crear un segmento ficticio basado en participation_time
+            if p.participation_time and p.participation_time > 0:
+                # Convertir Decimal a float para evitar problemas de JSON
+                participation_time_float = float(p.participation_time) if isinstance(p.participation_time, Decimal) else p.participation_time
+                
+                # Si es el único participante, el segmento debe cubrir todo el timeline
+                if single_participant:
+                    # Usar la duración del video o el participation_time (lo que sea mayor)
+                    end_time = max(video_duration, participation_time_float) if video_duration else participation_time_float
+                    segments = [{
+                        'start': 0.0,
+                        'end': float(end_time)
+                    }]
+                else:
+                    # Múltiples participantes: distribuir secuencialmente
+                    segments = [{
+                        'start': float(current_time),
+                        'end': float(current_time + participation_time_float)
+                    }]
+                    current_time += participation_time_float + 2  # +2 segundos de espacio
+            else:
+                segments = []
+        
+        participants_segments.append({
+            'label': p.label,
+            'segments': segments,
+            'color': None  # Se asignará en JavaScript
+        })
+    
+    participants_segments_json = json.dumps(participants_segments, ensure_ascii=False)
+    
     context = {
         'presentation': presentation,
+        'participants': participants_list,  # Usar lista ordenada
+        'has_individual_analysis': participants_queryset.exists(),
+        'suggested_grade': suggested_grade,
+        'suggested_feedback': suggested_feedback,
+        'is_review_mode': is_review_mode,  # Siempre False (editable)
+        'is_already_graded': is_already_graded,
+        'participants_segments_json': participants_segments_json,  # Datos para timeline
         'user': request.user,
         'profile': request.user.profile,
     }
@@ -492,6 +873,128 @@ def delete_course_view(request, course_id):
     }
     
     return render(request, 'courses/confirm_delete_course.html', context)
+
+@teacher_required
+def manage_course_students_view(request, course_id):
+    """Vista para gestionar estudiantes de un curso"""
+    from django.contrib.auth.models import User
+    from django.db.models import Q, Count
+    from django.http import JsonResponse
+    
+    course = get_object_or_404(Course, id=course_id, teacher=request.user)
+    
+    # API para búsqueda AJAX de estudiantes disponibles
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' and request.method == 'GET':
+        search_query = request.GET.get('search', '')
+        
+        # Obtener estudiantes disponibles (no matriculados)
+        available_students = User.objects.filter(
+            groups__name='Estudiante'
+        ).exclude(
+            id__in=course.students.values_list('id', flat=True)
+        )
+        
+        # Aplicar búsqueda
+        if search_query:
+            available_students = available_students.filter(
+                Q(username__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(email__icontains=search_query)
+            )
+        
+        available_students = available_students.order_by('last_name', 'first_name')[:50]  # Limitar a 50
+        
+        # Serializar datos
+        students_data = [{
+            'id': student.id,
+            'username': student.username,
+            'full_name': student.get_full_name() or student.username,
+            'email': student.email,
+        } for student in available_students]
+        
+        return JsonResponse({'students': students_data})
+    
+    # Manejar acciones POST
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
+        if action == 'add_student':
+            student_id = request.POST.get('student_id')
+            try:
+                student = User.objects.get(id=student_id, groups__name='Estudiante')
+                if course.students.filter(id=student_id).exists():
+                    message = f'{student.get_full_name()} ya está matriculado en este curso.'
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'message': message})
+                    messages.warning(request, message)
+                else:
+                    course.students.add(student)
+                    message = f'{student.get_full_name()} ha sido matriculado exitosamente.'
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'message': message})
+                    messages.success(request, message)
+            except User.DoesNotExist:
+                message = 'Estudiante no encontrado.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': message})
+                messages.error(request, message)
+        
+        elif action == 'remove_student':
+            student_id = request.POST.get('student_id')
+            try:
+                student = User.objects.get(id=student_id)
+                course.students.remove(student)
+                message = f'{student.get_full_name()} ha sido desmatriculado del curso.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': message})
+                messages.success(request, message)
+            except User.DoesNotExist:
+                message = 'Estudiante no encontrado.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': message})
+                messages.error(request, message)
+        
+        if not is_ajax:
+            return redirect('presentations:manage_course_students', course_id=course_id)
+        return JsonResponse({'success': False, 'message': 'Acción no válida'})
+    
+    # Obtener estudiantes matriculados con estadísticas
+    enrolled_students = course.students.all().annotate(
+        presentations_count=Count(
+            'presentations',
+            filter=Q(presentations__assignment__course=course)
+        )
+    ).order_by('last_name', 'first_name')
+    
+    # Obtener estudiantes disponibles para matricular (no están en el curso)
+    available_students = User.objects.filter(
+        groups__name='Estudiante'
+    ).exclude(
+        id__in=course.students.values_list('id', flat=True)
+    ).order_by('last_name', 'first_name')
+    
+    # Búsqueda de estudiantes disponibles
+    search_query = request.GET.get('search', '')
+    if search_query:
+        available_students = available_students.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+    
+    context = {
+        'course': course,
+        'enrolled_students': enrolled_students,
+        'available_students': available_students,
+        'search_query': search_query,
+        'user': request.user,
+        'profile': request.user.profile,
+    }
+    
+    return render(request, 'courses/manage_students.html', context)
 
 @teacher_required
 def edit_assignment_view(request, assignment_id):
@@ -935,3 +1438,557 @@ def presentation_transcription(request, presentation_id):
             context['formatted_transcription'] = formatted_text
     
     return render(request, 'presentations/transcription_detail.html', context)
+
+
+# =====================================================
+# VISTA PARA GRABACIÓN EN VIVO
+# =====================================================
+
+@student_required
+def live_record_view(request):
+    """
+    Vista para grabar presentaciones en vivo desde la cámara
+    Permite a los estudiantes grabar directamente sin subir archivo
+    """
+    # Obtener asignaciones disponibles (sin presentación previa del estudiante)
+    asignaciones_con_presentacion = Presentation.objects.filter(
+        student=request.user
+    ).values_list('assignment_id', flat=True)
+    
+    available_assignments = Assignment.objects.filter(
+        is_active=True,
+        due_date__gte=timezone.now()
+    ).exclude(
+        id__in=asignaciones_con_presentacion
+    ).select_related('course', 'course__teacher').order_by('due_date')
+    
+    # Verificar si viene una asignación específica por URL
+    assignment_id = request.GET.get('assignment')
+    selected_assignment = None
+    
+    if assignment_id:
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+            
+            # Verificar que no haya presentación previa para esta asignación
+            if assignment.id in asignaciones_con_presentacion:
+                messages.warning(
+                    request, 
+                    f'Ya has subido una presentación para "{assignment.title}". '
+                    'Selecciona otra asignación disponible.'
+                )
+            elif assignment.due_date < timezone.now():
+                messages.warning(
+                    request,
+                    f'La asignación "{assignment.title}" ha vencido. '
+                    'Selecciona otra asignación disponible.'
+                )
+            elif not assignment.is_active:
+                messages.warning(
+                    request,
+                    f'La asignación "{assignment.title}" no está activa. '
+                    'Selecciona otra asignación disponible.'
+                )
+            else:
+                # La asignación es válida, preseleccionarla
+                selected_assignment = assignment
+        except Assignment.DoesNotExist:
+            messages.error(request, "Asignación no encontrada.")
+    
+    if request.method == 'POST':
+        # Procesar video grabado
+        try:
+            video_file = request.FILES.get('video_file')
+            title = request.POST.get('title', '').strip()
+            description = request.POST.get('description', '').strip()
+            assignment_id = request.POST.get('assignment')
+            
+            if not video_file:
+                return JsonResponse({'success': False, 'error': 'No se recibió el video'}, status=400)
+            
+            if not title:
+                return JsonResponse({'success': False, 'error': 'El título es requerido'}, status=400)
+            
+            if not assignment_id:
+                return JsonResponse({'success': False, 'error': 'Debes seleccionar una asignación'}, status=400)
+            
+            # Verificar que el estudiante no haya subido ya una presentación para esta asignación
+            existing_presentation = Presentation.objects.filter(
+                student=request.user,
+                assignment_id=assignment_id
+            ).exists()
+            
+            if existing_presentation:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Ya has subido una presentación para esta asignación. No puedes subir más de una.'
+                }, status=400)
+            
+            # Crear presentación
+            presentation = Presentation(
+                title=title,
+                description=description or "Grabado en vivo",
+                student=request.user,
+                video_file=video_file,
+                file_size=video_file.size,
+                uploaded_at=timezone.now(),
+                status='UPLOADED',
+                is_live_recording=True  # Marcar como grabación en vivo
+            )
+            
+            if assignment_id:
+                try:
+                    assignment = Assignment.objects.get(id=assignment_id)
+                    presentation.assignment = assignment
+                except Assignment.DoesNotExist:
+                    pass
+            
+            presentation.save()
+            
+            # Iniciar análisis de IA en segundo plano
+            from .tasks import process_presentation_async
+            process_presentation_async(presentation.id)
+            
+            messages.success(
+                request,
+                f'✅ Grabación en vivo "{title}" guardada exitosamente! '
+                f'El análisis de IA se procesará automáticamente.'
+            )
+            
+            return JsonResponse({'success': True, 'redirect': '/presentations/my-presentations/'})
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    # GET request - redirigir al tab de grabación en upload (esta vista solo maneja POST/AJAX)
+    # El formulario de grabación está en presentations_upload.html tab="record"
+    if selected_assignment:
+        return redirect(f"{reverse('presentations:upload_presentation')}?tab=record&assignment={selected_assignment.id}")
+    return redirect(f"{reverse('presentations:upload_presentation')}?tab=record")
+
+
+@login_required
+def get_presentation_progress(request, presentation_id):
+    """
+    API endpoint para obtener el progreso del análisis de una presentación
+    """
+    from django.core.cache import cache
+    
+    # Verificar que el usuario tenga permiso
+    try:
+        presentation = Presentation.objects.get(id=presentation_id)
+        
+        # Solo el estudiante dueño o docentes pueden ver el progreso
+        if request.user != presentation.student and not request.user.groups.filter(name='Docente').exists():
+            return JsonResponse({'error': 'No autorizado'}, status=403)
+        
+        # Obtener progreso del cache
+        progress_data = cache.get(f'presentation_progress_{presentation_id}')
+        
+        if progress_data:
+            return JsonResponse(progress_data)
+        else:
+            # Si no hay datos en cache, verificar el estado de la presentación
+            return JsonResponse({
+                'status': presentation.status,
+                'progress': 100 if presentation.status == 'ANALYZED' else 0,
+                'step': {
+                    'UPLOADED': 'En cola para análisis...',
+                    'PROCESSING': 'Procesando...',
+                    'ANALYZED': 'Análisis completado ✅',
+                    'FAILED': 'Error en el análisis ❌',
+                    'GRADED': 'Calificada ✅'
+                }.get(presentation.status, 'Estado desconocido')
+            })
+    
+    except Presentation.DoesNotExist:
+        return JsonResponse({'error': 'Presentación no encontrada'}, status=404)
+
+
+# =====================================================
+# VISTAS PARA CALIFICACIÓN Y EDICIÓN (PROFESORES)
+# =====================================================
+
+@teacher_required
+def edit_participant_grade(request, participant_id):
+    """
+    Vista para que el profesor edite la calificación de un participante individual.
+    
+    La calificación de IA viene pre-llenada en el formulario.
+    El profesor puede editarla y agregar comentarios adicionales.
+    """
+    from .forms_grading import ParticipantGradingForm
+    from .models import Participant
+    
+    participant = get_object_or_404(Participant, id=participant_id)
+    presentation = participant.presentation
+    
+    # Verificar que el profesor tenga acceso a esta presentación
+    if presentation.assignment.course.teacher != request.user:
+        messages.error(request, 'No tienes permiso para calificar esta presentación.')
+        return redirect('teacher_dashboard')
+    
+    if request.method == 'POST':
+        form = ParticipantGradingForm(request.POST, instance=participant)
+        if form.is_valid():
+            participant = form.save(commit=False)
+            participant.grade_modified_by = request.user
+            participant.grade_modified_at = timezone.now()
+            participant.save()
+            
+            messages.success(
+                request,
+                f'✅ Calificación de {participant.label} actualizada correctamente.'
+            )
+            return redirect('presentation_detail', pk=presentation.id)
+    else:
+        form = ParticipantGradingForm(instance=participant)
+    
+    context = {
+        'form': form,
+        'participant': participant,
+        'presentation': presentation,
+        'assignment': presentation.assignment,
+    }
+    
+    return render(request, 'presentations/edit_participant_grade.html', context)
+
+
+@teacher_required
+def bulk_grade_presentation(request, presentation_id):
+    """
+    Vista para calificar todos los participantes de una presentación a la vez.
+    
+    Muestra un formulario con todos los participantes y sus calificaciones de IA pre-llenadas.
+    El profesor puede editar las que desee y guardar todo de una vez.
+    """
+    from .forms_grading import BulkGradingForm
+    from .models import Participant
+    
+    presentation = get_object_or_404(Presentation, id=presentation_id)
+    
+    # Verificar permisos
+    if presentation.assignment.course.teacher != request.user:
+        messages.error(request, 'No tienes permiso para calificar esta presentación.')
+        return redirect('teacher_dashboard')
+    
+    participants = presentation.participants.all().order_by('label')
+    
+    if request.method == 'POST':
+        form = BulkGradingForm(request.POST, participants=participants)
+        if form.is_valid():
+            updated_count = 0
+            
+            for participant in participants:
+                grade_field = f'grade_{participant.id}'
+                feedback_field = f'feedback_{participant.id}'
+                
+                new_grade = form.cleaned_data.get(grade_field)
+                new_feedback = form.cleaned_data.get(feedback_field)
+                
+                # Solo actualizar si hay cambios
+                if new_grade is not None and new_grade != participant.ai_grade:
+                    participant.manual_grade = new_grade
+                    participant.grade_modified_by = request.user
+                    participant.grade_modified_at = timezone.now()
+                    updated_count += 1
+                
+                if new_feedback and new_feedback != participant.teacher_feedback:
+                    participant.teacher_feedback = new_feedback
+                    if not participant.grade_modified_by:
+                        participant.grade_modified_by = request.user
+                        participant.grade_modified_at = timezone.now()
+                    updated_count += 1
+                
+                participant.save()
+            
+            # Actualizar estado de la presentación
+            if updated_count > 0:
+                presentation.status = 'GRADED'
+                presentation.graded_by = request.user
+                presentation.graded_at = timezone.now()
+                presentation.save()
+                
+                messages.success(
+                    request,
+                    f'✅ {updated_count} calificaciones actualizadas correctamente.'
+                )
+            else:
+                messages.info(request, 'No se realizaron cambios.')
+            
+            return redirect('presentation_detail', pk=presentation.id)
+    else:
+        form = BulkGradingForm(participants=participants)
+    
+    context = {
+        'form': form,
+        'presentation': presentation,
+        'participants': participants,
+        'assignment': presentation.assignment,
+    }
+    
+    return render(request, 'presentations/bulk_grade.html', context)
+
+
+@teacher_required
+def reset_participant_grade(request, participant_id):
+    """
+    Restaura la calificación de un participante a la evaluación original de IA.
+    """
+    from .models import Participant
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    participant = get_object_or_404(Participant, id=participant_id)
+    presentation = participant.presentation
+    
+    # Verificar permisos
+    if presentation.assignment.course.teacher != request.user:
+        return JsonResponse({'success': False, 'error': 'No autorizado'}, status=403)
+    
+    # Restaurar calificación de IA
+    participant.manual_grade = None
+    participant.teacher_feedback = ''
+    participant.grade_modified_by = None
+    participant.grade_modified_at = None
+    participant.save()
+    
+    messages.success(request, f'✅ Calificación de {participant.label} restaurada a evaluación de IA.')
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'ai_grade': participant.ai_grade,
+            'final_grade': participant.final_grade
+        })
+    
+    return redirect('presentation_detail', pk=presentation.id)
+
+
+# =====================================================
+# CONFIGURACIÓN DE IA
+# =====================================================
+
+@login_required
+@group_required('Docente')
+def ai_configuration_view(request):
+    """Vista para configurar nivel de estrictez de IA"""
+    
+    # Obtener o crear configuración del docente
+    config = AIConfiguration.get_config_for_teacher(request.user)
+    
+    if request.method == 'POST':
+        strictness_level = request.POST.get('strictness_level')
+        
+        if strictness_level in ['strict', 'moderate', 'lenient']:
+            config.strictness_level = strictness_level
+            
+            try:
+                # No validar pesos ya que no se modifican
+                config.save(update_fields=['strictness_level', 'updated_at'])
+                messages.success(
+                    request, 
+                    'Configuración de IA guardada correctamente. '
+                    'Los cambios se aplicarán a las próximas evaluaciones.'
+                )
+            except Exception as e:
+                messages.error(
+                    request,
+                    f'Error al guardar la configuración: {str(e)}'
+                )
+            
+            # Redirigir para evitar reenvío del formulario
+            return redirect('presentations:ai_configuration')
+        else:
+            messages.error(request, 'Nivel de estrictez inválido.')
+    
+    # Obtener descripciones de cada nivel directamente
+    levels_info = {
+        'strict': {
+            'title': 'Estricto',
+            'items': [
+                'Requiere dominio completo del tema',
+                'Penaliza imprecisiones y falta de profundidad',
+                'Exige estructura clara y ejemplos concretos'
+            ]
+        },
+        'moderate': {
+            'title': 'Moderado',
+            'items': [
+                '70-95% para presentaciones bien desarrolladas',
+                '85-95% para presentaciones sobresalientes',
+                'Balance entre exigencia y comprensión',
+                'Valora profundidad y relevancia del contenido'
+            ]
+        },
+        'lenient': {
+            'title': 'Suave',
+            'items': [
+                '70-80% con comprensión básica del tema',
+                '85-95% si el contenido es relevante',
+                'Valora el esfuerzo y participación',
+                'Enfoque en reforzar lo positivo'
+            ]
+        }
+    }
+    
+    context = {
+        'current_level': config.strictness_level,
+        'levels_info': levels_info,
+        'last_updated': config.updated_at,
+    }
+    
+    return render(request, 'presentations/ai_configuration.html', context)
+
+
+# IA GROK - MEJORAR INSTRUCCIONES
+
+
+@login_required
+@require_http_methods(["POST"])
+def improve_instructions_ai_view(request):
+    """Vista para mejorar instrucciones de asignaciones usando Groq AI"""
+    
+    # Verificar permisos de profesor
+    if not request.user.groups.filter(name='Docente').exists():
+        return JsonResponse({
+            'success': False,
+            'error': 'No tienes permisos para usar esta función. Debes ser profesor.'
+        }, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        instructions = data.get('instructions', '').strip()
+        context = data.get('context', {})
+        
+        if not instructions:
+            return JsonResponse({
+                'success': False,
+                'error': 'No se proporcionaron instrucciones'
+            }, status=400)
+        
+        # Importar Groq client
+        from groq import Groq
+        from apps.ai_processor.services.groq_key_manager import GroqKeyManager
+        
+        # Obtener API key usando el sistema de rotación
+        key_manager = GroqKeyManager()
+        groq_api_key = key_manager.get_current_key()
+        
+        if not groq_api_key:
+            return JsonResponse({
+                'success': False,
+                'error': 'API Keys de Groq no configuradas. Contacta al administrador.'
+            }, status=500)
+        
+        # Construir el prompt para Groq
+        prompt = f"""Eres un experto docente universitario especializado en evaluación de presentaciones virtuales. Tu tarea es mejorar las instrucciones de una asignación de EXPOSICIÓN VIRTUAL que será evaluada automáticamente por IA.
+
+CONTEXTO DE LA ASIGNACIÓN:
+- Título: {context.get('title', 'No especificado')}
+- Descripción: {context.get('description', 'No especificada')}
+- Tipo: {context.get('assignment_type', 'No especificado')}
+- Duración máxima: {context.get('max_duration', 'No especificada')} minutos
+
+INSTRUCCIONES ORIGINALES:
+{instructions}
+
+IMPORTANTE: Esta es una EXPOSICIÓN VIRTUAL en video que será evaluada por IA en los siguientes aspectos:
+1. **Coherencia del contenido**: La IA analizará si el discurso es lógico y bien estructurado
+2. **Claridad en la comunicación**: La IA evaluará la expresión oral y fluidez
+3. **Cumplimiento de objetivos**: La IA verificará que se cubran todos los puntos solicitados
+
+MEJORA estas instrucciones siguiendo estos criterios:
+
+📹 **Para la grabación del video:**
+- Especifica claramente QUÉ debe incluir la presentación
+- Indica la ESTRUCTURA requerida (introducción, desarrollo, conclusión)
+- Define los PUNTOS CLAVE que debe abordar el estudiante
+- Menciona aspectos de CALIDAD (audio claro, iluminación adecuada, postura profesional)
+
+🎯 **Para la evaluación por IA:**
+- Sé ESPECÍFICO en los temas que deben cubrirse (la IA buscará estos temas en la transcripción)
+- Define criterios MEDIBLES (ej: "mencionar al menos 3 conceptos clave")
+- Indica el ORDEN lógico esperado (la IA evaluará la coherencia)
+- Especifica EJEMPLOS o CASOS que deben incluirse
+
+📝 **Formato de las instrucciones mejoradas:**
+1. Organízalas en secciones claras con títulos
+2. Usa viñetas o numeración para mayor claridad
+3. Incluye criterios de evaluación específicos
+4. Agrega sugerencias técnicas (duración por sección, tips de grabación)
+5. Mantén un tono profesional pero motivador
+6. NO inventes información que no esté en el contexto original
+7. Longitud: 250-400 palabras
+
+**EJEMPLO de lo que se espera:**
+"En tu video debes explicar [concepto X], luego analizar [concepto Y], y finalmente proponer [concepto Z]. La IA evaluará que menciones estos tres elementos y que los presentes en este orden lógico."
+
+Responde SOLO con las instrucciones mejoradas, sin explicaciones adicionales ni comentarios."""
+
+        # Intentar con rotación de keys si falla
+        max_retries = min(3, len(key_manager.keys))
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                # Crear cliente Groq con la key actual
+                client = Groq(api_key=groq_api_key)
+                
+                # Hacer petición a Groq API
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "Eres un asistente experto en educación que ayuda a docentes a crear instrucciones claras y efectivas para asignaciones académicas."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=0.7,
+                    max_tokens=800,
+                    timeout=30
+                )
+                
+                improved_instructions = response.choices[0].message.content.strip()
+                
+                return JsonResponse({
+                    'success': True,
+                    'improved_instructions': improved_instructions
+                })
+                
+            except Exception as e:
+                last_error = str(e)
+                logger.error(f"Error con API key {attempt + 1}: {last_error}")
+                
+                # Si falla por rate limit, marcar key como fallida y rotar
+                if 'rate_limit' in last_error.lower() or '429' in last_error:
+                    key_manager.mark_key_failed(groq_api_key)
+                    groq_api_key = key_manager.get_current_key()
+                    if not groq_api_key:
+                        break
+                else:
+                    # Si es otro error, no reintentar
+                    break
+        
+        # Si llegamos aquí, todos los intentos fallaron
+        return JsonResponse({
+            'success': False,
+            'error': f'No se pudo procesar la solicitud. Último error: {last_error}'
+        }, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Datos JSON inválidos'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error inesperado en improve_instructions_ai_view: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'Error inesperado: {str(e)}'
+        }, status=500)

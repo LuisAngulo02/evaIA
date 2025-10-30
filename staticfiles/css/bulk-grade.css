@@ -1,0 +1,36 @@
+/**
+ * Bulk Grade Styles
+ * Template: bulk_grade.html
+ * Description: Styles for bulk grading multiple participants
+ */
+
+.participant-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+.participant-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.ai-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+.grade-input {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.grade-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}

@@ -49,24 +49,19 @@ def mark_as_read(request, notification_id):
         recipient=request.user
     )
     
-    # Solo marcar como leída si es POST o GET (para compatibilidad)
-    if request.method in ['POST', 'GET']:
-        notification.mark_as_read()
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'POST':
-            return JsonResponse({
-                'success': True,
-                'unread_count': NotificationService.get_unread_count(request.user)
-            })
-        
-        # Si hay URL de acción, redirigir ahí
-        if notification.action_url:
-            return redirect(notification.action_url)
-        
-        return redirect('notifications:list')
+    # Marcar como leída
+    notification.mark_as_read()
     
-    # Si no es GET o POST, devolver error
-    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    # Si es una petición AJAX
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'unread_count': NotificationService.get_unread_count(request.user),
+            'action_url': notification.get_action_url()
+        })
+    
+    # Redirigir a la URL de acción
+    return redirect(notification.get_action_url())
 
 
 @login_required

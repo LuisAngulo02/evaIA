@@ -1,0 +1,265 @@
+/**
+ * EvalExpo AI - Componentes Reutilizables
+ * Sidebar cards, tips, specs y otros componentes comunes
+ */
+
+/* ========== SIDEBAR CARDS ========== */
+.sidebar-card {
+    background: white;
+    border: 1px solid rgba(99, 102, 241, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 2rem;
+}
+
+.sidebar-card-header {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.sidebar-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--dark-color);
+    margin: 0;
+}
+
+.sidebar-card-body {
+    padding: 1.5rem;
+}
+
+/* ========== ASSIGNMENT ITEM ========== */
+.assignment-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.assignment-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-color);
+}
+
+.assignment-item:last-child {
+    margin-bottom: 0;
+}
+
+.assignment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.assignment-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.assignment-badge {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.assignment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.meta-item i {
+    width: 14px;
+    text-align: center;
+    color: var(--primary-color);
+}
+
+/* ========== TIP ITEMS ========== */
+.tip-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tip-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.tip-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary-color);
+}
+
+.tip-content strong {
+    color: var(--dark-color);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.tip-content p {
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ========== TECHNICAL SPECS ========== */
+.tech-spec {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.tech-spec:last-child {
+    margin-bottom: 0;
+}
+
+.spec-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.spec-icon.bg-primary { background: var(--primary-color); }
+.spec-icon.bg-success { background: var(--success-color); }
+.spec-icon.bg-warning { background: var(--warning-color); }
+.spec-icon.bg-info { background: var(--accent-color); }
+
+.spec-content {
+    flex: 1;
+}
+
+.spec-content strong {
+    color: var(--dark-color);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.9rem;
+}
+
+.spec-content span {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* ========== AI FEATURES ========== */
+.ai-feature {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(99, 102, 241, 0.02);
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.ai-feature:last-child {
+    margin-bottom: 0;
+}
+
+.feature-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-gradient);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.feature-content {
+    flex: 1;
+}
+
+.feature-content strong {
+    color: var(--dark-color);
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.feature-content p {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ========== TIPS CARD ========== */
+.tips-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.tips-card h6 {
+    color: var(--dark-color);
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-list li {
+    padding: 0.75rem 0;
+    color: var(--text-muted);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tips-list li:last-child {
+    border-bottom: none;
+}

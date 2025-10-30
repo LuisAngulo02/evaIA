@@ -1,0 +1,305 @@
+/* AI Configuration Styles - Nivel de Estrictez */
+
+.level-card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 2px solid #e9ecef;
+    position: relative;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.level-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    border-color: #dee2e6;
+}
+
+.level-card.active {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    color: white !important;
+    border: 3px solid #ffffff;
+    box-shadow: 0 16px 50px rgba(139, 92, 246, 0.4);
+}
+
+.level-card.active * {
+    color: white !important;
+}
+
+.level-card.active .level-features li {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Tarjeta Moderado (se ve igual que las demás cuando NO está activa) */
+.level-card.moderado {
+    background: #ffffff;
+    color: inherit;
+    border: 2px solid #e9ecef;
+}
+
+.level-card.moderado:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.level-recommended {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white !important;
+    padding: 0.5rem 1.25rem;
+    border-radius: 25px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.5px;
+    border: none;
+}
+
+.level-card.active .level-recommended {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.level-header {
+    margin-bottom: 1.5rem;
+}
+
+.level-icon {
+    margin: 0 auto 1rem;
+    opacity: 0.9;
+}
+
+.level-title {
+    font-size: 1.85rem;
+    margin-bottom: 0;
+    font-weight: 700;
+}
+
+.level-features {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+    text-align: left;
+    flex-grow: 1;
+}
+
+.level-features li {
+    padding: 0.875rem 0;
+    font-size: 0.925rem;
+    line-height: 1.5;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: flex-start;
+}
+
+.level-features li:last-child {
+    border-bottom: none;
+}
+
+.level-features li i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+}
+
+.level-features li span {
+    flex: 1;
+}
+
+.btn-select-level {
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+    padding: 1rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    width: 100%;
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.btn-select-level:hover {
+    background: #e9ecef;
+    transform: scale(1.02);
+}
+
+.btn-select-level.active {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white !important;
+    border-color: #0d6efd;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+/* Botones dentro de tarjetas activas (moradas) */
+.level-card.active .btn-select-level {
+    background: rgba(255, 255, 255, 0.95);
+    color: #8b5cf6 !important;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    font-weight: 800;
+}
+
+.level-card.active .btn-select-level:hover {
+    background: white;
+}
+
+.level-card.active .btn-select-level.active {
+    background: white;
+    color: #8b5cf6 !important;
+    border-color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Botones de acción principal */
+.btn-lg {
+    padding: 1rem 3rem;
+    font-size: 1rem;
+    border-radius: 50px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    letter-spacing: 0.3px;
+}
+
+.btn-lg:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.btn-primary.btn-lg {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+}
+
+.btn-outline-secondary.btn-lg:hover {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+#saveButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#saveButton:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Tarjeta de información */
+.info-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid #dee2e6;
+}
+
+.info-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.level-card {
+    animation: fadeInUp 0.6s ease-out backwards;
+}
+
+.col-md-4:nth-child(1) .level-card {
+    animation-delay: 0.1s;
+}
+
+.col-md-4:nth-child(2) .level-card {
+    animation-delay: 0.2s;
+}
+
+.col-md-4:nth-child(3) .level-card {
+    animation-delay: 0.3s;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.info-card {
+    animation: slideInUp 0.6s ease-out 0.4s backwards;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .level-card {
+        margin-bottom: 2rem;
+        min-height: auto;
+        padding: 2rem 1.5rem;
+    }
+    
+    .level-title {
+        font-size: 1.5rem;
+    }
+    
+    .level-features li {
+        font-size: 0.875rem;
+        padding: 0.75rem 0;
+    }
+    
+    .btn-lg {
+        padding: 0.875rem 2rem;
+        font-size: 0.95rem;
+    }
+    
+    .info-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .level-card {
+        padding: 1.5rem 1rem;
+    }
+    
+    .btn-select-level {
+        padding: 0.875rem 1.25rem;
+        font-size: 0.7rem;
+    }
+    
+    .level-icon i {
+        font-size: 2rem !important;
+    }
+    
+    .level-title {
+        font-size: 1.35rem;
+    }
+}

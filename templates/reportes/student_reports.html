@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Mis Calificaciones - EvalExpo AI{% endblock %}
 
@@ -14,74 +15,6 @@
             <p class="text-muted fs-5">Revisa tus calificaciones y progreso académico</p>
         </div>
     </div>
-
-    <!-- Statistics Cards -->
-    <div class="row mb-5">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div class="card-body text-white">
-                    <div class="d-flex align-items-center">
-                        <div class="stat-icon me-3">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0 fw-bold">{{ stats.average_score|floatformat:1 }}{% if stats.average_score > 0 %}%{% else %}N/A{% endif %}</h3>
-                            <small>Promedio General</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="card-body text-white">
-                    <div class="d-flex align-items-center">
-                        <div class="stat-icon me-3">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0 fw-bold">{{ stats.total_presentations }}</h3>
-                            <small>Calificadas</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <div class="card-body text-white">
-                    <div class="d-flex align-items-center">
-                        <div class="stat-icon me-3">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0 fw-bold">{{ stats.best_score|floatformat:1 }}{% if stats.best_score > 0 %}%{% else %}N/A{% endif %}</h3>
-                            <small>Mejor Nota</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 bg-gradient" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
-                <div class="card-body text-white">
-                    <div class="d-flex align-items-center">
-                        <div class="stat-icon me-3">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div>
-                            <h3 class="mb-0 fw-bold">{{ stats.courses_count }}</h3>
-                            <small>Cursos</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Grades Table -->
     <div class="row">
         <div class="col-12">
@@ -92,7 +25,7 @@
                     </h5>
                     {% if presentations %}
                     <div class="export-buttons">
-                        <button class="btn btn-danger btn-sm" onclick="exportStudentData('pdf')">
+                        <button class="btn btn-danger btn-sm" onclick="exportStudentDataWrapper('pdf')">
                             <i class="fas fa-download me-1"></i>Descargar Reporte PDF
                         </button>
                     </div>
@@ -174,102 +107,18 @@
     </div>
 </div>
 
-<style>
-.stat-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
+{% endblock %}
 
-.export-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/student-reports.css' %}">
+{% endblock %}
 
-.export-notification {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.table th {
-    border-top: none;
-    font-weight: 600;
-    color: #495057;
-}
-
-.badge.fs-6 {
-    font-size: 0.9rem !important;
-}
-</style>
-
+{% block extra_js %}
+<script src="{% static 'js/student-reports.js' %}"></script>
 <script>
-// Función para exportar datos del estudiante
-function exportStudentData(format) {
-    if (format === 'pdf') {
-        console.log('Exportando mis calificaciones a PDF...');
-        showExportMessage('Generando mi reporte PDF...', 'success');
-        window.location.href = "{% url 'reports:export_student_grades' %}?format=pdf";
+    // Wrapper function with Django URL
+    function exportStudentDataWrapper(format) {
+        exportStudentData(format, "{% url 'reports:export_student_grades' %}");
     }
-}
-
-// Función para mostrar mensajes de exportación
-function showExportMessage(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show export-notification`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    `;
-    
-    notification.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas fa-download me-2"></i>
-            <span>${message}</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification && notification.parentNode) {
-            notification.remove();
-        }
-    }, 3000);
-}
-
-// Animaciones de entrada
-document.addEventListener('DOMContentLoaded', function() {
-    const cards = document.querySelectorAll('.card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-});
 </script>
 {% endblock %}

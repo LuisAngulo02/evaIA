@@ -126,17 +126,26 @@ class ProfileForm(forms.ModelForm):
     role = forms.ModelChoiceField(
         queryset=Group.objects.filter(name__in=['Estudiante', 'Docente', 'Administrador']),
         required=True,
-        empty_label="Selecciona tu rol",
-        widget=forms.Select(attrs={'class': 'form-control'}),
-        help_text="Tu rol actual en el sistema."
+        empty_label=None,
+        widget=forms.Select(attrs={'class': 'form-control', 'disabled': 'disabled'}),
+        help_text="Tu rol actual en el sistema (no editable)."
     )
 
     class Meta:
         model = Profile
-        fields = ['institution', 'phone']
+        fields = ['institution', 'phone', 'avatar']
         widgets = {
-            'institution': forms.TextInput(attrs={'class': 'form-control'}),
-            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'institution': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Universidad o Institución'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+1234567890'}),
+            'avatar': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+        labels = {
+            'institution': 'Institución',
+            'phone': 'Teléfono',
+            'avatar': 'Foto de Perfil',
+        }
+        help_texts = {
+            'avatar': 'Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB',
         }
 
     def __init__(self, *args, **kwargs):
@@ -152,6 +161,21 @@ class ProfileForm(forms.ModelForm):
             if user_groups.exists():
                 self.fields['role'].initial = user_groups.first()
 
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if avatar:
+            # Solo validar si es un archivo nuevo (no el archivo existente)
+            if hasattr(avatar, 'content_type'):
+                # Verificar tamaño del archivo (5MB máximo)
+                if avatar.size > 5 * 1024 * 1024:
+                    raise forms.ValidationError('El archivo es demasiado grande. Tamaño máximo: 5MB')
+                
+                # Verificar tipo de archivo
+                if not avatar.content_type.startswith('image/'):
+                    raise forms.ValidationError('El archivo debe ser una imagen (JPG, PNG, GIF)')
+        
+        return avatar
+
     def save(self, commit=True):
         profile = super().save(commit=False)
         
@@ -163,12 +187,8 @@ class ProfileForm(forms.ModelForm):
             user.email = self.cleaned_data['email']
             user.save()
             
-            # Actualizar grupos
-            # Primero remover grupos de rol existentes
-            user.groups.filter(name__in=['Estudiante', 'Docente', 'Administrador']).delete()
-            # Añadir el nuevo grupo
-            selected_group = self.cleaned_data['role']
-            user.groups.add(selected_group)
+            # NO actualizar grupos (campo deshabilitado para evitar errores)
+            # Los grupos deben ser asignados por administradores
             
             profile.save()
             
@@ -191,3 +211,59 @@ class LoginForm(forms.Form):
             'autocomplete': 'current-password'
         })
     )
+
+
+class PasswordResetForm(forms.Form):
+    """Formulario para solicitar recuperación de contraseña"""
+    email = forms.EmailField(
+        label="Correo electrónico",
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Ingresa tu correo electrónico',
+            'autocomplete': 'email'
+        }),
+        help_text="Te enviaremos un enlace para restablecer tu contraseña."
+    )
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if not User.objects.filter(email=email).exists():
+            raise forms.ValidationError(
+                'No existe una cuenta con este correo electrónico.'
+            )
+        return email
+
+
+class SetPasswordForm(forms.Form):
+    """Formulario para establecer nueva contraseña"""
+    new_password1 = forms.CharField(
+        label="Nueva contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Nueva contraseña',
+            'autocomplete': 'new-password'
+        }),
+        help_text="Tu contraseña debe tener al menos 8 caracteres."
+    )
+    
+    new_password2 = forms.CharField(
+        label="Confirmar nueva contraseña",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg',
+            'placeholder': 'Confirma tu nueva contraseña',
+            'autocomplete': 'new-password'
+        })
+    )
+
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError('Las contraseñas no coinciden.')
+            if len(password1) < 8:
+                raise forms.ValidationError('La contraseña debe tener al menos 8 caracteres.')
+        
+        return password2

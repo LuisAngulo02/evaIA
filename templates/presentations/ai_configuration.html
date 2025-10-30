@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configuración IA - EvaIA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ai-configuration.css' %}?v=2.0">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <!-- Encabezado -->
+            <div class="text-center mb-5">
+                <div class="mb-3">
+                    <i class="fas fa-brain fa-3x text-primary"></i>
+                </div>
+                <h1 class="h2 fw-bold mb-3">Configuración de Inteligencia Artificial</h1>
+                <p class="text-muted fs-5">
+                    Ajusta qué tan exigente será la Inteligencia Artificial al evaluar las<br>
+                    presentaciones de tus estudiantes
+                </p>
+            </div>
+
+            <!-- Alertas de mensajes -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle me-2 fs-5"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle me-2 fs-5"></i>
+                            {% endif %}
+                            <div>{{ message }}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Formulario de selección -->
+            <form method="post" id="aiConfigForm">
+                {% csrf_token %}
+                
+                <div class="row g-4 mb-5">
+                    <!-- ESTRICTO -->
+                    <div class="col-md-4">
+                        <div class="level-card {% if current_level == 'strict' %}active{% endif %}" 
+                             data-level="strict"
+                             onclick="selectLevel('strict')">
+                            <div class="level-header">
+                                <div class="level-icon text-danger mb-3">
+                                    <i class="fas fa-chart-line fa-3x"></i>
+                                </div>
+                                <h3 class="level-title fw-bold mb-3">{{ levels_info.strict.title }}</h3>
+                            </div>
+                            <ul class="level-features">
+                                {% for item in levels_info.strict.items %}
+                                <li>
+                                    <i class="fas fa-check-circle text-danger me-2"></i>
+                                    <span>{{ item }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <button type="button" 
+                                    class="btn-select-level {% if current_level == 'strict' %}active{% endif %}"
+                                    onclick="selectLevel('strict', event)">
+                                {% if current_level == 'strict' %}
+                                    <i class="fas fa-check-circle me-2"></i>NIVEL SELECCIONADO
+                                {% else %}
+                                    SELECCIONAR ESTE NIVEL
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- MODERADO -->
+                    <div class="col-md-4">
+                        <div class="level-card moderado {% if current_level == 'moderate' %}active{% endif %}" 
+                             data-level="moderate"
+                             onclick="selectLevel('moderate')">
+                            <div class="level-recommended">
+                                <i class="fas fa-star me-1"></i>
+                                RECOMENDADO
+                            </div>
+                            <div class="level-header">
+                                <div class="level-icon mb-3">
+                                    <i class="fas fa-chart-bar fa-3x"></i>
+                                </div>
+                                <h3 class="level-title fw-bold mb-3">{{ levels_info.moderate.title }}</h3>
+                            </div>
+                            <ul class="level-features">
+                                {% for item in levels_info.moderate.items %}
+                                <li>
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <span>{{ item }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <button type="button" 
+                                    class="btn-select-level {% if current_level == 'moderate' %}active{% endif %}"
+                                    onclick="selectLevel('moderate', event)">
+                                {% if current_level == 'moderate' %}
+                                    <i class="fas fa-check-circle me-2"></i>NIVEL SELECCIONADO
+                                {% else %}
+                                    SELECCIONAR ESTE NIVEL
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SUAVE -->
+                    <div class="col-md-4">
+                        <div class="level-card {% if current_level == 'lenient' %}active{% endif %}" 
+                             data-level="lenient"
+                             onclick="selectLevel('lenient')">
+                            <div class="level-header">
+                                <div class="level-icon text-success mb-3">
+                                    <i class="fas fa-chart-area fa-3x"></i>
+                                </div>
+                                <h3 class="level-title fw-bold mb-3">{{ levels_info.lenient.title }}</h3>
+                            </div>
+                            <ul class="level-features">
+                                {% for item in levels_info.lenient.items %}
+                                <li>
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>{{ item }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            <button type="button" 
+                                    class="btn-select-level {% if current_level == 'lenient' %}active{% endif %}"
+                                    onclick="selectLevel('lenient', event)">
+                                {% if current_level == 'lenient' %}
+                                    <i class="fas fa-check-circle me-2"></i>NIVEL SELECCIONADO
+                                {% else %}
+                                    SELECCIONAR ESTE NIVEL
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="strictness_level" id="strictness_level" value="{{ current_level }}">
+
+                <!-- Botones de Acción -->
+                <div class="text-center mt-5 mb-4">
+                    <a href="{% url 'presentations:teacher_dashboard' %}" class="btn btn-outline-secondary btn-lg me-3 px-5">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg px-5" id="saveButton" disabled>
+                        <i class="fas fa-save me-2"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+
+            <!-- Información Adicional -->
+            <div class="info-card mt-5">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="info-icon">
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h6 class="fw-bold mb-2">Sobre esta configuración</h6>
+                        <p class="mb-0 text-muted">
+                            Esta configuración solo afecta cómo la IA evalúa la <strong>coherencia del contenido con el tema asignado</strong>. 
+                            No modifica la detección de rostros ni otros parámetros de evaluación. 
+                            Los cambios se aplicarán a todas las presentaciones evaluadas después de guardar.
+                        </p>
+                        {% if last_updated %}
+                        <p class="mb-0 text-muted mt-2 small">
+                            <i class="fas fa-clock me-1"></i>
+                            Última actualización: {{ last_updated|date:"d/m/Y H:i" }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ai-configuration.js' %}"></script>
+{% endblock %}

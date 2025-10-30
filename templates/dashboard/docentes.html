@@ -1,46 +1,79 @@
 {% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-docentes.css' %}?v=3.0">
+<style>
+    /* Animación shimmer para barras de progreso */
+    @keyframes shimmer {
+        0% { 
+            left: -100%; 
+        }
+        100% { 
+            left: 100%; 
+        }
+    }
+    
+    /* Inicializar barras en 0% para animación */
+    .shimmer-bar {
+        transition: width 1.5s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard-docentes.js' %}?v=3.0"></script>
+{% endblock %}
 
 {% block dashboard_content %}
 <!-- Estadísticas rápidas -->
 <div class="row mb-4">
     <div class="col-md-3 mb-3">
-        <div class="stat-card primary">
-            <div class="stat-icon">
-                <i class="fas fa-chalkboard"></i>
+        <a href="{% url 'presentations:manage_courses' %}" class="text-decoration-none">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-chalkboard"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_courses|default:0 }}</div>
+                <div class="stat-label">Cursos Activos</div>
             </div>
-            <div class="stat-number">{{ stats.total_courses|default:0 }}</div>
-            <div class="stat-label">Cursos Activos</div>
-        </div>
+        </a>
     </div>
     
     <div class="col-md-3 mb-3">
-        <div class="stat-card info">
-            <div class="stat-icon">
-                <i class="fas fa-tasks"></i>
+        <a href="{% url 'presentations:manage_assignments' %}" class="text-decoration-none">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_assignments|default:0 }}</div>
+                <div class="stat-label">Asignaciones</div>
             </div>
-            <div class="stat-number">{{ stats.total_assignments|default:0 }}</div>
-            <div class="stat-label">Asignaciones</div>
-        </div>
+        </a>
     </div>
     
     <div class="col-md-3 mb-3">
-        <div class="stat-card warning">
-            <div class="stat-icon">
-                <i class="fas fa-star-half-alt"></i>
+        <a href="{% url 'presentations:grade_presentations' %}" class="text-decoration-none">
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+                <div class="stat-number">{{ stats.pending_grading|default:0 }}</div>
+                <div class="stat-label">Por Calificar</div>
             </div>
-            <div class="stat-number">{{ stats.pending_grading|default:0 }}</div>
-            <div class="stat-label">Por Calificar</div>
-        </div>
+        </a>
     </div>
     
     <div class="col-md-3 mb-3">
-        <div class="stat-card success">
-            <div class="stat-icon">
-                <i class="fas fa-video"></i>
+        <a href="{% url 'reports:teacher_reports' %}" class="text-decoration-none">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_presentations|default:0 }}</div>
+                <div class="stat-label">Presentaciones</div>
             </div>
-            <div class="stat-number">{{ stats.total_presentations|default:0 }}</div>
-            <div class="stat-label">Presentaciones</div>
-        </div>
+        </a>
     </div>
 </div>
 
@@ -211,44 +244,74 @@
         </div>
         
         <!-- Estadísticas de rendimiento -->
-        <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header bg-white border-0">
-                <h6 class="mb-0">
-                    <i class="fas fa-chart-line me-2 text-success"></i>Rendimiento Estudiantes
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 20px;">
+                <h6 class="mb-0 text-white fw-bold">
+                    <i class="fas fa-chart-line me-2"></i>Rendimiento Estudiantes
                 </h6>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-semibold">Promedio General</span>
-                        <span class="small text-muted">{{ stats.average_score|default:0|floatformat:1 }}%</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: {{ stats.average_score|default:0 }}%"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-semibold">Tasa de Entrega</span>
-                        <span class="small text-muted">{{ stats.completion_rate|default:0|floatformat:1 }}%</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-primary" style="width: {{ stats.completion_rate|default:0 }}%"></div>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="small fw-semibold">Calidad Promedio IA</span>
-                        <span class="small text-muted">{{ stats.ai_average|default:0|floatformat:1 }}%</span>
-                    </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-info" style="width: {{ stats.ai_average|default:0 }}%"></div>
+            <div class="card-body" style="padding: 25px;">
+                <!-- Promedio General -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-graduation-cap text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Promedio General</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Calificación promedio del curso</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.average_score|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="text-center mt-3">
+                <!-- Tasa de Entrega -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #06beb6, #48b1bf); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-check-circle text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Tasa de Entrega</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Presentaciones enviadas a tiempo</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #06beb6, #48b1bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.completion_rate|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calidad Promedio IA -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #f093fb, #f5576c); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-robot text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Calidad Promedio IA</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Evaluación automática con IA</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #f093fb, #f5576c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.ai_average|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 pt-3 border-top">
                     <small class="text-muted">
                         <i class="fas fa-info-circle me-1"></i>
                         Basado en presentaciones calificadas
@@ -273,7 +336,7 @@
                     <a href="{% url 'reports:teacher_reports' %}" class="btn btn-outline-info btn-sm w-100">
                         <i class="fas fa-chart-line me-2"></i>Ver Reportes Detallados
                     </a>
-                    <a href="#" class="btn btn-outline-warning btn-sm">
+                    <a href="{% url 'presentations:ai_configuration' %}" class="btn btn-outline-warning btn-sm">
                         <i class="fas fa-cog me-2"></i>Configuración IA
                     </a>
                 </div>
@@ -291,222 +354,5 @@
         </div>
     </div>
 </div>
-
-<style>
-/* Tarjetas de estadísticas */
-.stat-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 20px;
-    padding: 30px;
-    color: white !important;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    opacity: 0.1;
-    z-index: 1;
-}
-
-.stat-card * {
-    position: relative;
-    z-index: 2;
-    color: white !important;
-}
-
-.stat-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-/* Gradientes para las tarjetas */
-.stat-card.primary { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-.stat-card.info { 
-    background: linear-gradient(135deg, #06beb6 0%, #48b1bf 100%);
-}
-.stat-card.warning { 
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-    color: #8B4513 !important;
-}
-.stat-card.warning * {
-    color: #8B4513 !important;
-}
-.stat-card.success { 
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-    color: #2d5016 !important;
-}
-.stat-card.success * {
-    color: #2d5016 !important;
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-    backdrop-filter: blur(10px);
-}
-
-.stat-icon i {
-    font-size: 1.5rem;
-    color: inherit !important;
-}
-
-.stat-number {
-    font-size: 2.2rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-    font-family: 'Outfit', sans-serif;
-    color: inherit !important;
-}
-
-.stat-label {
-    font-weight: 500;
-    font-size: 0.9rem;
-    opacity: 0.9;
-    color: inherit !important;
-}
-
-/* Acciones rápidas */
-.quick-action-card {
-    display: block;
-    background: white;
-    border: 2px solid transparent;
-    border-radius: 15px;
-    padding: 1.5rem;
-    text-align: center;
-    transition: all 0.3s ease;
-    color: inherit;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.quick-action-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    border-color: rgba(99, 102, 241, 0.2);
-    text-decoration: none;
-    color: inherit;
-}
-
-.quick-action-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 1.25rem;
-}
-
-.presentation-item {
-    transition: all 0.3s ease;
-}
-
-.presentation-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.course-item:last-child {
-    border-bottom: none !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-}
-
-@media (max-width: 768px) {
-    .stat-card {
-        padding: 20px;
-    }
-    
-    .stat-number {
-        font-size: 1.8rem;
-    }
-    
-    .quick-action-card {
-        padding: 1rem;
-    }
-    
-    .quick-action-icon {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-}
-</style>
-
-<script>
-// Función para mostrar notificación de exportación
-function showExportNotification(format) {
-    const notification = document.createElement('div');
-    notification.className = 'alert alert-info alert-dismissible fade show export-notification';
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        animation: slideIn 0.3s ease-out;
-    `;
-    
-    notification.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="fas fa-download me-2"></i>
-            <span>Generando archivo ${format}...</span>
-            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        if (notification && notification.parentNode) {
-            notification.remove();
-        }
-    }, 4000);
-}
-
-// Agregar event listeners a los enlaces de exportación
-document.addEventListener('DOMContentLoaded', function() {
-    // Enlaces de exportación Excel y PDF
-    document.querySelectorAll('a[href*="export_grades"]').forEach(link => {
-        link.addEventListener('click', function(e) {
-            const format = this.href.includes('excel') ? 'Excel' : 'PDF';
-            showExportNotification(format);
-        });
-    });
-});
-
-// CSS para animación
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-`;
-document.head.appendChild(style);
-</script>
 
 {% endblock %}
