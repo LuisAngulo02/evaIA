@@ -1,0 +1,1087 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ presentation.title }} - Detalles{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/presentation-detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                {% if is_teacher %}
+                <a href="{% url 'presentations:grade_presentations' %}">
+                    <i class="fas fa-star me-1"></i>Calificar Presentaciones
+                </a>
+                {% else %}
+                <a href="{% url 'presentations:my_presentations' %}">
+                    <i class="fas fa-video me-1"></i>Mis Presentaciones
+                </a>
+                {% endif %}
+            </li>
+            <li class="breadcrumb-item active">{{ presentation.title|truncatechars:50 }}</li>
+        </ol>
+    </nav>
+
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-gradient py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h4 class="mb-0 fw-bold text-dark">
+                        <i class="fas fa-video me-2"></i>{{ presentation.title }}
+                    </h4>
+                </div>
+                <div class="col-auto">
+                    {% if presentation.overall_ai_score %}
+                    <div class="text-center text-white">
+                        <h3 class="mb-0 fw-bold">{{ presentation.overall_ai_score }}%</h3>
+                        <small class="opacity-75">Puntuación IA</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Información Principal -->
+                <div class="col-lg-8 mb-3 mb-lg-0">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge bg-primary">
+                            <i class="fas fa-graduation-cap me-1"></i>{{ presentation.assignment.course.code }}
+                        </span>
+                        <span class="badge {{ presentation.status_badge_class }}">
+                            {% if presentation.status == 'GRADED' %}
+                                <i class="fas fa-star me-1"></i>
+                            {% elif presentation.status == 'ANALYZED' %}  
+                                <i class="fas fa-robot me-1"></i>
+                            {% elif presentation.status == 'PROCESSING' %}
+                                <i class="fas fa-cog fa-spin me-1"></i>
+                            {% elif presentation.status == 'UPLOADED' %}
+                                <i class="fas fa-upload me-1"></i>
+                            {% elif presentation.status == 'FAILED' %}
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                            {% else %}
+                                <i class="fas fa-clock me-1"></i>
+                            {% endif %}
+                            {{ presentation.get_status_display }}
+                        </span>
+                        {% if presentation.is_late %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Entrega Tardía
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Info Compacta -->
+                    <div class="row g-3 text-muted">
+                        <div class="col-sm-6 col-md-4">
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                            <strong>Subida:</strong><br>
+                            <small>{{ presentation.uploaded_at|date:"d/m/Y H:i"|default:"No disponible" }}</small>
+                        </div>
+                        <div class="col-sm-6 col-md-4">
+                            <i class="fas fa-user-tie me-2 text-success"></i>
+                            <strong>Docente:</strong><br>
+                            <small>{{ presentation.assignment.course.teacher.get_full_name }}</small>
+                        </div>
+                        {% if presentation.video_file %}
+                        <div class="col-sm-6 col-md-4">
+                            <i class="fas fa-file-video me-2 text-info"></i>
+                            <strong>Archivo:</strong><br>
+                            <small>{{ presentation.video_file.size|filesizeformat }}</small>
+                        </div>
+                        {% endif %}
+                        {% if presentation.duration_seconds %}
+                        <div class="col-sm-6 col-md-4">
+                            <i class="fas fa-clock me-2 text-warning"></i>
+                            <strong>Duración:</strong><br>
+                            <small>{{ presentation.duration_seconds|floatformat:0 }} segundos</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Botones de Acción -->
+                <div class="col-lg-4">
+                    <div class="d-grid gap-2">
+                        <div class="btn-group" role="group">
+                            {% if presentation.status != 'GRADED' and not presentation.final_score %}
+                                <a href="{% url 'presentations:edit_presentation' presentation.id %}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </a>
+                                <button type="button" 
+                                        class="btn btn-outline-danger btn-sm" 
+                                        onclick="confirmDelete({{ presentation.id }}, '{{ presentation.title|escapejs }}')">
+                                    <i class="fas fa-trash me-1"></i>Eliminar
+                                </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="btn-group" role="group">
+                            {% if presentation.video_file %}
+                                <a href="{{ presentation.video_file.url }}" download 
+                                   class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-download me-1"></i>Descargar
+                                </a>
+                                <a href="{% url 'presentations:presentation_transcription' presentation.id %}" 
+                                   class="btn btn-outline-info btn-sm">
+                                    {% if presentation.transcription_text %}
+                                        <i class="fas fa-file-alt me-1"></i>Ver Transcripción
+                                    {% else %}
+                                        <i class="fas fa-microphone me-1"></i>Transcribir
+                                    {% endif %}
+                                </a>
+                            {% endif %}
+                        </div>
+                        
+                        <a href="{% url 'presentations:my_presentations' %}" 
+                           class="btn btn-secondary btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Volver a Mis Presentaciones
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Alert - Shown First if Failed -->
+    {% if presentation.status == 'FAILED' %}
+    <div class="alert alert-danger shadow-lg mb-4 border-0" role="alert" 
+         style="animation: shake 0.5s; border-left: 5px solid #dc3545 !important;">
+        <div class="d-flex align-items-start">
+            <div class="flex-shrink-0 me-3">
+                <i class="fas fa-exclamation-circle fa-4x text-danger" style="opacity: 0.9;"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h4 class="alert-heading fw-bold mb-3">
+                    <i class="fas fa-times-circle me-2"></i>Error en el Procesamiento
+                </h4>
+                <hr class="my-3">
+                <div class="mb-3 fs-6">
+                    <strong>Mensaje de error:</strong>
+                    <div class="mt-2 p-3 bg-light rounded">
+                        {{ presentation.ai_feedback|linebreaks }}
+                    </div>
+                </div>
+                
+                {% if "No se detectó audio" in presentation.ai_feedback or "audio" in presentation.ai_feedback|lower %}
+                <div class="alert alert-warning border-0 shadow-sm mb-3" 
+                     style="border-left: 4px solid #ffc107 !important;">
+                    <h6 class="fw-bold mb-2">
+                        <i class="fas fa-microphone-slash me-2"></i>Sin Audio Detectado
+                    </h6>
+                    <p class="mb-2"><strong>Posibles causas:</strong></p>
+                    <ul class="mb-0 ps-3">
+                        <li class="mb-1">🎤 Micrófono desconectado o apagado</li>
+                        <li class="mb-1">🔒 Permisos de micrófono no otorgados al navegador</li>
+                        <li class="mb-1">📹 Video sin pista de audio</li>
+                        <li class="mb-1">🔇 Volumen muy bajo o silencio total</li>
+                    </ul>
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2 d-md-flex mt-4">
+                    <a href="{% url 'presentations:edit_presentation' presentation.id %}" 
+                       class="btn btn-primary btn-lg">
+                        <i class="fas fa-redo me-2"></i>Intentar de Nuevo
+                    </a>
+                    <a href="{% url 'presentations:my_presentations' %}" 
+                       class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>Volver a Mis Presentaciones
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="presentation-content">
+        <!-- Video Section -->
+        <div class="video-section">
+            {% if presentation.video_file %}
+            <div class="video-container-modern">
+                <div class="video-header">
+                    <h2><i class="fas fa-play-circle me-2"></i>Video de la Presentación</h2>
+                </div>
+                <div class="video-wrapper">
+                    <video id="videoPlayer" controls preload="metadata" class="modern-video-player">
+                        {% if presentation.is_stored_in_cloud and presentation.cloudinary_url %}
+                            <source src="{{ presentation.cloudinary_url }}" type="video/mp4">
+                        {% elif presentation.video_file %}
+                            <source src="{{ presentation.video_file.url }}" type="video/mp4">
+                            <source src="{{ presentation.video_file.url }}" type="video/webm">
+                        {% endif %}
+                        Tu navegador no soporta el elemento video.
+                    </video>
+                    <div class="video-overlay" id="videoOverlay">
+                        <div class="play-button-large" onclick="playVideo()">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controles de Video -->
+                <div class="video-tools" style="display: flex; justify-content: center; gap: 10px; margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <button class="video-tool-btn" onclick="skipTime(-10)" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='#5a67d8'" onmouseout="this.style.background='#667eea'">
+                        <i class="fas fa-backward"></i> -10s
+                    </button>
+                    <button class="video-tool-btn" onclick="togglePlayPause()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='#5a67d8'" onmouseout="this.style.background='#667eea'">
+                        <i class="fas fa-play" id="playPauseIcon"></i>
+                    </button>
+                    <button class="video-tool-btn" onclick="skipTime(10)" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='#5a67d8'" onmouseout="this.style.background='#667eea'">
+                        <i class="fas fa-forward"></i> +10s
+                    </button>
+                    <button class="video-tool-btn" onclick="toggleFullscreen()" style="padding: 10px 20px; background: #764ba2; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='#6a4292'" onmouseout="this.style.background='#764ba2'">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                
+                <div class="video-info-bar">
+                    <div class="video-stats">
+                        <div class="stat-chip">
+                            <i class="fas fa-file-video"></i>
+                            <span>{{ presentation.video_file.size|filesizeformat }}</span>
+                        </div>
+                        {% if presentation.duration %}
+                        <div class="stat-chip">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ presentation.duration }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="stat-chip">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ presentation.uploaded_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+                    <div class="video-actions">
+                        <button class="video-action-btn" onclick="toggleFullscreen()" title="Pantalla completa">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="video-action-btn" onclick="downloadVideo()" title="Descargar">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="video-action-btn" onclick="shareVideo()" title="Compartir">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Timeline de Participación por Persona -->
+                {% if has_individual_analysis %}
+                <div class="participants-timeline-container">
+                    <div class="timeline-header">
+                        <h3><i class="fas fa-users-line me-2"></i>Línea de Tiempo de Participación</h3>
+                        <p class="text-muted small">Segmentos donde aparece cada participante</p>
+                    </div>
+                    <div id="participantsTimeline" class="participants-timeline">
+                        <!-- Se renderizará dinámicamente con JavaScript -->
+                    </div>
+                    <div class="timeline-legend">
+                        <div class="legend-items" id="timelineLegend">
+                            <!-- Se renderizará dinámicamente con JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="no-video-state">
+                <div class="no-video-content">
+                    <div class="no-video-icon">
+                        <i class="fas fa-video-slash"></i>
+                    </div>
+                    <h3>Video no disponible</h3>
+                    <p>El archivo de video no se ha subido correctamente o no está disponible.</p>
+                    {% if presentation.status != 'GRADED' %}
+                    <a href="{% url 'presentations:edit_presentation' presentation.id %}" class="btn-action primary">
+                        <i class="fas fa-upload me-2"></i>Subir Video
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- NUEVO: Evaluación Individual de Participantes -->
+        {% if has_individual_analysis %}
+        <div class="participants-analysis-section">
+            <div class="analysis-header">
+                <h2><i class="fas fa-users me-2"></i>Evaluación Individual de Participantes</h2>
+                <p class="text-muted">Análisis automático de coherencia para cada participante detectado</p>
+            </div>
+            
+            <div class="participants-grid">
+                {% for participant in participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-avatar">
+                            {% if participant.photo %}
+                                <img src="{{ participant.photo.url }}" alt="{{ participant.label }}" class="participant-photo">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                                <span>{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <h3>{{ participant.label }}</h3>
+                            <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                        </div>
+                        <div class="participant-grade">
+                            <div class="grade-circle {{ participant.grade_color_class }}">
+                                <span class="grade-number">{{ participant.ai_grade|floatformat:1 }}</span>
+                                <span class="grade-max">/{{ presentation.assignment.max_score|floatformat:0 }}</span>
+                            </div>
+                            <small class="grade-label">Nota IA</small>
+                        </div>
+                    </div>
+                    
+                    <div class="participant-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Tiempo</span>
+                                    <span class="metric-value">{{ participant.time_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Aporte</span>
+                                    <span class="metric-value">{{ participant.contribution_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coherence-breakdown">
+                            <h4>Desglose de Evaluación</h4>
+                            <div class="metric-score-item">
+                                <div class="metric-icon-label">
+                                    <i class="fas fa-brain"></i>
+                                    <span class="metric-name">Coherencia semántica</span>
+                                </div>
+                                <div class="metric-value-stars">
+                                    <span class="metric-score">{{ participant.semantic_coherence|floatformat:1 }}/100</span>
+                                    <div class="stars-rating">
+                                        {% with score=participant.semantic_coherence %}
+                                            {% if score >= 90 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                            {% elif score >= 80 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 70 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+                                            {% elif score >= 60 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 50 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 40 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 20 %}
+                                                <i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-score-item">
+                                <div class="metric-icon-label">
+                                    <i class="fas fa-key"></i>
+                                    <span class="metric-name">Palabras clave</span>
+                                </div>
+                                <div class="metric-value-stars">
+                                    <span class="metric-score">{{ participant.keywords_score|floatformat:1 }}/100</span>
+                                    <div class="stars-rating">
+                                        {% with score=participant.keywords_score %}
+                                            {% if score >= 90 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                            {% elif score >= 80 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 70 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+                                            {% elif score >= 60 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 50 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 40 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 20 %}
+                                                <i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="metric-score-item">
+                                <div class="metric-icon-label">
+                                    <i class="fas fa-book-open"></i>
+                                    <span class="metric-name">Profundidad</span>
+                                </div>
+                                <div class="metric-value-stars">
+                                    <span class="metric-score">{{ participant.depth_score|floatformat:1 }}/100</span>
+                                    <div class="stars-rating">
+                                        {% with score=participant.depth_score %}
+                                            {% if score >= 90 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                            {% elif score >= 80 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 70 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+                                            {% elif score >= 60 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 50 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 40 %}
+                                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% elif score >= 20 %}
+                                                <i class="fas fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% else %}
+                                                <i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if participant.keywords_found %}
+                        <div class="keywords-section">
+                            <h5><i class="fas fa-key me-1"></i>Palabras clave detectadas:</h5>
+                            <div class="keywords-list">
+                                {% for keyword in participant.keywords_found|slice:":8" %}
+                                    <span class="keyword-badge">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="transcription-section">
+                            <div class="transcription-header" style="cursor: pointer;" data-transcription-toggle>
+                                <h5>
+                                    <span><i class="fas fa-file-alt me-1"></i>Ver Transcripción</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </h5>
+                            </div>
+                            <div class="transcription-content" style="display: none;">
+                                {% if participant.transcription %}
+                                    <p>{{ participant.transcription }}</p>
+                                {% else %}
+                                    <p class="transcription-empty">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        No hay transcripción disponible para este participante
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="observations-section">
+                            <div class="observations-header" style="cursor: pointer;" data-observation-toggle>
+                                <h5><i class="fas fa-comment-alt me-1"></i>Observación <i class="fas fa-chevron-down float-end"></i></h5>
+                            </div>
+                            <div class="observations-content" style="display: none; margin-top: 10px;">
+                                <p style="white-space: pre-wrap;">{{ participant.ai_feedback|default:participant.observations }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant-stats">
+                            <span><i class="fas fa-align-left"></i> {{ participant.word_count }} palabras</span>
+                            <span><i class="fas fa-stopwatch"></i> {{ participant.participation_time|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+         
+            
+            <!-- Calificación Conjunta Sugerida por IA -->
+            <div class="group-grade-suggestion mt-5">
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <h3><i class="fas fa-robot me-2"></i>Calificación Conjunta Sugerida por IA</h3>
+                        <p class="text-dark" style="opacity: 0.8;">Basada en el análisis conjunto de todos los participantes</p>
+                    </div>
+                    <div class="suggestion-content">
+                        <div class="group-score-display">
+                            <div class="score-circle-group">
+                                <span class="score-number-large">{{ overall_ai_score|floatformat:1 }}</span>
+                                <span class="score-max">/{{ max_score|floatformat:0 }}</span>
+                            </div>
+                            <div class="score-details">
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Coherencia promedio:</span>
+                                    <span class="breakdown-value">{{ average_coherence|floatformat:1 }}%</span>
+                                </div>
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Distribución del tiempo:</span>
+                                    <span class="breakdown-value">{{ time_distribution_quality }}</span>
+                                </div>
+                                <div class="score-breakdown">
+                                    <span class="breakdown-label">Cobertura del tema:</span>
+                                    <span class="breakdown-value">{{ topic_coverage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="group-feedback">
+                            <h5><i class="fas fa-lightbulb me-2"></i>Conclusión Generada por IA:</h5>
+                            <p class="ai-generated-feedback">
+                                {% if group_feedback %}
+                                    {{ group_feedback }}
+                                {% else %}
+                                    El grupo demostró comprensión del tema. Se recomienda seguir profundizando en los conceptos clave para fortalecer la presentación.
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Information Sidebar -->
+        <div class="info-sidebar">
+            <!-- Assignment Details Card -->
+            <div class="info-card assignment-card">
+                <div class="card-header-modern">
+                    <div class="header-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3>Detalles de la Asignación</h3>
+                </div>
+                <div class="card-content">
+                    <div class="assignment-title">{{ presentation.assignment.title }}</div>
+                    <div class="assignment-description">{{ presentation.assignment.description|default:"Sin descripción disponible" }}</div>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-graduation-cap"></i>Curso
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.course.name }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-tag"></i>Tipo
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.get_assignment_type_display }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-stopwatch"></i>Duración Máxima
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.max_duration }} min</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-calendar-times"></i>Fecha Límite
+                            </span>
+                            <span class="detail-value {% if presentation.is_late %}late-delivery{% endif %}">
+                                {{ presentation.assignment.due_date|date:"d M Y H:i" }}
+                            </span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-trophy"></i>Puntaje Máximo
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.max_score }} pts</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">
+                                <i class="fas fa-user-tie"></i>Docente
+                            </span>
+                            <span class="detail-value">{{ presentation.assignment.course.teacher.get_full_name|default:presentation.assignment.course.teacher.username }}</span>
+                        </div>
+                    </div>
+                    
+                    {% if presentation.assignment.instructions %}
+                    <div class="instructions-section">
+                        <div class="instructions-header">
+                            <i class="fas fa-list-ul"></i>
+                            <span>Instrucciones</span>
+                        </div>
+                        <div class="instructions-content">
+                            {{ presentation.assignment.instructions|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Student Notes -->
+            {% if presentation.description %}
+            <div class="info-card notes-card">
+                <div class="card-header-modern">
+                    <div class="header-icon">
+                        <i class="fas fa-sticky-note"></i>
+                    </div>
+                    <h3>Mis Notas</h3>
+                </div>
+                <div class="card-content">
+                    <div class="notes-content">
+                        {{ presentation.description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Processing Status -->
+    {% if presentation.status == 'PROCESSING' %}
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <div class="processing-animation mb-3">
+                <i class="fas fa-cogs fa-spin text-primary" style="font-size: 3rem;"></i>
+            </div>
+            <h6 class="mb-2">Procesando con IA</h6>
+            <p class="text-muted small mb-0">Tu presentación está siendo analizada. Te notificaremos cuando está lista.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar esta presentación?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta acción no se puede deshacer y se eliminará el archivo de video.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle observation sections
+(function() {
+    function setupObservationToggles() {
+        const headers = document.querySelectorAll('[data-observation-toggle]');
+        
+        headers.forEach((header) => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                
+                if (!content || !content.classList.contains('observations-content')) {
+                    return;
+                }
+                
+                const chevronIcon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+                const currentDisplay = window.getComputedStyle(content).display;
+                const isHidden = currentDisplay === 'none';
+                
+                if (isHidden) {
+                    content.style.display = 'block';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-down');
+                        chevronIcon.classList.add('fa-chevron-up');
+                    }
+                } else {
+                    content.style.display = 'none';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-up');
+                        chevronIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    }
+    
+    function setupTranscriptionToggles() {
+        const headers = document.querySelectorAll('[data-transcription-toggle]');
+        
+        headers.forEach((header) => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                
+                if (!content || !content.classList.contains('transcription-content')) {
+                    return;
+                }
+                
+                const chevronIcon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+                const currentDisplay = window.getComputedStyle(content).display;
+                const isHidden = currentDisplay === 'none';
+                
+                if (isHidden) {
+                    content.style.display = 'block';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-down');
+                        chevronIcon.classList.add('fa-chevron-up');
+                    }
+                } else {
+                    content.style.display = 'none';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-up');
+                        chevronIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setupObservationToggles();
+            setupTranscriptionToggles();
+        });
+    } else {
+        setupObservationToggles();
+        setupTranscriptionToggles();
+    }
+})();
+
+// Video Player Functions
+function playVideo() {
+    const video = document.getElementById('videoPlayer');
+    const overlay = document.getElementById('videoOverlay');
+    
+    if (video) {
+        video.play();
+        if (overlay) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        }
+    }
+}
+
+function togglePlayPause() {
+    const video = document.getElementById('videoPlayer');
+    const icon = document.getElementById('playPauseIcon');
+    
+    if (video) {
+        if (video.paused) {
+            video.play();
+            if (icon) icon.className = 'fas fa-pause';
+        } else {
+            video.pause();
+            if (icon) icon.className = 'fas fa-play';
+        }
+    }
+}
+
+function skipTime(seconds) {
+    const video = document.getElementById('videoPlayer');
+    if (video) {
+        const newTime = video.currentTime + seconds;
+        // Asegurar que no se pase de los límites
+        if (newTime < 0) {
+            video.currentTime = 0;
+        } else if (newTime > video.duration) {
+            video.currentTime = video.duration;
+        } else {
+            video.currentTime = newTime;
+        }
+    }
+}
+
+function toggleFullscreen() {
+    const video = document.getElementById('videoPlayer');
+    if (video) {
+        if (video.requestFullscreen) {
+            video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen();
+        } else if (video.msRequestFullscreen) {
+            video.msRequestFullscreen();
+        }
+    }
+}
+
+// Sincronizar el icono de play/pause con el estado del video
+(function() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('videoPlayer');
+            const icon = document.getElementById('playPauseIcon');
+            
+            if (video && icon) {
+                video.addEventListener('play', () => {
+                    icon.className = 'fas fa-pause';
+                });
+                
+                video.addEventListener('pause', () => {
+                    icon.className = 'fas fa-play';
+                });
+                
+                video.addEventListener('ended', () => {
+                    icon.className = 'fas fa-play';
+                });
+            }
+        });
+    } else {
+        const video = document.getElementById('videoPlayer');
+        const icon = document.getElementById('playPauseIcon');
+        
+        if (video && icon) {
+            video.addEventListener('play', () => {
+                icon.className = 'fas fa-pause';
+            });
+            
+            video.addEventListener('pause', () => {
+                icon.className = 'fas fa-play';
+            });
+            
+            video.addEventListener('ended', () => {
+                icon.className = 'fas fa-play';
+            });
+        }
+    }
+})();
+
+// Funciones adicionales para compartir y descargar video
+function downloadVideo() {
+    const video = document.getElementById('videoPlayer');
+    if (video && video.currentSrc) {
+        const a = document.createElement('a');
+        a.href = video.currentSrc;
+        a.download = 'presentacion.mp4';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+}
+
+function shareVideo() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Mi Presentación - {{ presentation.title|escapejs }}',
+            text: 'Mira mi presentación',
+            url: window.location.href
+        }).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            alert('URL copiada al portapapeles');
+        }).catch(() => {
+            prompt('Copia esta URL:', window.location.href);
+        });
+    }
+}
+
+// Inicializar timeline y video overlay cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('videoPlayer');
+    const overlay = document.getElementById('videoOverlay');
+    
+    if (video && overlay) {
+        video.addEventListener('play', () => {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        });
+        
+        video.addEventListener('pause', () => {
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        });
+        
+        video.addEventListener('ended', () => {
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+        });
+    }
+    
+    // Inicializar timeline de participantes
+    {% if has_individual_analysis %}
+    if (typeof initParticipantsTimeline === 'function') {
+        initParticipantsTimeline();
+    }
+    {% endif %}
+});
+
+// Función para inicializar el timeline de participantes
+{% if has_individual_analysis %}
+function initParticipantsTimeline() {
+    const participantsData = {{ participants_segments_json|safe }};
+    const video = document.getElementById('videoPlayer');
+    const timelineContainer = document.getElementById('participantsTimeline');
+    const legendContainer = document.getElementById('timelineLegend');
+    
+    if (!video || !timelineContainer || !legendContainer || !participantsData || participantsData.length === 0) {
+        return;
+    }
+    
+    const videoDuration = video.duration || 100;
+    
+    // Colores para cada participante
+    const colors = [
+        '#3498db', // Azul
+        '#2ecc71', // Verde
+        '#f39c12', // Naranja
+        '#9b59b6', // Púrpura
+        '#e74c3c', // Rojo
+        '#1abc9c', // Turquesa
+        '#34495e', // Gris oscuro
+        '#e67e22'  // Naranja oscuro
+    ];
+    
+    // Asignar colores a cada participante
+    participantsData.forEach((participant, index) => {
+        participant.color = colors[index % colors.length];
+    });
+    
+    // Renderizar timeline
+    const timelineTrack = document.createElement('div');
+    timelineTrack.className = 'timeline-track';
+    
+    participantsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        participant.segments.forEach(segment => {
+            const startPercent = (segment.start / videoDuration) * 100;
+            const endPercent = (segment.end / videoDuration) * 100;
+            const widthPercent = endPercent - startPercent;
+            
+            const segmentDiv = document.createElement('div');
+            segmentDiv.className = 'timeline-segment';
+            segmentDiv.style.left = `${startPercent}%`;
+            segmentDiv.style.width = `${widthPercent}%`;
+            segmentDiv.style.backgroundColor = participant.color;
+            segmentDiv.title = `${participant.label}: ${segment.start.toFixed(1)}s - ${segment.end.toFixed(1)}s`;
+            
+            // Agregar label si el segmento es suficientemente ancho
+            if (widthPercent > 5) {
+                const label = document.createElement('span');
+                label.className = 'timeline-segment-label';
+                label.textContent = participant.label;
+                segmentDiv.appendChild(label);
+            }
+            
+            // Click para saltar al tiempo del video
+            segmentDiv.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTime = parseFloat(segment.start);
+                if (!isNaN(targetTime)) {
+                    video.currentTime = targetTime;
+                    if (video.paused) {
+                        video.play();
+                    }
+                }
+            });
+            
+            timelineTrack.appendChild(segmentDiv);
+        });
+    });
+    
+    timelineContainer.appendChild(timelineTrack);
+    
+    // Renderizar leyenda
+    participantsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        // Calcular tiempo total
+        const totalTime = participant.segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+        const minutes = Math.floor(totalTime / 60);
+        const seconds = Math.floor(totalTime % 60);
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${participant.color};"></div>
+            <span class="legend-label">${participant.label}</span>
+            <span class="legend-time">(${minutes}:${seconds.toString().padStart(2, '0')})</span>
+        `;
+        
+        // Click para resaltar segmentos
+        legendItem.addEventListener('click', () => {
+            document.querySelectorAll('.timeline-segment').forEach(seg => {
+                seg.style.opacity = '0.3';
+            });
+            
+            document.querySelectorAll(`[title^="${participant.label}:"]`).forEach(seg => {
+                seg.style.opacity = '1';
+                seg.style.transform = 'scaleY(1.1)';
+            });
+            
+            // Restaurar después de 2 segundos
+            setTimeout(() => {
+                document.querySelectorAll('.timeline-segment').forEach(seg => {
+                    seg.style.opacity = '1';
+                    seg.style.transform = 'scaleY(1)';
+                });
+            }, 2000);
+        });
+        
+        legendContainer.appendChild(legendItem);
+    });
+    
+    // Actualizar duración cuando el video se cargue (solo una vez)
+    if (!video.dataset.timelineInitialized) {
+        video.addEventListener('loadedmetadata', function initializeOnce() {
+            // Recrear timeline con la duración correcta
+            timelineContainer.innerHTML = '';
+            legendContainer.innerHTML = '';
+            video.dataset.timelineInitialized = 'true';
+            video.removeEventListener('loadedmetadata', initializeOnce);
+            initParticipantsTimeline();
+        });
+    }
+}
+{% endif %}
+</script>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">¿Estás seguro de que deseas eliminar la presentación <strong id="presentationTitle"></strong>?</p>
+                <div class="alert alert-danger mb-0" role="alert">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    <strong>¡Advertencia!</strong> Esta acción NO se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar Permanentemente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<!-- Script para eliminar presentación -->
+<script src="{% static 'js/my-presentations.js' %}?v=2.1"></script>
+{% endblock %}
+

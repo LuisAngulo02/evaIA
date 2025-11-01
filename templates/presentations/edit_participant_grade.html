@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Editar Calificación - {{ participant.label }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit-participant-grade.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Columna izquierda: Análisis de IA -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        Análisis de IA: {{ participant.label }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Calificación de IA -->
+                    <div class="ai-analysis-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="fas fa-brain me-2"></i>
+                                Calificación Automática
+                            </h6>
+                            <span class="badge-ai">
+                                <i class="fas fa-robot me-1"></i>
+                                IA Avanzada (Groq)
+                            </span>
+                        </div>
+                        
+                        <div class="grade-display mb-3">
+                            <div class="text-primary">{{ participant.ai_grade|floatformat:2 }}</div>
+                            <small class="text-muted">sobre 20</small>
+                        </div>
+                        
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="small">Coherencia</div>
+                                <div class="h5 mb-0">{{ participant.coherence_score|floatformat:1 }}%</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small">Tiempo</div>
+                                <div class="h5 mb-0">{{ participant.participation_time|floatformat:0 }}s</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small">Palabras</div>
+                                <div class="h5 mb-0">{{ participant.word_count }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback de IA -->
+                    <div class="mb-4">
+                        <h6><i class="fas fa-comments me-2 text-primary"></i>Retroalimentación de IA</h6>
+                        <div class="alert alert-light border">
+                            {{ participant.ai_feedback|linebreaks }}
+                        </div>
+                    </div>
+                    
+                    <!-- Fortalezas y Mejoras (si existen) -->
+                    {% if participant.ai_feedback and "strengths" in participant.ai_feedback or "improvements" in participant.ai_feedback %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle me-2 text-success"></i>Fortalezas</h6>
+                            <div class="strength-item">
+                                <i class="fas fa-star text-success me-2"></i>
+                                Cumple con los criterios principales
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-arrow-up me-2 text-warning"></i>Áreas de Mejora</h6>
+                            <div class="improvement-item">
+                                <i class="fas fa-lightbulb text-warning me-2"></i>
+                                Oportunidades de profundización
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Transcripción -->
+                    <div class="mt-4">
+                        <h6><i class="fas fa-file-alt me-2 text-info"></i>Transcripción</h6>
+                        <div class="transcription-box">
+                            {{ participant.transcription }}
+                        </div>
+                    </div>
+                    
+                    <!-- Datos de la presentación -->
+                    <div class="mt-4">
+                        <div class="small text-muted">
+                            <strong>Presentación:</strong> {{ presentation.title }}<br>
+                            <strong>Asignación:</strong> {{ assignment.title }}<br>
+                            <strong>Estudiante:</strong> {{ presentation.student.get_full_name }}<br>
+                            <strong>Fecha:</strong> {{ presentation.created_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna derecha: Formulario de edición -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Calificación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if participant.is_manually_graded %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Calificación editada</strong><br>
+                        <small>
+                            Modificada por: {{ participant.grade_modified_by.get_full_name }}<br>
+                            Fecha: {{ participant.grade_modified_at|date:"d/m/Y H:i" }}
+                        </small>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Calificación actual -->
+                        <div class="mb-4 text-center p-3 bg-light rounded">
+                            <small class="text-muted d-block">Calificación actual</small>
+                            <div class="display-6 text-success">
+                                {{ participant.final_grade|floatformat:2 }}
+                            </div>
+                            <small class="text-muted">sobre 20</small>
+                        </div>
+                        
+                        <!-- Campo de calificación manual -->
+                        <div class="mb-3">
+                            <label for="{{ form.manual_grade.id_for_label }}" class="form-label">
+                                <i class="fas fa-star me-2"></i>{{ form.manual_grade.label }}
+                            </label>
+                            {{ form.manual_grade }}
+                            <small class="form-text text-muted d-block mt-1">
+                                {{ form.manual_grade.help_text }}
+                            </small>
+                            {% if form.manual_grade.errors %}
+                                <div class="text-danger mt-1">{{ form.manual_grade.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Campo de comentarios -->
+                        <div class="mb-3">
+                            <label for="{{ form.teacher_feedback.id_for_label }}" class="form-label">
+                                <i class="fas fa-comment-dots me-2"></i>{{ form.teacher_feedback.label }}
+                            </label>
+                            {{ form.teacher_feedback }}
+                            <small class="form-text text-muted d-block mt-1">
+                                {{ form.teacher_feedback.help_text }}
+                            </small>
+                            {% if form.teacher_feedback.errors %}
+                                <div class="text-danger mt-1">{{ form.teacher_feedback.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Botones -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                Guardar Calificación
+                            </button>
+                            
+                            {% if participant.is_manually_graded %}
+                            <button type="button" class="btn btn-outline-secondary" onclick="resetGrade('{% url 'presentations:reset_participant_grade' participant.id %}', '{{ csrf_token }}')">
+                                <i class="fas fa-undo me-2"></i>
+                                Restaurar Calificación de IA
+                            </button>
+                            {% endif %}
+                            
+                            <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'js/edit-participant-grade.js' %}"></script>
+{% endblock %}

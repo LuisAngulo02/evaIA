@@ -1,0 +1,206 @@
+<!-- Contenido del dropdown de notificaciones -->
+<div class="dropdown-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">Notificaciones</span>
+    {% if unread_count > 0 %}
+    <button class="btn btn-sm btn-outline-primary" onclick="markAllAsRead()">
+        Marcar todas como leídas
+    </button>
+    {% endif %}
+</div>
+    
+    {% if notifications %}
+        {% for notification in notifications %}
+        <div class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}" 
+             data-notification-id="{{ notification.id }}"
+             data-action-url="{% if notification.action_url %}{{ notification.action_url }}{% endif %}"
+             onclick="handleNotificationClick({{ notification.id }}, '{% if notification.action_url %}{{ notification.action_url }}{% endif %}', {{ notification.is_read|yesno:'true,false' }})">
+            <div class="d-flex align-items-start">
+                <div class="notification-icon me-3">
+                    <i class="{{ notification.icon_class }}"></i>
+                </div>
+                <div class="notification-content flex-grow-1">
+                    <h6 class="notification-title mb-1">{{ notification.title }}</h6>
+                    <p class="notification-message mb-1 small text-muted">
+                        {{ notification.message|truncatechars:80 }}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">{{ notification.time_since_created }}</small>
+                        {% if not notification.is_read %}
+                        <span class="badge bg-primary badge-sm">Nuevo</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if not forloop.last %}
+        <div class="dropdown-divider"></div>
+        {% endif %}
+        {% endfor %}
+        
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item text-center">
+            <a href="{% url 'notifications:list' %}" class="btn btn-sm btn-primary">
+                Ver todas las notificaciones
+            </a>
+        </div>
+    {% else %}
+        <div class="dropdown-item text-center py-4">
+            <i class="fas fa-bell-slash text-muted mb-2" style="font-size: 2rem;"></i>
+            <p class="text-muted mb-0">No tienes notificaciones</p>
+        </div>
+    {% endif %}
+
+<style>
+.notification-item {
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #f0f8ff;
+    border-left: 3px solid #0d6efd;
+}
+
+.notification-icon {
+    width: 30px;
+    text-align: center;
+}
+
+.notification-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.notification-message {
+    font-size: 0.8rem;
+    line-height: 1.3;
+}
+
+.dropdown-header {
+    padding: 12px 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+</style>
+
+<script>
+async function handleNotificationClick(notificationId, actionUrl, isRead) {
+    // Obtener CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        // Si no hay token, al menos intentar redirigir
+        if (actionUrl) {
+            window.location.href = actionUrl;
+        }
+        return;
+    }
+    
+    // Marcar como leída PRIMERO (si no lo está ya)
+    if (!isRead) {
+        try {
+            const response = await fetch(`/notifications/mark-read/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Actualizar contador
+                if (window.updateNotificationBadge) {
+                    window.updateNotificationBadge(data.unread_count);
+                }
+                
+                // Actualizar visualmente la notificación
+                const notificationItem = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                if (notificationItem) {
+                    notificationItem.classList.remove('unread');
+                    const badge = notificationItem.querySelector('.badge');
+                    if (badge) {
+                        badge.remove();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error al marcar como leída:', error);
+        }
+    }
+    
+    // Redirigir a la URL de acción DESPUÉS de marcar como leída
+    if (actionUrl && actionUrl !== '') {
+        // Esperar un momento para asegurar que la petición se completó
+        await new Promise(resolve => setTimeout(resolve, 200));
+        window.location.href = actionUrl;
+    }
+}
+
+async function markAllAsRead() {
+    // Mostrar confirmación personalizada
+    const confirmed = await customConfirm(
+        '¿Marcar todas las notificaciones como leídas?',
+        'Aceptar',
+        'Cancelar'
+    );
+    
+    if (!confirmed) {
+        return; // Usuario canceló
+    }
+    
+    // Obtener CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                      document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    
+    if (!csrfToken) {
+        console.error('CSRF token not found');
+        showCustomAlert('Error: No se pudo obtener el token de seguridad', 'error', 3000);
+        return;
+    }
+    
+    try {
+        const response = await fetch('{% url "notifications:mark_all_as_read" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mostrar alerta de éxito
+            showCustomAlert('Todas las notificaciones han sido marcadas como leídas', 'success', 3000);
+            
+            // Recargar el dropdown
+            if (window.loadNotificationDropdown) {
+                window.loadNotificationDropdown();
+            }
+            // Actualizar el contador
+            if (window.updateNotificationBadge) {
+                window.updateNotificationBadge(0);
+            }
+        } else {
+            showCustomAlert('Error al marcar las notificaciones como leídas', 'error', 3000);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showCustomAlert('Ocurrió un error al procesar la solicitud', 'error', 3000);
+    }
+}
+</script>

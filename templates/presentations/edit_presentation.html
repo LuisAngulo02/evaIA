@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Editar Presentación - {{ presentation.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit-presentation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:my_presentations' %}">Mis Presentaciones</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:presentation_detail' presentation.id %}">{{ presentation.title|truncatechars:30 }}</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Editar</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold text-dark mb-2">
+                        <i class="fas fa-edit me-3" style="color: var(--primary-color);"></i>
+                        Editar Presentación
+                    </h1>
+                    <p class="text-muted fs-5">Actualiza los detalles de tu presentación</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Presentation Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning border-2">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <h5 class="mb-0 text-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Presentación Actual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-2">{{ presentation.title }}</h6>
+                            <p class="text-muted mb-2">{{ presentation.assignment.title }}</p>
+                            <div class="presentation-meta">
+                                <span class="badge bg-primary me-2">
+                                    {{ presentation.assignment.course.code }}
+                                </span>
+                                <span class="badge {{ presentation.status_badge_class }}">
+                                    {{ presentation.get_status_display }}
+                                </span>
+                                <span class="text-muted small ms-2">
+                                    Subida: {{ presentation.uploaded_at_display|date:"d M Y H:i" }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if presentation.video_file %}
+                                <div class="current-video-info">
+                                    <i class="fas fa-file-video text-primary me-2"></i>
+                                    <span class="small">{{ presentation.file_size_mb }} MB</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0">
+                <div class="card-header bg-gradient text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Actualizar Información
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="editForm">
+                        {% csrf_token %}
+                        
+                        <!-- Assignment Info (Read-only) -->
+                        <div class="mb-4">
+                            <label class="form-label">Asignación</label>
+                            <div class="card border-primary">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ presentation.assignment.title }}</h6>
+                                            <p class="mb-2 text-muted">{{ presentation.assignment.course.code }} - {{ presentation.assignment.course.name }}</p>
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <span class="badge bg-primary">{{ presentation.assignment.get_assignment_type_display }}</span>
+                                                <span class="badge bg-info">Max: {{ presentation.assignment.max_duration }} min</span>
+                                                <span class="badge bg-warning text-dark">{{ presentation.assignment.max_score }} pts</span>
+                                                <span class="badge bg-secondary">Vence: {{ presentation.assignment.due_date|date:"d M Y H:i" }}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-lock text-muted" title="No puedes cambiar la asignación al editar"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                No puedes cambiar la asignación al editar una presentación
+                            </div>
+                            <!-- Campo oculto para mantener la asignación -->
+                            <input type="hidden" name="assignment" value="{{ presentation.assignment.id }}">
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mb-4">
+                            <label class="form-label">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Video Upload with Current Video Display -->
+                        <div class="mb-4">
+                            <label class="form-label">Video de la Presentación</label>
+                            
+                            <!-- Current Video Display -->
+                            {% if presentation.video_file %}
+                            <div class="current-video-display mb-3 p-3 bg-light rounded border">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="video-thumbnail me-3">
+                                        <i class="fas fa-video text-primary fa-2x"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Video actual</h6>
+                                        <small class="text-muted">
+                                            {{ presentation.video_file.name|slice:"30:" }}... 
+                                            ({{ presentation.file_size_mb }} MB)
+                                            {% if presentation.duration %}
+                                                | {{ presentation.duration }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="toggleVideoPreview()">
+                                            <i class="fas fa-play me-1"></i>Vista previa
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteVideo()">
+                                            <i class="fas fa-trash me-1"></i>Eliminar y subir nueva
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Video Preview (Initially Hidden) -->
+                                <div id="currentVideoPreview" class="mt-3" style="display: none;">
+                                    <video controls class="w-100" style="max-height: 300px; border-radius: 8px;">
+                                        <source src="{{ presentation.video_file.url }}" type="video/mp4">
+                                        Tu navegador no soporta el elemento video.
+                                    </video>
+                                </div>
+                                
+                                <div class="alert alert-warning mt-3 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Nota:</strong> Al eliminar el video, se borrará toda la presentación y serás redirigido a subir una nueva para esta asignación.
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                No hay video asociado a esta presentación.
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="mb-4">
+                            <label class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-arrow-left me-2"></i>Cancelar
+                                </a>
+                            </div>
+                            <div>
+                                <button type="submit" class="btn btn-success btn-lg" id="saveBtn">
+                                    <i class="fas fa-save me-2"></i>
+                                    <span class="btn-text">Guardar Cambios</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Assignment Info -->
+            <div class="card mb-4" id="assignment-details">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Información de la Asignación
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div id="assignment-info">
+                        <p><strong>Curso:</strong> {{ presentation.assignment.course.name }}</p>
+                        <p><strong>Tipo:</strong> {{ presentation.assignment.get_assignment_type_display }}</p>
+                        <p><strong>Duración máxima:</strong> {{ presentation.assignment.max_duration }} min</p>
+                        <p><strong>Fecha límite:</strong> {{ presentation.assignment.due_date|date:"d M Y H:i" }}</p>
+                        <p><strong>Puntaje máximo:</strong> {{ presentation.assignment.max_score }} puntos</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips for Editing -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Consejos para Editar
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-edit text-primary"></i>
+                        </div>
+                        <div class="tip-content">
+                            <strong>Cambios permitidos</strong>
+                            <p>Puedes cambiar el título, notas y reemplazar el video mientras no esté calificada.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-video text-warning"></i>
+                        </div>
+                        <div class="tip-content">
+                            <strong>Nuevo video</strong>
+                            <p>Si subes un nuevo video, el anterior será reemplazado permanentemente.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="tip-item">
+                        <div class="tip-icon">
+                            <i class="fas fa-robot text-info"></i>
+                        </div>
+                        <div class="tip-content">
+                            <strong>Análisis IA</strong>
+                            <p>Los cambios pueden requerir un nuevo análisis de la inteligencia artificial.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/edit-presentation.js' %}"></script>
+<script>
+// Asegurar que las funciones estén disponibles globalmente
+window.toggleVideoPreview = function() {
+    const preview = document.getElementById('currentVideoPreview');
+    if (preview.style.display === 'none') {
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+window.confirmDeleteVideo = function() {
+    if (confirm('¿Estás seguro de que deseas eliminar esta presentación? Esta acción no se puede deshacer. Serás redirigido a subir una nueva presentación con la misma asignación.')) {
+        // Get presentation ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const presentationId = pathParts[pathParts.indexOf('presentation') + 1];
+        
+        // Show loading message
+        const confirmBtn = event.target;
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Eliminando...';
+        
+        // Call delete endpoint
+        fetch(`/presentations/presentation/${presentationId}/delete-video/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to upload page with assignment pre-selected
+                alert('✅ Presentación eliminada exitosamente. Serás redirigido para subir una nueva.');
+                window.location.href = data.redirect_url;
+            } else {
+                alert('❌ Error al eliminar la presentación: ' + (data.message || 'Error desconocido'));
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error al eliminar la presentación. Por favor, intenta de nuevo.');
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = originalText;
+        });
+    }
+}
+
+window.removeNewVideo = function() {
+    const videoInput = document.getElementById('id_video_file');
+    if (videoInput) {
+        videoInput.value = '';
+    }
+    
+    const preview = document.getElementById('newVideoPreview');
+    if (preview) {
+        preview.style.display = 'none';
+    }
+    
+    // Revoke object URL to free memory
+    const videoSource = document.getElementById('newVideoSource');
+    if (videoSource && videoSource.src) {
+        URL.revokeObjectURL(videoSource.src);
+        videoSource.src = '';
+    }
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

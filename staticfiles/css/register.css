@@ -1,0 +1,96 @@
+/* Register Page Styles */
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.form-control {
+    border-radius: 12px !important;
+    padding: 14px 18px;
+    border: 2px solid #e2e8f0;
+    background: rgba(255, 255, 255, 0.95);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.15);
+    background: white;
+}
+
+.input-group .form-control {
+    border-radius: 12px 0 0 12px !important;
+    border-right: none;
+}
+
+.input-group-text {
+    border-radius: 0 12px 12px 0 !important;
+    border: 2px solid #e2e8f0;
+    border-left: none;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.form-control:focus + .input-group-text {
+    border-color: #6366f1;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+}
+
+.btn-outline-primary {
+    border-color: #6366f1;
+    color: #6366f1;
+    border-width: 2px;
+}
+
+.btn-outline-primary:hover {
+    background: #6366f1;
+    border-color: #6366f1;
+    transform: translateY(-1px);
+}
+
+.card {
+    backdrop-filter: blur(20px);
+    background: rgba(255, 255, 255, 0.95) !important;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.text-primary {
+    color: #6366f1 !important;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.password-strength.weak { 
+    color: #ef4444; 
+}
+
+.password-strength.fair { 
+    color: #f59e0b; 
+}
+
+.password-strength.good { 
+    color: #06b6d4; 
+}
+
+.password-strength.strong { 
+    color: #10b981; 
+}

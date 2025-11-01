@@ -1,0 +1,398 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mis Presentaciones - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my-presentations.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/my-presentations.js' %}"></script>
+<script>
+// Inicializar monitoreo de progreso al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    const processingPresentations = [];
+    
+    // Detectar presentaciones en procesamiento
+    {% for presentation in presentations %}
+        {% if presentation.status == 'PROCESSING' or presentation.status == 'UPLOADED' %}
+            processingPresentations.push({{ presentation.id }});
+        {% endif %}
+    {% endfor %}
+    
+    // Iniciar monitoreo
+    initProgressMonitoring(processingPresentations);
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Hero Header -->
+    <div class="hero-header mb-5">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-chart-line me-2"></i>
+                <span>Dashboard Personal</span>
+            </div>
+            <h1 class="hero-title">
+                Mis <span class="text-gradient">Presentaciones</span>
+            </h1>
+            <p class="hero-subtitle">
+                Revisa tu progreso, análisis de IA y feedback de docentes en un solo lugar.
+            </p>
+            <div class="hero-actions">
+                <a href="{% url 'presentations:upload_presentation' %}" class="btn-hero-primary">
+                    <i class="fas fa-rocket"></i>
+                    <span>Nueva Presentación</span>
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="floating-stats">
+                <div class="stat-bubble bubble-1">
+                    <i class="fas fa-video"></i>
+                    <span>Videos</span>
+                </div>
+                <div class="stat-bubble bubble-2">
+                    <i class="fas fa-star"></i>
+                    <span>Scores</span>
+                </div>
+                <div class="stat-bubble bubble-3">
+                    <i class="fas fa-robot"></i>
+                    <span>IA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Stats Dashboard -->
+    <div class="stats-dashboard mb-5">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="stat-pulse"></div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ stats.total|default:0 }}</div>
+                        <div class="stat-label">Total Presentaciones</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-arrow-up"></i>
+                            <span>+3 este mes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-pulse"></div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ stats.pending|default:0 }}</div>
+                        <div class="stat-label">En Análisis</div>
+                        {% if stats.pending > 0 %}
+                        <div class="stat-change">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Procesando</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card stat-info">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="stat-pulse"></div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ stats.analyzed|default:0 }}</div>
+                        <div class="stat-label">Analizadas IA</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Completadas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card stat-success">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-pulse"></div>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">{{ stats.avg_score|floatformat:1|default:"--" }}%</div>
+                        <div class="stat-label">Promedio General</div>
+                        <div class="stat-change positive">
+                            <i class="fas fa-trophy"></i>
+                            <span>Excelente</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Presentations List -->
+    <div class="row">
+        <div class="col-12">
+            {% if presentations %}
+                {% for presentation in presentations %}
+                <div class="card mb-4 presentation-card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <!-- Presentation Info -->
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-start">
+                                    <div class="presentation-thumbnail me-3">
+                                        {% if presentation.get_thumbnail_url %}
+                                            <img src="{{ presentation.get_thumbnail_url }}" 
+                                                 alt="Thumbnail de {{ presentation.title }}" 
+                                                 class="thumbnail-image"
+                                                 loading="lazy">
+                                            <div class="thumbnail-overlay">
+                                                <i class="fas fa-play-circle"></i>
+                                            </div>
+                                        {% elif presentation.video_file %}
+                                            <div class="video-thumbnail">
+                                                <i class="fas fa-play-circle"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="video-placeholder">
+                                                <i class="fas fa-video-slash"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="presentation-info flex-grow-1">
+                                        <h5 class="mb-2">
+                                            <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="text-decoration-none">
+                                                {{ presentation.title }}
+                                            </a>
+                                        </h5>
+                                        
+                                        <div class="presentation-meta mb-2">
+                                            <span class="badge bg-primary me-2">
+                                                <i class="fas fa-book me-1"></i>
+                                                {{ presentation.assignment.course.code }}
+                                            </span>
+                                            <span class="text-muted small">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {{ presentation.uploaded_at_display|date:"d M Y H:i" }}
+                                            </span>
+                                            {% if presentation.is_late %}
+                                                <span class="badge bg-warning ms-2">
+                                                    <i class="fas fa-clock me-1"></i>Tardía
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="assignment-info">
+                                            <strong>{{ presentation.assignment.title }}</strong>
+                                            <p class="text-muted small mb-1">{{ presentation.assignment.description|truncatechars:100 }}</p>
+                                        </div>
+                                        
+                                        {% if presentation.description %}
+                                            <div class="notes-preview">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-sticky-note me-1"></i>
+                                                    {{ presentation.description|truncatechars:80 }}
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status and Actions -->
+                            <div class="col-md-4 text-end">
+                                <!-- Status Badge -->
+                                <div class="mb-3">
+                                    <span class="badge {{ presentation.status_badge_class }} fs-6 px-3 py-2">
+                                        {{ presentation.status_display|safe }}
+                                    </span>
+                                </div>
+                                
+                                <!-- Progress Bar para análisis en curso -->
+                                {% if presentation.status == 'PROCESSING' or presentation.status == 'UPLOADED' %}
+                                <div class="progress-container mb-3" id="progress-container-{{ presentation.id }}">
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
+                                             id="progress-bar-{{ presentation.id }}"
+                                             role="progressbar" 
+                                             style="width: 0%"
+                                             aria-valuenow="0" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            <span id="progress-text-{{ presentation.id }}">Iniciando...</span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block" id="progress-step-{{ presentation.id }}">
+                                        <i class="fas fa-spinner fa-spin me-1"></i>Analizando con IA...
+                                    </small>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Scores -->
+                                {% if presentation.overall_ai_score %}
+                                    <div class="score-display mb-3">
+                                        <div class="score-circle">
+                                            <span class="score-number">{{ presentation.overall_ai_score }}</span>
+                                            <small class="score-label">IA Score</small>
+                                        </div>
+                                        {% if presentation.final_score %}
+                                            <div class="score-circle ms-2">
+                                                <span class="score-number">{{ presentation.final_score }}</span>
+                                                <small class="score-label">Final</small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Action Buttons -->
+                                <div class="action-buttons">
+                                    <a href="{% url 'presentations:presentation_detail' presentation.id %}" 
+                                       class="btn btn-sm btn-outline-primary me-1" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    {% if presentation.status != 'GRADED' and not presentation.final_score %}
+                                        <a href="{% url 'presentations:edit_presentation' presentation.id %}" 
+                                           class="btn btn-sm btn-outline-secondary me-1" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete({{ presentation.id }}, '{{ presentation.title }}')" 
+                                                title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- File Info -->
+                                {% if presentation.video_file %}
+                                    <div class="file-info mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file-video me-1"></i>
+                                            {{ presentation.file_size_mb }} MB
+                                            {% if presentation.duration %}
+                                                | {{ presentation.duration }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- Pagination -->
+                {% if presentations.has_other_pages %}
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="Paginación de presentaciones">
+                            <ul class="pagination">
+                                {% if presentations.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ presentations.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in presentations.paginator.page_range %}
+                                    {% if presentations.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > presentations.number|add:'-3' and num < presentations.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if presentations.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ presentations.next_page_number }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+                
+            {% else %}
+                <!-- Empty State -->
+                <div class="card border-0">
+                    <div class="card-body text-center py-5">
+                        <div class="empty-state">
+                            <div class="empty-icon mb-4">
+                                <i class="fas fa-video text-muted"></i>
+                            </div>
+                            <h4 class="mb-3">No tienes presentaciones aún</h4>
+                            <p class="text-muted mb-4">
+                                Comienza subiendo tu primera presentación y obtén retroalimentación instantánea con IA
+                            </p>
+                            <a href="{% url 'presentations:upload_presentation' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload me-2"></i>Subir mi primera presentación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar la presentación <strong id="presentationTitle"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Esta acción no se puede deshacer.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

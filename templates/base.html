@@ -1,0 +1,222 @@
+﻿{% load auth_extras %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}EvalExpo AI - Sistema Inteligente de Evaluación{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js para gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Archivos CSS Externos -->
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{% url 'auth:dashboard' %}">
+                <i class="fas fa-brain me-2"></i>
+                EvalExpo AI
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'auth:dashboard' %}">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </li>
+                    {% if user|is_student %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'presentations:my_presentations' %}">
+                            <i class="fas fa-video me-2"></i>Mis Presentaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reports:student_reports' %}">
+                            <i class="fas fa-chart-bar me-2"></i>Calificaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'help:user_guide' %}" data-bs-toggle="tooltip" title="Guía de Usuario">
+                            <i class="fas fa-question-circle me-2"></i>Ayuda
+                        </a>
+                    </li>
+                    {% elif user|is_teacher %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'presentations:manage_courses' %}">
+                            <i class="fas fa-chalkboard-teacher me-2"></i>Cursos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'presentations:manage_assignments' %}">
+                            <i class="fas fa-tasks me-2"></i>Asignaciones
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'presentations:grade_presentations' %}">
+                            <i class="fas fa-star me-2"></i>Calificar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'help:user_guide' %}" data-bs-toggle="tooltip" title="Guía de Usuario">
+                            <i class="fas fa-question-circle me-2"></i>Ayuda
+                        </a>
+                    </li>
+                    {% elif user|is_admin %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">
+                            <i class="fas fa-cogs me-2"></i>Admin Panel
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'reports:admin_reports' %}">
+                            <i class="fas fa-chart-line me-2"></i>Reportes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'help:user_guide' %}" data-bs-toggle="tooltip" title="Guía de Usuario">
+                            <i class="fas fa-question-circle me-2"></i>Ayuda
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false" title="Notificaciones">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notifications_count > 0 %}
+                            <span class="badge bg-danger badge-sm notification-badge" id="notificationCount">
+                                {% if unread_notifications_count > 99 %}99+{% else %}{{ unread_notifications_count }}{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="badge bg-danger badge-sm notification-badge" id="notificationCount" 
+                                  style="display: none;">0</span>
+                            {% endif %}
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end notifications-dropdown" id="notificationDropdownContent" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            <div class="dropdown-header d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Cargando notificaciones...</span>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <div class="avatar me-2">
+                                {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle" width="32" height="32">
+                                {% else %}
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; font-size: 14px;">
+                                    {{ user.first_name.0|default:user.username.0|upper }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <span>{{ user.first_name|default:user.username }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end profile-dropdown">
+                            <li>
+                                <div class="dropdown-item-text">
+                                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                                    <small class="text-muted">{{ user.profile.get_role_display }}</small>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'auth:profile' %}">
+                                    <i class="fas fa-user-edit me-2"></i>Configurar Perfil
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'auth:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055; margin-top: 90px;">
+        {% for message in messages %}
+        <div class="toast show align-items-center border-0 shadow-lg mb-3 toast-{{ message.tags|default:'info' }}" role="alert">
+            <div class="d-flex w-100">
+                <div class="toast-body d-flex align-items-center">
+                    <div class="me-3">
+                        {% if message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle fa-lg"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-circle fa-lg"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle fa-lg"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <strong class="me-2">
+                            {% if message.tags == 'error' or message.tags == 'danger' %}
+                                Error
+                            {% elif message.tags == 'success' %}
+                                Éxito
+                            {% elif message.tags == 'warning' %}
+                                Advertencia
+                            {% else %}
+                                Información
+                            {% endif %}
+                        </strong>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% csrf_token %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <!-- Custom Alerts System -->
+    <script src="{% static 'js/custom-alerts.js' %}?v=2.0"></script>
+    
+    <!-- Base JavaScript -->
+    <script src="{% static 'js/base.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

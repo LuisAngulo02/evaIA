@@ -1,0 +1,681 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}{% if is_review_mode %}Ver: {{ presentation.title }}{% else %}{% if is_already_graded %}Revisar: {{ presentation.title }}{% else %}Calificar: {{ presentation.title }}{% endif %}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/grade-presentation-detail.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/grading.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header -->
+    <div class="grading-header mb-5">
+        <div class="breadcrumb-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb-modern">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:grade_presentations' %}">
+                            <i class="fas fa-star me-2"></i>Calificar Presentaciones
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">{{ presentation.title|truncatechars:40 }}</li>
+                </ol>
+            </nav>
+        </div>
+        
+        <div class="header-content">
+            <div class="presentation-info">
+                <h1 class="presentation-title">
+                    {{ presentation.title }}
+                    {% if is_review_mode %}
+                    <span class="badge bg-info ms-3"><i class="fas fa-eye me-1"></i>Vista Solo Lectura</span>
+                    {% elif is_already_graded %}
+                    <span class="badge bg-warning ms-3"><i class="fas fa-edit me-1"></i>Revisando</span>
+                    {% else %}
+                    <span class="badge bg-primary ms-3"><i class="fas fa-star me-1"></i>Calificando</span>
+                    {% endif %}
+                </h1>
+                <div class="student-info">
+                    <div class="student-avatar">
+                        <img src="https://ui-avatars.com/api/?name={{ presentation.student.get_full_name|default:presentation.student.username }}&background=6366f1&color=ffffff" 
+                             alt="{{ presentation.student.get_full_name|default:presentation.student.username }}"
+                             class="rounded-circle">
+                    </div>
+                    <div class="student-details">
+                        <h5>{{ presentation.student.get_full_name|default:presentation.student.username }}</h5>
+                        <p class="text-muted">{{ presentation.assignment.course.code }} - {{ presentation.assignment.course.name }}</p>
+                        <div class="submission-info">
+                            <span class="badge bg-info">{{ presentation.assignment.title }}</span>
+                            <span class="text-muted ms-2">Subido: {{ presentation.uploaded_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assignment-info">
+                <div class="assignment-card">
+                    <h6><i class="fas fa-clipboard-list me-2"></i>Información de la Asignación</h6>
+                    <div class="assignment-details">
+                        <div class="detail-row">
+                            <span>Puntaje Máximo:</span>
+                            <strong>{{ presentation.assignment.max_score }} puntos</strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Fecha Límite:</span>
+                            <strong {% if presentation.is_late %}class="text-danger"{% endif %}>
+                                {{ presentation.assignment.due_date|date:"d M Y H:i" }}
+                            </strong>
+                        </div>
+                        <div class="detail-row">
+                            <span>Estado:</span>
+                            <span class="badge {{ presentation.status_badge_class }}">
+                                {{ presentation.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grading-content">
+        <!-- Video Player -->
+        <div class="video-section">
+            {% if presentation.video_file %}
+            <div class="video-container-grading">
+                <div class="video-header">
+                    <h4><i class="fas fa-play-circle me-2"></i>Video de la Presentación</h4>
+                    <div class="video-controls">
+                        <span class="video-duration">
+                            {% if presentation.duration %}{{ presentation.duration }}{% else %}--:--{% endif %}
+                        </span>
+                        <span class="video-size">
+                            {% if presentation.video_file %}
+                                {% if presentation.file_size %}
+                                    {{ presentation.file_size|filesizeformat }}
+                                {% else %}
+                                    Tamaño no disponible
+                                {% endif %}
+                            {% else %}
+                                Archivo no encontrado
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="video-wrapper">
+                    <video id="presentationVideo" controls class="grading-video">
+                        <source src="{{ presentation.video_file.url }}" type="video/mp4">
+                        Tu navegador no soporta el elemento video.
+                    </video>
+                </div>
+                
+                <div class="video-tools">
+                    <button class="video-tool-btn" onclick="skipTime(-10)">
+                        <i class="fas fa-backward"></i> -10s
+                    </button>
+                    <button class="video-tool-btn" onclick="togglePlayPause()">
+                        <i class="fas fa-play" id="playPauseIcon"></i>
+                    </button>
+                    <button class="video-tool-btn" onclick="skipTime(10)">
+                        <i class="fas fa-forward"></i> +10s
+                    </button>
+                    <button class="video-tool-btn" onclick="toggleFullscreen()">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Timeline de Participación por Persona -->
+            {% if has_individual_analysis %}
+            <div class="participants-timeline-container mt-4">
+                <div class="timeline-header">
+                    <h3><i class="fas fa-users-line me-2"></i>Línea de Tiempo de Participación</h3>
+                    <p class="text-muted small">Segmentos donde aparece cada participante</p>
+                </div>
+                <div id="participantsTimeline" class="participants-timeline">
+                    <!-- Se renderizará dinámicamente con JavaScript -->
+                </div>
+                <div class="timeline-legend">
+                    <div class="legend-items" id="timelineLegend">
+                        <!-- Se renderizará dinámicamente con JavaScript -->
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="no-video-message">
+                <i class="fas fa-video-slash"></i>
+                <h5>Video no disponible</h5>
+                <p>No se pudo cargar el video de la presentación.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- NUEVO: Evaluación Individual de Participantes -->
+        {% if has_individual_analysis %}
+        <div class="participants-analysis-section">
+            <div class="analysis-header">
+                <h2><i class="fas fa-users me-2"></i>Evaluación Individual de Participantes</h2>
+                <p class="text-muted">Análisis automático de coherencia para cada participante detectado</p>
+            </div>
+            
+            <div class="participants-grid">
+                {% for participant in participants %}
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-avatar">
+                            {% if participant.photo %}
+                                <img src="{{ participant.photo.url }}" alt="{{ participant.label }}" class="participant-photo">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                                <span>{{ forloop.counter }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="participant-info">
+                            <h3>{{ participant.label }}</h3>
+                            <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="participant-metrics">
+                        <div class="metric-row">
+                            <div class="metric-item">
+                                <i class="fas fa-clock text-primary"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Tiempo</span>
+                                    <span class="metric-value">{{ participant.time_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                <div class="metric-info">
+                                    <span class="metric-label">Aporte</span>
+                                    <span class="metric-value">{{ participant.contribution_percentage|floatformat:1 }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coherence-breakdown">
+                            <h4>Desglose de Evaluación</h4>
+                            <div class="breakdown-item">
+                                <span>Coherencia semántica</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.semantic_coherence }}%"></div>
+                                </div>
+                                <span>{{ participant.semantic_coherence|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Palabras clave</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.keywords_score }}%"></div>
+                                </div>
+                                <span>{{ participant.keywords_score|floatformat:1 }}/100</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>Profundidad</span>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: {{ participant.depth_score }}%"></div>
+                                </div>
+                                <span>{{ participant.depth_score|floatformat:1 }}/100</span>
+                            </div>
+                        </div>
+                        
+                        {% if participant.keywords_found %}
+                        <div class="keywords-section">
+                            <h5><i class="fas fa-key me-1"></i>Palabras clave detectadas:</h5>
+                            <div class="keywords-list">
+                                {% for keyword in participant.keywords_found|slice:":8" %}
+                                    <span class="keyword-badge">{{ keyword }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="observations-section">
+                            <div class="observations-header" style="cursor: pointer;" data-observation-toggle>
+                                <h5><i class="fas fa-comment-alt me-1"></i>Observación <i class="fas fa-chevron-down float-end"></i></h5>
+                            </div>
+                            <div class="observations-content" style="display: none; margin-top: 10px;">
+                                <p style="white-space: pre-wrap;">{{ participant.ai_feedback|default:participant.observations }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="participant-stats">
+                            <span><i class="fas fa-align-left"></i> {{ participant.word_count }} palabras</span>
+                            <span><i class="fas fa-stopwatch"></i> {{ participant.participation_time|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        
+        </div>
+        {% endif %}
+
+        <!-- AI Analysis Results -->
+        {% if presentation.overall_ai_score %}
+        <div class="ai-analysis-section">
+            <div class="section-header">
+                <h4><i class="fas fa-robot me-2"></i>Análisis de Inteligencia Artificial</h4>
+                <p class="text-muted">Evaluación automática basada en criterios de presentación</p>
+            </div>
+            
+            <div class="ai-scores">
+                {% if presentation.content_score %}
+                <div class="score-card content">
+                    <div class="score-icon"><i class="fas fa-book"></i></div>
+                    <div class="score-value">{{ presentation.content_score }}%</div>
+                    <div class="score-label">Contenido</div>
+                    <div class="score-description">Relevancia y estructura del tema</div>
+                </div>
+                {% endif %}
+                
+                {% if presentation.fluency_score %}
+                <div class="score-card fluency">
+                    <div class="score-icon"><i class="fas fa-comments"></i></div>
+                    <div class="score-value">{{ presentation.fluency_score }}%</div>
+                    <div class="score-label">Fluidez</div>
+                    <div class="score-description">Claridad y ritmo del discurso</div>
+                </div>
+                {% endif %}
+                
+                {% if presentation.body_language_score %}
+                <div class="score-card body-language">
+                    <div class="score-icon"><i class="fas fa-user"></i></div>
+                    <div class="score-value">{{ presentation.body_language_score }}%</div>
+                    <div class="score-label">Lenguaje Corporal</div>
+                    <div class="score-description">Gestos y expresión corporal</div>
+                </div>
+                {% endif %}
+                
+                {% if presentation.voice_score %}
+                <div class="score-card voice">
+                    <div class="score-icon"><i class="fas fa-microphone"></i></div>
+                    <div class="score-value">{{ presentation.voice_score }}%</div>
+                    <div class="score-label">Voz y Dicción</div>
+                    <div class="score-description">Claridad y proyección vocal</div>
+                </div>
+                {% endif %}
+                
+                <div class="score-card overall">
+                    <div class="score-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="score-value">{{ presentation.overall_ai_score }}%</div>
+                    <div class="score-label">Puntuación IA</div>
+                    <div class="score-description">Evaluación general automática</div>
+                </div>
+            </div>
+            
+            {% if presentation.ai_feedback %}
+            <div class="ai-feedback-card">
+                <h6><i class="fas fa-lightbulb me-2"></i>Retroalimentación IA</h6>
+                <div class="ai-feedback-content">
+                    {{ presentation.ai_feedback|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Grading Form -->
+        <div class="grading-form-section">
+            <div class="form-header">
+                <h4><i class="fas fa-star me-2"></i>Calificación del Docente</h4>
+                <p class="text-muted">Proporciona tu evaluación y retroalimentación</p>
+            </div>
+            
+            {% if is_review_mode %}
+            <!-- VISTA DE REVISIÓN - SOLO LECTURA -->
+            <div class="review-mode">
+                <div class="review-grid">
+                    {% if presentation.final_score is not None %}
+                    <!-- Calificación Final (Solo Lectura) -->
+                    <div class="score-display-section">
+                        <div class="score-card">
+                            <h5 class="score-label">
+                                <i class="fas fa-trophy me-2 text-warning"></i>Puntuación Final
+                            </h5>
+                            <div class="score-display">
+                                <span class="score-value">{{ presentation.final_score|floatformat:1 }}</span>
+                                <span class="score-max-display">/ {{ presentation.assignment.max_score }}</span>
+                            </div>
+                            <div class="score-percentage-display">
+                                {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%
+                            </div>
+                            <div class="score-bar-display">
+                                <div class="score-fill-display" style="width: {% widthratio presentation.final_score presentation.assignment.max_score 100 %}%"></div>
+                            </div>
+                            {% if presentation.graded_by %}
+                            <div class="grading-info mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user-check me-1"></i>Calificado por: {{ presentation.graded_by.get_full_name|default:presentation.graded_by.username }}
+                                    <br><i class="fas fa-calendar me-1"></i>Fecha: {{ presentation.graded_at|date:"d M Y H:i" }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Presentación No Calificada -->
+                    <div class="score-display-section">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Esta presentación aún no ha sido calificada.
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if presentation.final_score is not None %}
+                    <!-- Retroalimentación (Solo Lectura) -->
+                    <div class="feedback-display-section">
+                        <h5 class="feedback-label">
+                            <i class="fas fa-comment-alt me-2 text-primary"></i>Retroalimentación del Profesor
+                        </h5>
+                        <div class="feedback-display">
+                            {% if presentation.teacher_feedback %}
+                                {{ presentation.teacher_feedback|linebreaks }}
+                            {% else %}
+                                <em class="text-muted">No se proporcionó retroalimentación adicional.</em>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Botones de Acción - Solo Volver -->
+                <div class="form-actions">
+                    <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                </div>
+            </div>
+            
+            {% else %}
+            <!-- VISTA DE CALIFICACIÓN - EDITABLE -->
+            <form method="post" class="grading-form">
+                {% csrf_token %}
+                
+                <div class="grading-grid">
+                    <!-- Score Input -->
+                    <div class="score-input-section">
+                        <label for="final_score" class="form-label">
+                            <i class="fas fa-trophy me-2"></i>Puntuación Final
+                        </label>
+                        <div class="score-input-container">
+                            <input type="number" 
+                                   class="form-control score-input" 
+                                   id="final_score" 
+                                   name="final_score" 
+                                   min="0" 
+                                   max="{{ presentation.assignment.max_score }}" 
+                                   step="0.1"
+                                   placeholder="0.0"
+                                   value="{% if presentation.final_score %}{{ presentation.final_score }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
+                                   required>
+                            <span class="score-max">/ {{ presentation.assignment.max_score }}</span>
+                        </div>
+                        <div class="score-helper">
+                            <small class="text-muted">
+                                Puntuación de 0 a {{ presentation.assignment.max_score }} puntos
+                                {% if suggested_grade and not presentation.final_score %}
+                                    <br><span class="text-success">✨ Calificación sugerida por IA: {{ suggested_grade }} puntos</span>
+                                {% elif presentation.overall_ai_score %}
+                                    <br>Sugerencia IA: {{ presentation.overall_ai_score|floatformat:1 }}%
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <!-- Visual Score Preview -->
+                        <div class="score-preview">
+                            <div class="score-bar">
+                                <div class="score-fill" id="scoreFill"></div>
+                            </div>
+                            <div class="score-percentage" id="scorePercentage">0%</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Feedback Input -->
+                    <div class="feedback-section">
+                        <label for="teacher_feedback" class="form-label">
+                            <i class="fas fa-comment-alt me-2"></i>Retroalimentación
+                        </label>
+                        <textarea class="form-control feedback-textarea" 
+                                  id="teacher_feedback" 
+                                  name="teacher_feedback" 
+                                  rows="8" 
+                                  placeholder="Proporciona comentarios constructivos sobre la presentación...">{% if presentation.teacher_feedback %}{{ presentation.teacher_feedback }}{% elif suggested_feedback %}{{ suggested_feedback }}{% endif %}</textarea>
+                        
+                        {% if suggested_feedback and not presentation.teacher_feedback %}
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-magic me-1"></i>Retroalimentación generada por IA. Puedes editarla antes de guardar.
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="form-actions">
+                    <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg">
+                        {% if request.path == '/presentations/detail/'|add:presentation.id|add:'/' %}
+                            <i class="fas fa-save me-2"></i>Actualizar Calificación
+                        {% else %}
+                            <i class="fas fa-star me-2"></i>Guardar Calificación
+                        {% endif %}
+                    </button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para inicializar el timeline de participantes
+{% if has_individual_analysis %}
+function initParticipantsTimeline() {
+    const participantsSegmentsData = {{ participants_segments_json|safe }};
+    const video = document.getElementById('presentationVideo');
+    const timelineContainer = document.getElementById('participantsTimeline');
+    const legendContainer = document.getElementById('timelineLegend');
+    
+    if (!video || !timelineContainer || !legendContainer) {
+        return;
+    }
+    
+    if (!participantsSegmentsData || participantsSegmentsData.length === 0) {
+        return;
+    }
+    
+    const videoDuration = video.duration || 100;
+    
+    // Limpiar contenedores primero
+    timelineContainer.innerHTML = '';
+    legendContainer.innerHTML = '';
+    
+    // Colores para cada participante
+    const colors = [
+        '#3498db', '#2ecc71', '#f39c12', '#9b59b6', 
+        '#e74c3c', '#1abc9c', '#34495e', '#e67e22'
+    ];
+    
+    participantsSegmentsData.forEach((participant, index) => {
+        participant.color = colors[index % colors.length];
+    });
+    
+    // Renderizar timeline
+    const timelineTrack = document.createElement('div');
+    timelineTrack.className = 'timeline-track';
+    
+    participantsSegmentsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        participant.segments.forEach(segment => {
+            const startPercent = (segment.start / videoDuration) * 100;
+            const endPercent = (segment.end / videoDuration) * 100;
+            const widthPercent = endPercent - startPercent;
+            
+            const segmentDiv = document.createElement('div');
+            segmentDiv.className = 'timeline-segment';
+            segmentDiv.style.left = `${startPercent}%`;
+            segmentDiv.style.width = `${widthPercent}%`;
+            segmentDiv.style.backgroundColor = participant.color;
+            segmentDiv.title = `${participant.label}: ${segment.start.toFixed(1)}s - ${segment.end.toFixed(1)}s`;
+            
+            if (widthPercent > 5) {
+                const label = document.createElement('span');
+                label.className = 'timeline-segment-label';
+                label.textContent = participant.label;
+                segmentDiv.appendChild(label);
+            }
+            
+            // Click para saltar al tiempo del video
+            segmentDiv.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetTime = parseFloat(segment.start);
+                if (!isNaN(targetTime)) {
+                    video.currentTime = targetTime;
+                    if (video.paused) {
+                        video.play();
+                    }
+                }
+            });
+            
+            timelineTrack.appendChild(segmentDiv);
+        });
+    });
+    
+    timelineContainer.appendChild(timelineTrack);
+    
+    // Renderizar leyenda
+    participantsSegmentsData.forEach(participant => {
+        if (!participant.segments || participant.segments.length === 0) return;
+        
+        const totalTime = participant.segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+        const minutes = Math.floor(totalTime / 60);
+        const seconds = Math.floor(totalTime % 60);
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${participant.color};"></div>
+            <span class="legend-label">${participant.label}</span>
+            <span class="legend-time">(${minutes}:${seconds.toString().padStart(2, '0')})</span>
+        `;
+        
+        legendItem.addEventListener('click', () => {
+            document.querySelectorAll('.timeline-segment').forEach(seg => {
+                seg.style.opacity = '0.3';
+            });
+            
+            document.querySelectorAll(`[title^="${participant.label}:"]`).forEach(seg => {
+                seg.style.opacity = '1';
+                seg.style.transform = 'scaleY(1.1)';
+            });
+            
+            setTimeout(() => {
+                document.querySelectorAll('.timeline-segment').forEach(seg => {
+                    seg.style.opacity = '1';
+                    seg.style.transform = 'scaleY(1)';
+                });
+            }, 2000);
+        });
+        
+        legendContainer.appendChild(legendItem);
+    });
+    
+    // Actualizar cuando el video se cargue
+    video.addEventListener('loadedmetadata', () => {
+        timelineContainer.innerHTML = '';
+        legendContainer.innerHTML = '';
+        initParticipantsTimeline();
+    });
+}
+{% endif %}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize video controls
+    initVideoControls();
+    
+    {% if not is_review_mode %}
+    // Initialize score preview (only in edit mode)
+    const maxScore = {{ presentation.assignment.max_score|unlocalize|default:"100" }};
+    initScorePreview(maxScore);
+    {% endif %}
+    
+    {% if has_individual_analysis %}
+    // Initialize participants chart
+    const participantsData = [
+        {% for participant in participants %}
+        {
+            name: '{{ participant.label }}',
+            coherence: {{ participant.coherence_score|unlocalize|default:"0" }},
+            time: {{ participant.time_percentage|unlocalize|default:"0" }},
+            contribution: {{ participant.contribution_percentage|unlocalize|default:"0" }}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+    initParticipantsChart(participantsData);
+    
+    // Initialize timeline
+    if (typeof initParticipantsTimeline === 'function') {
+        initParticipantsTimeline();
+    }
+    {% endif %}
+});
+</script>
+
+<script>
+// Toggle observation sections
+(function() {
+    function setupObservationToggles() {
+        const headers = document.querySelectorAll('[data-observation-toggle]');
+        
+        headers.forEach((header) => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                
+                if (!content || !content.classList.contains('observations-content')) {
+                    return;
+                }
+                
+                const chevronIcon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+                const currentDisplay = window.getComputedStyle(content).display;
+                const isHidden = currentDisplay === 'none';
+                
+                if (isHidden) {
+                    content.style.display = 'block';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-down');
+                        chevronIcon.classList.add('fa-chevron-up');
+                    }
+                } else {
+                    content.style.display = 'none';
+                    if (chevronIcon) {
+                        chevronIcon.classList.remove('fa-chevron-up');
+                        chevronIcon.classList.add('fa-chevron-down');
+                    }
+                }
+            });
+        });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupObservationToggles);
+    } else {
+        setupObservationToggles();
+    }
+})();
+</script>
+
+{% endblock %}

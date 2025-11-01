@@ -1,0 +1,746 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard de Rendimiento - Sistema de Evaluación{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<style>
+    .performance-dashboard {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 2rem 0;
+    }
+
+    .dashboard-header {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .dashboard-header h1 {
+        color: #667eea;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        transition: transform 0.3s, box-shadow 0.3s;
+        border-left: 5px solid;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    .kpi-card.primary { border-left-color: #667eea; }
+    .kpi-card.success { border-left-color: #48bb78; }
+    .kpi-card.warning { border-left-color: #f6ad55; }
+    .kpi-card.info { border-left-color: #4299e1; }
+
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .kpi-card.primary .kpi-icon { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .kpi-card.success .kpi-icon { background: linear-gradient(135deg, #48bb78, #38a169); color: white; }
+    .kpi-card.warning .kpi-icon { background: linear-gradient(135deg, #f6ad55, #ed8936); color: white; }
+    .kpi-card.info .kpi-icon { background: linear-gradient(135deg, #4299e1, #3182ce); color: white; }
+
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .kpi-label {
+        font-size: 0.9rem;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-change {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+
+    .chart-card h5 {
+        color: #2d3748;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .top-students-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+
+    .student-rank {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: #f7fafc;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+
+    .student-rank:hover {
+        background: #edf2f7;
+        transform: translateX(5px);
+    }
+
+    .rank-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        margin-right: 1rem;
+        font-size: 1.1rem;
+    }
+
+    .rank-1 { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #744210; }
+    .rank-2 { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #4a5568; }
+    .rank-3 { background: linear-gradient(135deg, #cd7f32, #dda15e); color: white; }
+    .rank-other { background: #e2e8f0; color: #4a5568; }
+
+    .student-info {
+        flex-grow: 1;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+
+    .student-presentations {
+        font-size: 0.85rem;
+        color: #718096;
+    }
+
+    .student-score {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+
+    .course-breakdown {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    }
+
+    .course-item {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: #f7fafc;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+    }
+
+    .course-header-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .course-name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .course-stats {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .course-stat {
+        text-align: center;
+    }
+
+    .course-stat-value {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+
+    .course-stat-label {
+        font-size: 0.75rem;
+        color: #718096;
+        text-transform: uppercase;
+    }
+
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 10px;
+        background: #e2e8f0;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        border-radius: 10px;
+        transition: width 0.5s ease;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #718096;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #cbd5e0;
+        margin-bottom: 1rem;
+    }
+
+    .medal-icon {
+        font-size: 1.5rem;
+        margin-right: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .kpi-value { font-size: 2rem; }
+        .chart-container { height: 250px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="performance-dashboard">
+    <div class="container-fluid px-4">
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1>
+                        <i class="fas fa-chart-line me-3"></i>
+                        Dashboard de Rendimiento
+                    </h1>
+                    <p class="mb-0 text-muted">
+                        Visualización del desempeño académico de tus estudiantes
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge bg-success fs-6">
+                        <i class="fas fa-sync-alt me-2"></i>Actualizado
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="row">
+            <div class="col-lg-3 col-md-6">
+                <div class="kpi-card primary">
+                    <div class="kpi-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.total_presentations }}</div>
+                    <div class="kpi-label">Presentaciones Totales</div>
+                    <div class="kpi-change text-success">
+                        <i class="fas fa-arrow-up me-1"></i>
+                        {{ stats.graded_presentations }} completadas
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="kpi-card success">
+                    <div class="kpi-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.average_score|floatformat:1 }}%</div>
+                    <div class="kpi-label">Promedio General</div>
+                    <div class="kpi-change text-info">
+                        <i class="fas fa-robot me-1"></i>
+                        IA: {{ stats.ai_average|floatformat:1 }}%
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="kpi-card warning">
+                    <div class="kpi-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="kpi-value">{{ stats.pending_grading }}</div>
+                    <div class="kpi-label">Pendientes</div>
+                    <div class="kpi-change text-warning">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Requieren revisión
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-6">
+                <div class="kpi-card info">
+                    <div class="kpi-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="kpi-value">{{ participant_stats.total_participants|default:0 }}</div>
+                    <div class="kpi-label">Participantes</div>
+                    <div class="kpi-change text-primary">
+                        <i class="fas fa-graduation-cap me-1"></i>
+                        {{ stats.total_courses }} cursos
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Gráficos -->
+            <div class="col-lg-8">
+                <!-- Distribución de Calificaciones -->
+                <div class="chart-card">
+                    <h5>
+                        <i class="fas fa-chart-pie me-2 text-primary"></i>
+                        Distribución de Niveles de Calificación
+                    </h5>
+                    {% if grade_distribution %}
+                    <div class="chart-container">
+                        <canvas id="gradeDistributionChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-pie"></i>
+                        <p>No hay datos de calificaciones para mostrar</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tendencia Semanal -->
+                <div class="chart-card">
+                    <h5>
+                        <i class="fas fa-chart-line me-2 text-success"></i>
+                        Tendencia de Rendimiento (Últimas 4 Semanas)
+                    </h5>
+                    {% if weekly_trend %}
+                    <div class="chart-container">
+                        <canvas id="weeklyTrendChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <p>No hay suficientes datos para mostrar la tendencia</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Desglose por Curso -->
+                <div class="course-breakdown">
+                    <h5>
+                        <i class="fas fa-book me-2 text-warning"></i>
+                        Rendimiento por Curso
+                    </h5>
+                    {% if course_stats %}
+                        {% for course_stat in course_stats %}
+                        <div class="course-item">
+                            <div class="course-header-item">
+                                <div>
+                                    <div class="course-name">{{ course_stat.course.code }}</div>
+                                    <small class="text-muted">{{ course_stat.course.name }}</small>
+                                </div>
+                                <div class="course-stats">
+                                    <div class="course-stat">
+                                        <div class="course-stat-value">{{ course_stat.presentations_count }}</div>
+                                        <div class="course-stat-label">Presentaciones</div>
+                                    </div>
+                                    <div class="course-stat">
+                                        <div class="course-stat-value">{{ course_stat.average_score|floatformat:1 }}%</div>
+                                        <div class="course-stat-label">Promedio</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" style="width: {{ course_stat.average_score }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <p>No hay cursos con presentaciones</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Panel Lateral -->
+            <div class="col-lg-4">
+                <!-- Top Estudiantes -->
+                <div class="top-students-card">
+                    <h5>
+                        <i class="fas fa-medal me-2 text-warning"></i>
+                        Top 5 Estudiantes
+                    </h5>
+                    {% if top_students %}
+                        {% for student_data in top_students %}
+                        <div class="student-rank">
+                            <div class="rank-number rank-{{ forloop.counter }}">
+                                {% if forloop.counter == 1 %}
+                                    <span class="medal-icon">🥇</span>
+                                {% elif forloop.counter == 2 %}
+                                    <span class="medal-icon">🥈</span>
+                                {% elif forloop.counter == 3 %}
+                                    <span class="medal-icon">🥉</span>
+                                {% else %}
+                                    {{ forloop.counter }}
+                                {% endif %}
+                            </div>
+                            <div class="student-info">
+                                <div class="student-name">
+                                    {{ student_data.student.get_full_name|default:student_data.student.username }}
+                                </div>
+                                <div class="student-presentations">
+                                    {{ student_data.presentations_count }} presentacion{{ student_data.presentations_count|pluralize:"es" }}
+                                </div>
+                            </div>
+                            <div class="student-score">
+                                {{ student_data.avg_score|floatformat:1 }}%
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-graduate"></i>
+                            <p>No hay estudiantes calificados aún</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Estadísticas Adicionales -->
+                <div class="chart-card">
+                    <h5>
+                        <i class="fas fa-info-circle me-2 text-info"></i>
+                        Estadísticas Adicionales
+                    </h5>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Tasa de Completado</span>
+                            <span class="fw-bold text-success">
+                                {% if stats.total_presentations > 0 %}
+                                    {% widthratio stats.graded_presentations stats.total_presentations 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="progress-bar-custom">
+                            <div class="progress-fill" style="width: {% if stats.total_presentations > 0 %}{% widthratio stats.graded_presentations stats.total_presentations 100 %}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="kpi-icon mx-auto" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="fw-bold text-dark mt-2">{{ stats.total_assignments|default:0 }}</div>
+                            <small class="text-muted">Asignaciones</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="kpi-icon mx-auto" style="background: linear-gradient(135deg, #48bb78, #38a169);">
+                                <i class="fas fa-check-double"></i>
+                            </div>
+                            <div class="fw-bold text-dark mt-2">{{ stats.graded_presentations|default:0 }}</div>
+                            <small class="text-muted">Calificadas</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="chart-card">
+                    <h5>
+                        <i class="fas fa-bolt me-2 text-warning"></i>
+                        Acciones Rápidas
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-star me-2"></i>Calificar Pendientes
+                        </a>
+                        <a href="{% url 'presentations:create_assignment' %}" class="btn btn-outline-success">
+                            <i class="fas fa-plus me-2"></i>Nueva Asignación
+                        </a>
+                        <a href="{% url 'presentations:manage_courses' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-cog me-2"></i>Gestionar Cursos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración común de Chart.js
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    Chart.defaults.color = '#4a5568';
+
+    // Gráfico de Distribución de Calificaciones
+    {% if grade_distribution %}
+    const gradeDistCtx = document.getElementById('gradeDistributionChart');
+    if (gradeDistCtx) {
+        const gradeData = {{ grade_distribution_json|safe }};
+        
+        new Chart(gradeDistCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Excelente', 'Muy Bueno', 'Bueno', 'Regular', 'Bajo'],
+                datasets: [{
+                    data: [
+                        gradeData.excelente || 0,
+                        gradeData.muy_bueno || 0,
+                        gradeData.bueno || 0,
+                        gradeData.regular || 0,
+                        gradeData.bajo || 0
+                    ],
+                    backgroundColor: [
+                        '#48bb78',
+                        '#4299e1',
+                        '#f6ad55',
+                        '#ed8936',
+                        '#fc8181'
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    // Gráfico de Tendencia Semanal
+    {% if weekly_trend %}
+    const weeklyTrendCtx = document.getElementById('weeklyTrendChart');
+    if (weeklyTrendCtx) {
+        const weeklyData = {{ weekly_trend_json|safe }};
+        
+        new Chart(weeklyTrendCtx, {
+            type: 'line',
+            data: {
+                labels: weeklyData.map(w => w.week),
+                datasets: [{
+                    label: 'Promedio de Calificaciones',
+                    data: weeklyData.map(w => w.avg_score),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2
+                }, {
+                    label: 'Cantidad de Presentaciones',
+                    data: weeklyData.map(w => w.count),
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#48bb78',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.datasetIndex === 0) {
+                                        label += context.parsed.y.toFixed(1) + '%';
+                                    } else {
+                                        label += context.parsed.y;
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Promedio (%)',
+                            font: {
+                                weight: '600'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Cantidad',
+                            font: {
+                                weight: '600'
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    {% endif %}
+
+    // Animaciones de entrada
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '0';
+                entry.target.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    entry.target.style.transition = 'all 0.5s ease';
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }, 100);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.kpi-card, .chart-card, .top-students-card, .course-breakdown').forEach(el => {
+        observer.observe(el);
+    });
+});
+</script>
+{% endblock %}

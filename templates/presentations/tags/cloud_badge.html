@@ -1,0 +1,11 @@
+{% load static %}
+
+{% if is_in_cloud %}
+    <span class="badge bg-info" title="Video almacenado en Cloudinary">
+        <i class="fas fa-cloud"></i> En la nube
+    </span>
+{% else %}
+    <span class="badge bg-secondary" title="Video almacenado localmente">
+        <i class="fas fa-server"></i> Local
+    </span>
+{% endif %}

@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load auth_extras %}
+
+{% block title %}Dashboard - {{ user.profile.get_role_display }} - EvalExpo AI{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Welcome Section -->
+    <div class="welcome-section mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="welcome-content">
+                    <h1 class="welcome-title">
+                        ¡Bienvenido, {{ user.first_name|default:user.username }}!
+                    </h1>
+                    <p class="welcome-subtitle mb-3">
+                        {{ user.profile.get_role_display }} en {{ user.profile.institution|default:"EvalExpo AI" }}
+                    </p>
+                    <div class="d-flex align-items-center">
+                        <span class="badge welcome-badge me-3">
+                            <i class="fas fa-user-tag me-2"></i>{{ user.profile.role }}
+                        </span>
+                        <span class="badge welcome-badge">
+                            <i class="fas fa-calendar me-2"></i>Último acceso: Hoy
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="welcome-avatar">
+                    {% if user.profile.avatar %}
+                        <img src="{{ user.profile.avatar.url }}" alt="Avatar" class="rounded-circle border border-white border-3 shadow" width="120" height="120">
+                    {% else %}
+                        <div class="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center border border-white border-3 shadow" style="width: 120px; height: 120px;">
+                            <i class="fas fa-user text-white" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    {% block dashboard_content %}{% endblock %}
+</div>
+
+<style>
+.content-wrapper {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.welcome-section {
+    background: var(--primary-gradient);
+    border-radius: 24px;
+    padding: 40px;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);
+}
+
+.welcome-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+
+.welcome-section::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -10%;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    z-index: 1;
+}
+
+.welcome-content {
+    position: relative;
+    z-index: 2;
+}
+
+.welcome-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    font-family: 'Outfit', sans-serif;
+    color: white !important;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.welcome-subtitle {
+    font-size: 1.2rem;
+    opacity: 1;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.95) !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.welcome-avatar {
+    position: relative;
+    z-index: 2;
+}
+
+.welcome-avatar img {
+    object-fit: cover;
+    width: 120px;
+    height: 120px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Badges en welcome section */
+.welcome-badge {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-badge:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+@media (max-width: 768px) {
+    .content-wrapper {
+        padding: 20px;
+    }
+    
+    .welcome-section {
+        padding: 30px 20px;
+    }
+    
+    .welcome-title {
+        font-size: 2rem;
+    }
+    
+    .welcome-subtitle {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
