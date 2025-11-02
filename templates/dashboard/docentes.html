@@ -1,0 +1,358 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-docentes.css' %}?v=3.0">
+<style>
+    /* Animación shimmer para barras de progreso */
+    @keyframes shimmer {
+        0% { 
+            left: -100%; 
+        }
+        100% { 
+            left: 100%; 
+        }
+    }
+    
+    /* Inicializar barras en 0% para animación */
+    .shimmer-bar {
+        transition: width 1.5s cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard-docentes.js' %}?v=3.0"></script>
+{% endblock %}
+
+{% block dashboard_content %}
+<!-- Estadísticas rápidas -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'presentations:manage_courses' %}" class="text-decoration-none">
+            <div class="stat-card primary">
+                <div class="stat-icon">
+                    <i class="fas fa-chalkboard"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_courses|default:0 }}</div>
+                <div class="stat-label">Cursos Activos</div>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'presentations:manage_assignments' %}" class="text-decoration-none">
+            <div class="stat-card info">
+                <div class="stat-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_assignments|default:0 }}</div>
+                <div class="stat-label">Asignaciones</div>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'presentations:grade_presentations' %}" class="text-decoration-none">
+            <div class="stat-card warning">
+                <div class="stat-icon">
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+                <div class="stat-number">{{ stats.pending_grading|default:0 }}</div>
+                <div class="stat-label">Por Calificar</div>
+            </div>
+        </a>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'reports:teacher_reports' %}" class="text-decoration-none">
+            <div class="stat-card success">
+                <div class="stat-icon">
+                    <i class="fas fa-video"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_presentations|default:0 }}</div>
+                <div class="stat-label">Presentaciones</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Acciones rápidas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3 col-sm-6">
+                        <a href="{% url 'presentations:manage_courses' %}" class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="fas fa-chalkboard"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">Gestionar Cursos</h6>
+                            <p class="text-muted small mb-0">Crear y administrar tus cursos</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-3 col-sm-6">
+                        <a href="{% url 'presentations:create_assignment' %}" class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon bg-success bg-opacity-10 text-success">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">Nueva Asignación</h6>
+                            <p class="text-muted small mb-0">Crear tarea de presentación</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-3 col-sm-6">
+                        <a href="{% url 'presentations:grade_presentations' %}" class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon bg-warning bg-opacity-10 text-warning">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">Calificar</h6>
+                            <p class="text-muted small mb-0">Evaluar presentaciones</p>
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-3 col-sm-6">
+                        <a href="{% url 'presentations:manage_assignments' %}" class="quick-action-card text-decoration-none">
+                            <div class="quick-action-icon bg-info bg-opacity-10 text-info">
+                                <i class="fas fa-list-alt"></i>
+                            </div>
+                            <h6 class="fw-bold mb-1">Ver Asignaciones</h6>
+                            <p class="text-muted small mb-0">Administrar tareas</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Presentaciones por calificar -->
+    <div class="col-lg-8 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-check me-2 text-warning"></i>Presentaciones por Calificar
+                </h5>
+                <span class="badge bg-warning rounded-pill">{{ pending_presentations|length|default:0 }}</span>
+            </div>
+            <div class="card-body">
+                {% if pending_presentations %}
+                    <div class="presentation-list">
+                        {% for presentation in pending_presentations %}
+                        <div class="presentation-item border rounded p-3 mb-3">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <div class="presentation-avatar me-3">
+                                        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">{{ presentation.title }}</h6>
+                                        <p class="text-muted small mb-1">{{ presentation.student.get_full_name|default:presentation.student.username }}</p>
+                                        <small class="text-muted">{{ presentation.uploaded_at|timesince }} atrás</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if presentation.ai_score %}
+                                        <span class="badge bg-info">IA: {{ presentation.ai_score }}%</span>
+                                    {% endif %}
+                                    <a href="{% url 'presentations:grade_presentation_detail' presentation.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-star me-1"></i>Calificar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if pending_presentations|length > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-warning">
+                            <i class="fas fa-eye me-2"></i>Ver todas ({{ stats.pending_grading }})
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-check-circle text-success" style="font-size: 4rem; opacity: 0.3;"></i>
+                        </div>
+                        <h6 class="text-muted mb-3">¡Excelente trabajo!</h6>
+                        <p class="text-muted small mb-4">No tienes presentaciones pendientes por calificar.</p>
+                        <a href="{% url 'presentations:manage_assignments' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-tasks me-2"></i>Ver Asignaciones
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel lateral -->
+    <div class="col-lg-4">
+        <!-- Cursos recientes -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-chalkboard me-2 text-primary"></i>Mis Cursos
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if recent_courses %}
+                    {% for course in recent_courses %}
+                    <div class="course-item border-bottom pb-3 mb-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="mb-1">{{ course.code }}</h6>
+                                <p class="text-muted small mb-1">{{ course.name }}</p>
+                                <span class="badge bg-light text-dark">
+                                    {{ course.students.count }} estudiantes
+                                </span>
+                            </div>
+                            <a href="{% url 'presentations:create_assignment' %}?course={{ course.id }}" 
+                               class="btn btn-sm btn-outline-success" title="Nueva asignación">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'presentations:manage_courses' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-eye me-1"></i>Ver todos
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-chalkboard text-muted mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="text-muted small mb-3">No tienes cursos creados</p>
+                        <a href="{% url 'presentations:create_course' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-plus me-1"></i>Crear curso
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Estadísticas de rendimiento -->
+        <div class="card border-0 shadow-sm mb-4" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; padding: 20px;">
+                <h6 class="mb-0 text-white fw-bold">
+                    <i class="fas fa-chart-line me-2"></i>Rendimiento Estudiantes
+                </h6>
+            </div>
+            <div class="card-body" style="padding: 25px;">
+                <!-- Promedio General -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-graduation-cap text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Promedio General</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Calificación promedio del curso</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.average_score|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tasa de Entrega -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #06beb6, #48b1bf); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-check-circle text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Tasa de Entrega</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Presentaciones enviadas a tiempo</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #06beb6, #48b1bf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.completion_rate|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calidad Promedio IA -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #f093fb, #f5576c); display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                                <i class="fas fa-robot text-white" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold" style="font-size: 0.95rem; color: #333;">Calidad Promedio IA</div>
+                                <div class="text-muted" style="font-size: 0.8rem;">Evaluación automática con IA</div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold" style="font-size: 2rem; background: linear-gradient(135deg, #f093fb, #f5576c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                {{ stats.ai_average|default:0|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 pt-3 border-top">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Basado en presentaciones calificadas
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Herramientas útiles -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0">
+                <h6 class="mb-0">
+                    <i class="fas fa-tools me-2 text-info"></i>Herramientas Útiles
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <!-- Botones de reportes -->
+                    <a href="{% url 'reports:export_grades_pdf' %}" class="btn btn-danger btn-sm mb-2 w-100" onclick="showExportNotification('PDF')">
+                        <i class="fas fa-download me-2"></i>Exportar Calificaciones PDF
+                    </a>
+                    <a href="{% url 'reports:teacher_reports' %}" class="btn btn-outline-info btn-sm w-100">
+                        <i class="fas fa-chart-line me-2"></i>Ver Reportes Detallados
+                    </a>
+                    <a href="{% url 'presentations:ai_configuration' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-cog me-2"></i>Configuración IA
+                    </a>
+                </div>
+                
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="small fw-bold mb-2">
+                        <i class="fas fa-lightbulb me-1 text-warning"></i>Consejos
+                    </h6>
+                    <p class="small text-muted mb-0">
+                        Revisa regularmente las presentaciones analizadas por IA para proporcionar 
+                        retroalimentación oportuna a tus estudiantes.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

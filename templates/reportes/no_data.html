@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Sin Datos para Exportar - EvalExpo AI{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body text-center py-5">
+                        <div class="empty-state-icon mb-4">
+                            <i class="fas fa-download" style="font-size: 5rem; color: #e9ecef;"></i>
+                        </div>
+                        
+                        <h3 class="mb-3">No hay datos para exportar</h3>
+                        
+                        {% if user.groups.all.0.name == 'Docente' %}
+                            <div class="alert alert-warning mb-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>¿Quieres probar con datos de ejemplo?</strong><br>
+                                Inicia sesión como: <code>docente1</code> / <code>123456</code><br>
+                                <small>Este usuario ya tiene 17 presentaciones calificadas listas para exportar.</small>
+                            </div>
+                            
+                            <p class="text-muted mb-4">
+                                O si prefieres usar tu cuenta actual, necesitas:
+                            </p>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-4 mb-3">
+                                    <div class="step-card">
+                                        <div class="step-number">1</div>
+                                        <h6>Crear Cursos</h6>
+                                        <p class="small text-muted">Configura tus materias y cursos</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="step-card">
+                                        <div class="step-number">2</div>
+                                        <h6>Asignar Trabajos</h6>
+                                        <p class="small text-muted">Crea asignaciones para tus estudiantes</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="step-card">
+                                        <div class="step-number">3</div>
+                                        <h6>Calificar</h6>
+                                        <p class="small text-muted">Evalúa las presentaciones subidas</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <a href="{% url 'presentations:manage_courses' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Crear Curso
+                                </a>
+                                <a href="{% url 'presentations:manage_assignments' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-tasks me-2"></i>Ver Asignaciones
+                                </a>
+                                <a href="{% url 'presentations:grade_presentations' %}" class="btn btn-outline-warning">
+                                    <i class="fas fa-star me-2"></i>Calificar Presentaciones
+                                </a>
+                            </div>
+                            
+                        {% else %}
+                            <div class="alert alert-info mb-4">
+                                <i class="fas fa-user-graduate me-2"></i>
+                                <strong>¿Quieres probar con datos de ejemplo?</strong><br>
+                                Inicia sesión como estudiante: <code>estudiante1</code>, <code>estudiante2</code>, <code>estudiante3</code>, <code>estudiante4</code> o <code>estudiante5</code><br>
+                                Contraseña: <code>123456</code><br>
+                                <small>Estos usuarios ya tienen calificaciones disponibles para exportar.</small>
+                            </div>
+                            
+                            <p class="text-muted mb-4">
+                                O si prefieres usar tu cuenta actual, necesitas tener presentaciones evaluadas por tus docentes.
+                            </p>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <div class="step-card">
+                                        <div class="step-number">1</div>
+                                        <h6>Subir Presentación</h6>
+                                        <p class="small text-muted">Carga tu video de presentación</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="step-card">
+                                        <div class="step-number">2</div>
+                                        <h6>Esperar Evaluación</h6>
+                                        <p class="small text-muted">Tu docente calificará tu trabajo</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <a href="{% url 'presentations:upload_presentation' %}" class="btn btn-primary">
+                                    <i class="fas fa-upload me-2"></i>Subir Presentación
+                                </a>
+                                <a href="{% url 'presentations:my_presentations' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list me-2"></i>Ver Mis Presentaciones
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                        <hr class="my-4">
+                        
+                        <div class="alert alert-info d-inline-flex align-items-center">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <small>
+                                <strong>Tip:</strong> Una vez que tengas calificaciones, podrás exportarlas en formato PDF desde esta misma sección.
+                            </small>
+                        </div>
+                        
+                        <div class="mt-4 d-flex gap-2 justify-content-center flex-wrap">
+                            <a href="{% url 'auth:logout' %}" class="btn btn-warning">
+                                <i class="fas fa-user-swap me-2"></i>Cambiar Usuario
+                            </a>
+                            <a href="{% url 'auth:dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.step-card {
+    padding: 1.5rem 1rem;
+    border: 2px dashed #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.step-card:hover {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.05);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 1rem auto;
+}
+
+.empty-state-icon {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

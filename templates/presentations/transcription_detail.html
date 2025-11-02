@@ -1,0 +1,425 @@
+<!-- templates/presentations/transcription_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transcripción - {{ presentation.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/presentation-detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header Morado -->
+    <div class="presentation-header mb-4">
+        <div class="breadcrumb-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb-modern">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:my_presentations' %}">
+                            <i class="fas fa-video me-2"></i>Mis Presentaciones
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'presentations:presentation_detail' presentation.id %}">
+                            {{ presentation.title|truncatechars:40 }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Transcripción</li>
+                </ol>
+            </nav>
+        </div>
+        
+        <div class="header-content">
+            <div class="presentation-info">
+                <h1 class="presentation-title" style="color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    <i class="fas fa-file-alt me-2"></i>Transcripción
+                </h1>
+                <div class="presentation-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-graduation-cap" style="color: white; opacity: 0.9;"></i>
+                        <div class="stat-content">
+                            <span class="stat-label" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Curso</span>
+                            <span class="stat-value" style="color: white; font-weight: 600;">{{ presentation.assignment.course.code }}</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-clipboard-list" style="color: white; opacity: 0.9;"></i>
+                        <div class="stat-content">
+                            <span class="stat-label" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Asignación</span>
+                            <span class="stat-value" style="color: white; font-weight: 600;">{{ presentation.assignment.title }}</span>
+                        </div>
+                    </div>
+                    {% if presentation.audio_duration %}
+                    <div class="stat-item">
+                        <i class="fas fa-clock" style="color: white; opacity: 0.9;"></i>
+                        <div class="stat-content">
+                            <span class="stat-label" style="color: rgba(255,255,255,0.8); font-size: 0.8rem;">Duración</span>
+                            <span class="stat-value" style="color: white; font-weight: 600;">{{ presentation.audio_duration|floatformat:0 }}s</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="action-panel">
+                <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a la Presentación
+                </a>
+            </div>
+        </div>
+    </div>
+    {% if has_transcription %}
+    <!-- Transcripciones por Participante -->
+    {% if presentation.participants.exists %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h4 class="mb-0 text-white">
+                        <i class="fas fa-users me-2"></i>Transcripción por Participante
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    {% for participant in presentation.participants.all %}
+                    <div class="participant-transcription-box mb-4">
+                        <!-- Header del participante -->
+                        <div class="participant-box-header">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="participant-avatar-small">
+                                    {% if participant.photo %}
+                                        <img src="{{ participant.photo.url }}" alt="{{ participant.label }}">
+                                    {% else %}
+                                        <div class="avatar-placeholder">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-1">{{ participant.label }}</h5>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <span class="badge {{ participant.level_badge_class }}">{{ participant.coherence_level }}</span>
+                                        <span class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ participant.participation_time|floatformat:1 }}s
+                                        </span>
+                                        <span class="text-muted">
+                                            <i class="fas fa-percentage me-1"></i>
+                                            {{ participant.time_percentage|floatformat:1 }}% del tiempo
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Transcripción del participante -->
+                        <div class="participant-box-content">
+                            {% if participant.transcription %}
+                                <p class="mb-0">{{ participant.transcription }}</p>
+                            {% else %}
+                                <p class="text-muted mb-0 fst-italic">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    No hay transcripción disponible para este participante
+                                </p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Estadísticas -->
+                        <div class="participant-box-footer">
+                            <div class="row g-2">
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-align-left me-1"></i>
+                                        {{ participant.transcription|length }} caracteres
+                                    </small>
+                                </div>
+                                <div class="col-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-chart-line me-1"></i>
+                                        {{ participant.contribution_percentage|floatformat:1 }}% de aporte
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Transcripción Completa -->
+    <div class="row mb-4">
+        <div class="col-12">
+    <!-- Transcripción Completa -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0 text-white">
+                            <i class="fas fa-quote-left me-2"></i>Transcripción Completa
+                        </h4>
+                        <button class="btn btn-light btn-sm" onclick="copyTranscription()">
+                            <i class="fas fa-copy me-1"></i>Copiar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if formatted_transcription %}
+                    <!-- Con timestamps -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-clock me-1"></i>Transcripción con Timestamps
+                        </h6>
+                        <div class="transcription-box" style="max-height: 400px; overflow-y: auto;">
+                            <pre id="formatted-transcription" class="mb-0">{{ formatted_transcription }}</pre>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    {% endif %}
+                    
+                    <!-- Texto completo -->
+                    <div>
+                        <h6 class="text-muted mb-3">
+                            <i class="fas fa-align-left me-1"></i>Texto Completo
+                        </h6>
+                        <div class="transcription-box" style="max-height: 400px; overflow-y: auto;">
+                            <p id="full-transcription" class="mb-0">{{ presentation.transcription_text }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Estadísticas -->
+                    <div class="row mt-4 g-3">
+                        <div class="col-md-4">
+                            <div class="stat-card bg-primary bg-opacity-10">
+                                <div class="stat-icon text-primary">
+                                    <i class="fas fa-font"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number text-primary">{{ presentation.transcription_text|length }}</div>
+                                    <div class="stat-label">Caracteres</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-card bg-success bg-opacity-10">
+                                <div class="stat-icon text-success">
+                                    <i class="fas fa-spell-check"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number text-success">{{ presentation.transcription_text|wordcount }}</div>
+                                    <div class="stat-label">Palabras</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if presentation.transcription_segments %}
+                        <div class="col-md-4">
+                            <div class="stat-card bg-info bg-opacity-10">
+                                <div class="stat-icon text-info">
+                                    <i class="fas fa-list"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-number text-info">{{ presentation.transcription_segments|length }}</div>
+                                    <div class="stat-label">Segmentos</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No hay transcripción -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-microphone-slash" style="font-size: 4rem; color: #cbd5e1;"></i>
+                    </div>
+                    <h3 class="mb-3">No hay transcripción disponible</h3>
+                    <p class="text-muted mb-4">
+                        Esta presentación aún no ha sido transcrita. La transcripción se genera automáticamente
+                        durante el proceso de análisis de la presentación.
+                    </p>
+                    <a href="{% url 'presentations:presentation_detail' presentation.id %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left me-2"></i>Volver a la Presentación
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Copiar transcripción
+function copyTranscription() {
+    const text = document.getElementById('full-transcription').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        // Mostrar notificación
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Copiado!';
+        btn.classList.remove('btn-light');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-light');
+        }, 2000);
+    });
+}
+</script>
+<style>
+/* Cajas de participantes */
+.participant-transcription-box {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.participant-transcription-box:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.participant-box-header {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.participant-avatar-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.participant-avatar-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.participant-box-header h5 {
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.participant-box-content {
+    padding: 1.5rem;
+    background: white;
+    min-height: 100px;
+}
+
+.participant-box-content p {
+    line-height: 1.8;
+    color: #334155;
+    font-size: 1rem;
+}
+
+.participant-box-footer {
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Estadísticas */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.transcription-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.transcription-box pre {
+    white-space: pre-wrap;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #334155;
+}
+
+.transcription-box p {
+    line-height: 1.8;
+    color: #334155;
+    font-size: 1rem;
+}
+
+.transcription-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+.transcription-box::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+.transcription-box::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.transcription-box::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
+{% endblock %}

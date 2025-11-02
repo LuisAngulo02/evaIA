@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestionar Asignaciones - EvalExpo AI{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold text-dark mb-2">
+                        <i class="fas fa-tasks me-3" style="color: var(--primary-color);"></i>
+                        Gestionar Asignaciones
+                    </h1>
+                    <p class="text-muted fs-5">Administra las asignaciones de presentaciones</p>
+                </div>
+                <a href="{% url 'presentations:create_assignment' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-plus me-2"></i>Nueva Asignación
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignments List -->
+    <div class="row">
+        <div class="col-12">
+            {% if assignments %}
+                {% for assignment in assignments %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h5 class="mb-2">{{ assignment.title }}</h5>
+                                <p class="text-muted mb-2">{{ assignment.description|truncatechars:100 }}</p>
+                                <div class="assignment-meta">
+                                    <small class="text-muted">
+                                        <i class="fas fa-book me-1"></i>{{ assignment.course.name }}
+                                        <i class="fas fa-calendar ms-3 me-1"></i>Vence: {{ assignment.due_date|date:"d M Y H:i" }}
+                                        <i class="fas fa-star ms-3 me-1"></i>{{ assignment.max_score }} puntos
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <span class="badge {{ assignment.is_active|yesno:'bg-success,bg-secondary' }} me-2">
+                                    {{ assignment.is_active|yesno:'Activa,Inactiva' }}
+                                </span>
+                                <div class="btn-group">
+                                    <a href="{% url 'presentations:edit_assignment' assignment.id %}" class="btn btn-outline-primary btn-sm" title="Editar asignación">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if assignment.is_active %}
+                                        <button type="button" 
+                                                class="btn btn-outline-warning btn-sm btn-deactivate" 
+                                                data-assignment-name="{{ assignment.title }}" 
+                                                data-assignment-url="{% url 'presentations:delete_assignment' assignment.id %}"
+                                                title="Desactivar asignación">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    {% else %}
+                                        <button type="button" 
+                                                class="btn btn-outline-danger btn-sm btn-delete" 
+                                                data-assignment-name="{{ assignment.title }}" 
+                                                data-assignment-url="{% url 'presentations:delete_assignment' assignment.id %}"
+                                                title="Eliminar permanentemente">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="empty-state">
+                            <div class="empty-icon mb-4">
+                                <i class="fas fa-tasks text-muted" style="font-size: 5rem; opacity: 0.3;"></i>
+                            </div>
+                            <h4 class="mb-3">No hay asignaciones registradas</h4>
+                            <p class="text-muted mb-4">
+                                Crea tu primera asignación para que los estudiantes puedan subir presentaciones
+                            </p>
+                            <a href="{% url 'presentations:create_assignment' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>Crear Primera Asignación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación de desactivación -->
+<div class="modal fade" id="deactivateModal" tabindex="-1" aria-labelledby="deactivateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="deactivateModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Desactivación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">¿Estás seguro de que deseas desactivar la asignación <strong id="assignmentNameDeactivate"></strong>?</p>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    La asignación quedará inactiva y los estudiantes no podrán subir nuevas presentaciones. Podrás eliminarla permanentemente después.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="deactivateForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-ban me-2"></i>Desactivar Asignación
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación de eliminación permanente -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Eliminación Permanente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">¿Estás seguro de que deseas <strong>eliminar permanentemente</strong> la asignación <strong id="assignmentNameDelete"></strong>?</p>
+                <div class="alert alert-danger mb-0" role="alert">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    <strong>¡Advertencia!</strong> Esta acción NO se puede deshacer. Se eliminarán todas las presentaciones asociadas.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar Permanentemente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/manage-assignments.js' %}?v=2.0"></script>
+{% endblock %}

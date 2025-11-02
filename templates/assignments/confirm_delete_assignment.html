@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Asignación - {{ assignment.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/confirm-delete-assignment.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="delete-confirmation-card">
+                <div class="card-header">
+                    <div class="warning-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Confirmar Eliminación</h3>
+                    <p class="text-muted">Esta acción no se puede deshacer</p>
+                </div>
+                
+                <div class="card-body">
+                    <div class="assignment-info">
+                        <h5>{{ assignment.title }}</h5>
+                        <p class="assignment-course">{{ assignment.course.code }} - {{ assignment.course.name }}</p>
+                        {% if assignment.description %}
+                        <p class="assignment-description">{{ assignment.description }}</p>
+                        {% endif %}
+                        
+                        <div class="assignment-details">
+                            <div class="detail-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Fecha límite: {{ assignment.due_date|date:"d M Y H:i" }}</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-trophy"></i>
+                                <span>Puntaje máximo: {{ assignment.max_score }} puntos</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Duración máxima: {{ assignment.max_duration }} minutos</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="warning-message">
+                        <div class="warning-content">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <h6>¿Qué sucederá al eliminar esta asignación?</h6>
+                                <ul class="warning-list">
+                                    <li>La asignación se marcará como inactiva</li>
+                                    <li>No aparecerá en las listas de asignaciones activas</li>
+                                    <li>Los estudiantes no podrán subir nuevas presentaciones</li>
+                                    <li>Las presentaciones existentes se conservarán</li>
+                                    <li>Los datos históricos no se perderán</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if assignment.presentation_set.exists %}
+                    <div class="affected-items">
+                        <h6 class="text-warning">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Presentaciones Existentes
+                        </h6>
+                        <div class="affected-content">
+                            <div class="presentation-stats">
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.count }}</strong>
+                                    <span>Total de presentaciones</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.filter:status='GRADED'.count }}</strong>
+                                    <span>Ya calificadas</span>
+                                </div>
+                                <div class="stat-item">
+                                    <strong>{{ assignment.presentation_set.filter:status='ANALYZED'.count }}</strong>
+                                    <span>Por calificar</span>
+                                </div>
+                            </div>
+                            <p class="small text-muted mt-2">
+                                Las presentaciones existentes no serán eliminadas y mantendrán sus calificaciones.
+                                Sin embargo, los estudiantes no podrán subir nuevas presentaciones para esta asignación.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if assignment.due_date > timezone.now %}
+                    <div class="active-warning">
+                        <div class="active-content">
+                            <i class="fas fa-calendar-check"></i>
+                            <div>
+                                <h6>Asignación Activa</h6>
+                                <p>Esta asignación aún está activa y los estudiantes pueden estar trabajando en ella. 
+                                   Considera postponer la eliminación hasta después de la fecha límite.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-actions">
+                    <a href="{% url 'presentations:manage_assignments' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Cancelar
+                    </a>
+                    
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Eliminar Asignación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,57 @@
+/**
+ * Edit Participant Grade Styles
+ * Template: edit_participant_grade.html
+ * Description: Styles for editing individual participant grades
+ */
+
+.ai-analysis-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.grade-display {
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8f9fa;
+}
+
+.badge-ai {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.strength-item, .improvement-item {
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.strength-item {
+    background: #d4edda;
+    border-color: #28a745;
+}
+
+.improvement-item {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.transcription-box {
+    background: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+}

@@ -1,0 +1,176 @@
+# NÚCLEO DE DJANGO Y FRAMEWORK WEB
+
+Django==5.2.7
+asgiref==3.10.0
+sqlparse==0.5.3
+tzdata==2025.2
+pytz==2025.2
+
+
+# BASE DE DATOS Y ALMACENAMIENTO
+
+psycopg2-binary==2.9.11
+cloudinary==1.44.1
+django-cloudinary-storage==0.3.0
+
+
+# VARIABLES DE ENTORNO Y CONFIGURACIÓN
+
+python-decouple==3.8
+python-dotenv==1.1.1
+
+
+# INTELIGENCIA ARTIFICIAL Y APRENDIZAJE AUTOMÁTICO - API DE GROQ
+
+groq==0.32.0
+openai==1.59.5
+openai-whisper==20231117
+
+
+# PROCESAMIENTO DE LENGUAJE NATURAL
+
+sentence-transformers==3.3.1
+transformers==4.46.3
+tokenizers==0.20.3
+sentencepiece==0.2.1
+tiktoken==0.12.0
+
+
+# APRENDIZAJE PROFUNDO - PyTorch
+
+torch==2.5.1
+torchaudio==2.5.1
+torchvision==0.20.1
+
+
+# COMPUTACIÓN CIENTÍFICA Y ANÁLISIS DE DATOS
+numpy==1.26.4
+scipy==1.14.1
+scikit-learn==1.5.2
+pandas==2.2.3
+joblib==1.4.2
+
+
+# VISIÓN POR COMPUTADORA Y DETECCIÓN FACIAL
+
+opencv-python==4.9.0.80
+opencv-contrib-python==4.9.0.80
+mediapipe==0.10.21
+Pillow==11.3.0
+
+
+# PROCESAMIENTO DE AUDIO Y VOZ
+
+librosa==0.11.0
+soundfile==0.13.1
+pydub==0.25.1
+
+
+# PROCESAMIENTO Y MANIPULACIÓN DE VIDEO
+
+moviepy==2.2.1
+imageio==2.37.0
+imageio-ffmpeg==0.6.0
+proglog==0.1.12
+
+
+# VISUALIZACIÓN Y GENERACIÓN DE REPORTES
+
+matplotlib==3.9.3
+reportlab==4.4.4
+openpyxl==3.1.5
+
+
+# CLIENTES HTTP Y PETICIONES A APIs
+
+requests==2.32.5
+httpx==0.28.1
+httpcore==1.0.9
+urllib3==2.5.0
+certifi==2025.10.5
+h11==0.16.0
+
+
+# UTILIDADES Y HERRAMIENTAS AUXILIARES
+
+pydantic==2.12.0
+pydantic_core==2.41.1
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+tqdm==4.67.1
+python-dateutil==2.9.0.post0
+filelock==3.20.0
+huggingface-hub==0.35.3
+safetensors==0.6.2
+
+
+# COMPATIBILIDAD Y SISTEMA OPERATIVO
+
+colorama==0.4.6
+distro==1.9.0
+typing_extensions==4.15.0
+typing-inspection==0.4.2
+annotated-types==0.7.0
+attrs==25.4.0
+anyio==4.11.0
+sniffio==1.3.1
+idna==3.10
+charset-normalizer==3.4.3
+
+
+# COMPUTACIÓN MATEMÁTICA Y SIMBÓLICA
+
+numba==0.62.1
+llvmlite==0.45.1
+
+
+# PROCESAMIENTO DE GRAFOS Y REDES (ELIMINADO - No se usa)
+# networkx==3.5 (Comentado - no se usa en el proyecto)
+
+
+# SOPORTE PARA GRÁFICOS Y VISUALIZACIÓN
+
+contourpy==1.3.3
+cycler==0.12.1
+fonttools==4.60.1
+kiwisolver==1.4.9
+
+
+# MANEJO Y MANIPULACIÓN DE DATOS
+
+et_xmlfile==2.0.0
+more-itertools==10.8.0
+msgpack==1.1.2
+pooch==1.8.2
+lazy_loader==0.4
+decorator==5.2.1
+threadpoolctl==3.6.0
+
+
+# BUFFERS DE PROTOCOLO Y SERIALIZACIÓN
+
+protobuf==4.25.8
+flatbuffers==25.9.23
+
+
+# HERRAMIENTAS DE CONSTRUCCIÓN Y COMPILACIÓN
+
+cffi==2.0.0
+pycparser==2.23
+packaging==25.0
+pyparsing==3.2.5
+six==1.17.0
+
+
+# UTILIDADES PARA ARCHIVOS Y RUTAS
+
+platformdirs==4.5.0
+fsspec==2025.9.0
+
+
+# PROCESAMIENTO DE TEXTO Y EXPRESIONES REGULARES
+
+regex==2025.9.18
+PyYAML==6.0.3
+jiter==0.11.0
+

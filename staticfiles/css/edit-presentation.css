@@ -1,0 +1,146 @@
+/* ============================================================
+   EDIT PRESENTATION STYLES
+   Estilos para la interfaz de edición de presentaciones
+   ============================================================ */
+
+/* ===== UPLOAD AREA ===== */
+.upload-area {
+    border: 3px dashed #dee2e6;
+    border-radius: 15px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-area:hover {
+    border-color: #007bff;
+    background: #e3f2fd;
+    transform: translateY(-2px);
+}
+
+.upload-area.dragover {
+    border-color: #28a745 !important;
+    background: #d4edda !important;
+    transform: scale(1.02);
+}
+
+.upload-content {
+    position: relative;
+    z-index: 2;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.upload-area:hover .upload-icon {
+    color: #007bff;
+    transform: scale(1.1);
+}
+
+.upload-area.dragover .upload-icon {
+    color: #28a745 !important;
+    animation: bounce 0.6s ease infinite alternate;
+}
+
+.upload-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.upload-subtitle {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+}
+
+.upload-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+@keyframes bounce {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-10px); }
+}
+
+/* ===== VIDEO DISPLAY ===== */
+.current-video-display {
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.current-video-display:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.02) !important;
+}
+
+.video-thumbnail {
+    width: 50px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* ===== TIP ITEMS ===== */
+.tip-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tip-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.tip-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(99, 102, 241, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tip-content strong {
+    color: var(--dark-color);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.tip-content p {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* ===== PRESENTATION META ===== */
+.presentation-meta .badge {
+    border-radius: 6px;
+}
+
+.bg-gradient {
+    background: var(--primary-gradient) !important;
+}
+
+/* ===== FILE INPUT HIDDEN ===== */
+#id_video_file {
+    display: none;
+}

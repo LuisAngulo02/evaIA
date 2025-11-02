@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestionar Estudiantes - {{ course.name }} - EvalExpo AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/manage-students.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper fade-in">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'presentations:manage_courses' %}">Cursos</a></li>
+                    <li class="breadcrumb-item active">Gestionar Estudiantes</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold text-dark mb-2">
+                        <i class="fas fa-users me-3" style="color: var(--primary-color);"></i>
+                        Estudiantes de {{ course.code }}
+                    </h1>
+                    <p class="text-muted fs-5">{{ course.name }}</p>
+                </div>
+                <a href="{% url 'presentations:manage_courses' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Volver a Cursos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas del curso -->
+    <div class="section-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-2">
+                    <i class="fas fa-chart-bar me-2"></i>Resumen del Curso
+                </h5>
+                <p class="text-muted mb-0">{{ course.description|default:"Sin descripción" }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="stats-badge">
+                    <i class="fas fa-user-graduate me-2"></i>
+                    <strong>{{ enrolled_students.count }}</strong> Estudiante{{ enrolled_students.count|pluralize }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Panel principal: Estudiantes Matriculados -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-check me-2 text-success"></i>
+                        Estudiantes Matriculados ({{ enrolled_students.count }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if enrolled_students %}
+                        <div class="list-group list-group-flush">
+                            {% for student in enrolled_students %}
+                            <div class="list-group-item student-card border-0 mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            <div class="student-avatar me-3">
+                                                {% if student.profile.avatar %}
+                                                    <img src="{{ student.profile.avatar.url }}" 
+                                                         alt="{{ student.get_full_name }}"
+                                                         style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                                {% else %}
+                                                    {{ student.first_name.0|upper }}{{ student.last_name.0|upper }}
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    {{ student.get_full_name|default:student.username }}
+                                                </h6>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-envelope me-1"></i>{{ student.email }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center">
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-file-powerpoint me-1"></i>
+                                                {{ student.presentations_count }} Presentacion{{ student.presentations_count|pluralize:"es" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 text-end">
+                                        <form method="POST" style="display: inline;" 
+                                              onsubmit="return handleUnenrollSubmit(event, '{{ student.get_full_name }}');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove_student">
+                                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                    title="Desmatricular estudiante">
+                                                <i class="fas fa-user-minus"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-slash text-muted mb-3" style="font-size: 4rem; opacity: 0.3;"></i>
+                            <h5 class="text-muted">No hay estudiantes matriculados</h5>
+                            <p class="text-muted small">Agrega estudiantes desde el panel lateral</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel lateral: Agregar Estudiantes -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2 text-primary"></i>
+                        Agregar Estudiantes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Buscador -->
+                    <div class="mb-4">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" 
+                                   id="searchInput"
+                                   class="form-control" 
+                                   placeholder="Buscar por nombre, correo o usuario..." 
+                                   autocomplete="off">
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Busca por nombre, apellido, email o username
+                        </small>
+                    </div>
+
+                    <!-- Lista de estudiantes disponibles -->
+                    <div id="availableStudentsList" class="available-students-list" style="max-height: 500px; overflow-y: auto;">
+                        <!-- Los resultados se cargarán aquí vía AJAX -->
+                    </div>
+                    
+                    <!-- Loading indicator -->
+                    <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Buscando...</span>
+                        </div>
+                        <p class="text-muted mt-2">Buscando estudiantes...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2 text-warning"></i>
+                        Acciones Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'presentations:create_assignment' %}?course={{ course.id }}" 
+                       class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-tasks me-2"></i>Nueva Asignación
+                    </a>
+                    <a href="{% url 'presentations:edit_course' course.id %}" 
+                       class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                        <i class="fas fa-edit me-2"></i>Editar Curso
+                    </a>
+                    <a href="{% url 'reports:export_course_grades' course.id %}" 
+                       class="btn btn-outline-success btn-sm w-100">
+                        <i class="fas fa-download me-2"></i>Exportar Calificaciones
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/custom-alerts.js' %}?v=3.0"></script>
+<script src="{% static 'js/manage-students.js' %}?v=3.0" data-course-id="{{ course.id }}"></script>
+{% endblock %}

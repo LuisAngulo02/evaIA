@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mi Perfil - Sistema de Evaluación{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="avatar">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.get_full_name }}">
+                {% else %}
+                    <i class="fas fa-user"></i>
+                {% endif %}
+            </div>
+            <h2>{{ user.get_full_name|default:user.username }}</h2>
+            <p>{{ user.email }}</p>
+            <span class="badge" style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; display: inline-block;">
+                {% if user.profile.role == 'Estudiante' %}
+                    <i class="fas fa-graduation-cap"></i> Estudiante
+                {% elif user.profile.role == 'Docente' %}
+                    <i class="fas fa-chalkboard-teacher"></i> Docente
+                {% elif user.profile.role == 'Administrador' %}
+                    <i class="fas fa-user-shield"></i> Administrador
+                {% else %}
+                    <i class="fas fa-user"></i> Usuario
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="profile-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="success-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Foto de Perfil -->
+                <div class="form-group">
+                    <label for="{{ form.avatar.id_for_label }}">
+                        <i class="fas fa-camera me-2"></i>{{ form.avatar.label }}
+                    </label>
+                    {% if user.profile.avatar %}
+                        <div class="mb-2">
+                            <img src="{{ user.profile.avatar.url }}" alt="Avatar actual" style="max-width: 150px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            <p class="text-muted small mt-1">Foto actual</p>
+                        </div>
+                    {% endif %}
+                    {{ form.avatar }}
+                    {% if form.avatar.help_text %}
+                        <small class="text-muted">{{ form.avatar.help_text }}</small>
+                    {% endif %}
+                    {% if form.avatar.errors %}
+                        <div class="error">{{ form.avatar.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Información Personal -->
+                <h5 class="mb-3"><i class="fas fa-user me-2"></i>Información Personal</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="error">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="error">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.email.id_for_label }}">
+                        <i class="fas fa-envelope me-2"></i>Correo Electrónico
+                    </label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="error">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Rol (solo lectura) -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-user-tag me-2"></i>Rol
+                    </label>
+                    <div class="form-control" style="background-color: #f8f9fa; border: 1px solid #dee2e6; color: #495057;">
+                        {{ user.profile.get_role_display }}
+                    </div>
+                    <small class="text-muted">Tu rol actual en el sistema (no editable). Contacta al administrador para cambios.</small>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Información Adicional -->
+                <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Información Adicional</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.institution.id_for_label }}">
+                                <i class="fas fa-university me-2"></i>Institución
+                            </label>
+                            {{ form.institution }}
+                            {% if form.institution.errors %}
+                                <div class="error">{{ form.institution.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.phone.id_for_label }}">
+                                <i class="fas fa-phone me-2"></i>Teléfono
+                            </label>
+                            {{ form.phone }}
+                            {% if form.phone.errors %}
+                                <div class="error">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="form-actions text-center">
+                    <a href="{% url 'auth:dashboard' %}" class="btn btn-secondary me-2">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn-update">
+                        <i class="fas fa-save me-1"></i>Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load presentation_tags %}
+
+{% block title %}Configuración IA - EvaIA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ai-configuration.css' %}?v=2.0">
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-11">
+            <!-- Encabezado -->
+            <div class="text-center mb-5">
+                <div class="mb-3">
+                    <i class="fas fa-info-circle fa-3x text-info"></i>
+                </div>
+                <h1 class="h2 fw-bold mb-3">Información sobre Evaluación con IA</h1>
+                <p class="text-muted fs-5">
+                    Conoce cómo la Inteligencia Artificial evalúa las presentaciones<br>
+                    según diferentes criterios de exigencia
+                </p>
+                <div class="alert alert-info d-inline-block mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Nota:</strong> Esta página es solo informativa. El sistema usa nivel <strong class="text-primary">{{ levels_info|lookup:current_level|lookup:'title' }}</strong> actualmente.
+                </div>
+            </div>
+
+            <!-- Alertas de mensajes -->
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle me-2 fs-5"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle me-2 fs-5"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle me-2 fs-5"></i>
+                            {% endif %}
+                            <div>{{ message }}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Formulario de selección (DESHABILITADO - Solo Visual) -->
+            <div class="info-banner mb-4 p-3 bg-light border border-info rounded">
+                <i class="fas fa-eye me-2 text-info"></i>
+                <strong>Modo Solo Lectura:</strong> Esta página muestra información sobre cada nivel de evaluación, sin modificar la configuración del sistema.
+            </div>
+            
+            <div class="row g-4 mb-5">
+                <!-- ESTRICTO -->
+                <div class="col-md-4">
+                    <div class="level-card {% if current_level == 'strict' %}active{% endif %}" 
+                         data-level="strict">
+                        <div class="level-header">
+                            <div class="level-icon text-danger mb-3">
+                                <i class="fas fa-chart-line fa-3x"></i>
+                            </div>
+                            <h3 class="level-title fw-bold mb-2">{{ levels_info.strict.title }}</h3>
+                            <p class="text-muted small mb-3">{{ levels_info.strict.description }}</p>
+                        </div>
+                        <ul class="level-features">
+                            {% for item in levels_info.strict.items %}
+                            <li>
+                                <i class="fas fa-check-circle text-danger me-2"></i>
+                                <span>{{ item }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if current_level == 'strict' %}
+                        <div class="badge w-100 py-2 mt-3" style="background: linear-gradient(135deg, #dc3545, #c82333); color: white; font-weight: 700; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                            <i class="fas fa-star me-1"></i> NIVEL ACTUAL
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- MODERADO -->
+                <div class="col-md-4">
+                    <div class="level-card moderado {% if current_level == 'moderate' %}active{% endif %}" 
+                         data-level="moderate">
+                        <div class="level-recommended">
+                            <i class="fas fa-star me-1"></i>
+                            RECOMENDADO
+                        </div>
+                        <div class="level-header">
+                            <div class="level-icon mb-3">
+                                <i class="fas fa-chart-bar fa-3x"></i>
+                            </div>
+                            <h3 class="level-title fw-bold mb-2">{{ levels_info.moderate.title }}</h3>
+                            <p class="text-muted small mb-3">{{ levels_info.moderate.description }}</p>
+                        </div>
+                        <ul class="level-features">
+                            {% for item in levels_info.moderate.items %}
+                            <li>
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span>{{ item }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if current_level == 'moderate' %}
+                        <div class="badge w-100 py-2 mt-3" style="background: linear-gradient(135deg, #0d6efd, #0a58ca); color: white; font-weight: 700; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                            <i class="fas fa-star me-1"></i> NIVEL ACTUAL
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- SUAVE -->
+                <div class="col-md-4">
+                    <div class="level-card {% if current_level == 'lenient' %}active{% endif %}" 
+                         data-level="lenient">
+                        <div class="level-header">
+                            <div class="level-icon text-success mb-3">
+                                <i class="fas fa-chart-area fa-3x"></i>
+                            </div>
+                            <h3 class="level-title fw-bold mb-2">{{ levels_info.lenient.title }}</h3>
+                            <p class="text-muted small mb-3">{{ levels_info.lenient.description }}</p>
+                        </div>
+                        <ul class="level-features">
+                            {% for item in levels_info.lenient.items %}
+                            <li>
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span>{{ item }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if current_level == 'lenient' %}
+                        <div class="badge w-100 py-2 mt-3" style="background: linear-gradient(135deg, #198754, #146c43); color: white; font-weight: 700; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.3);">
+                            <i class="fas fa-star me-1"></i> NIVEL ACTUAL
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Volver -->
+            <div class="text-center mt-5 mb-4">
+                <a href="{% url 'presentations:teacher_dashboard' %}" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                </a>
+            </div>
+
+            <!-- Información Adicional -->
+            <div class="info-card mt-5">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="info-icon">
+                            <i class="fas fa-lightbulb fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            Sobre el Sistema de Evaluación con IA
+                        </h6>
+                        <p class="mb-2">
+                            <strong>Nivel actual del sistema:</strong> 
+                            <span class="badge {% if current_level == 'strict' %}bg-danger{% elif current_level == 'moderate' %}bg-primary{% else %}bg-success{% endif %} fs-6">
+                                {{ levels_info|lookup:current_level|lookup:'title' }}
+                            </span>
+                        </p>
+                        <p class="mb-2 text-muted">
+                            La evaluación con IA analiza la <strong>coherencia del contenido</strong>, 
+                            <strong>profundidad de los temas</strong>, <strong>uso de palabras clave</strong> y 
+                            <strong>estructura de la presentación</strong>. 
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <i class="fas fa-shield-alt text-primary me-1"></i>
+                            Los parámetros de detección de rostros, autenticidad y análisis técnico se mantienen constantes 
+                            independientemente del nivel de exigencia.
+                        </p>
+                        {% if last_updated %}
+                        <p class="mb-0 text-muted mt-3 small">
+                            <i class="fas fa-clock me-1"></i>
+                            Configuración establecida: {{ last_updated|date:"d/m/Y H:i" }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Tabla comparativa adicional -->
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        Comparación de Niveles
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Aspecto</th>
+                                    <th class="text-danger">Estricto</th>
+                                    <th class="text-primary">Moderado</th>
+                                    <th class="text-success">Suave</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Rango típico</strong></td>
+                                    <td>50-85%</td>
+                                    <td>70-95%</td>
+                                    <td>70-95%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Excelencia</strong></td>
+                                    <td>85-90%</td>
+                                    <td>90-95%</td>
+                                    <td>90-95%</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Énfasis</strong></td>
+                                    <td>Dominio completo</td>
+                                    <td>Balance y profundidad</td>
+                                    <td>Esfuerzo y participación</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Tolerancia</strong></td>
+                                    <td>Baja</td>
+                                    <td>Media</td>
+                                    <td>Alta</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ai-configuration.js' %}"></script>
+{% endblock %}
