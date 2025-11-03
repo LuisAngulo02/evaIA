@@ -791,7 +791,7 @@ tail -f logs/system.log
 
 **EvalExpo AI - Sistema de Evaluación de Presentaciones con IA**
 
-[⬆ Volver arriba](#evalexpo-ai---sistema-de-evaluación-de-presentaciones-con-ia)
+[Volver arriba](#evalexpo-ai---sistema-de-evaluación-de-presentaciones-con-ia)
 
 </div>
 
