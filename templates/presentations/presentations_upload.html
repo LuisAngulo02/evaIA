@@ -1,7 +1,7 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Subir Presentación - EvalExpo AI{% endblock %}
+{% block title %}Subir Presentacion - EvalExpo AI{% endblock %}
 
 {% block extra_css %}
 <!-- Archivos CSS externos -->
@@ -42,6 +42,163 @@
         25% { transform: translateX(-5px); }
         75% { transform: translateX(5px); }
     }
+
+    /* Custom Alert System */
+    .custom-alert-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .custom-alert-overlay.active {
+        display: flex;
+    }
+
+    .custom-alert-box {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+        overflow: hidden;
+        animation: slideIn 0.3s ease;
+        transform-origin: center;
+    }
+
+    .custom-alert-header {
+        padding: 2rem 2rem 1rem 2rem;
+        text-align: center;
+    }
+
+    .custom-alert-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        animation: scaleIn 0.5s ease;
+    }
+
+    .custom-alert-icon.success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+    }
+
+    .custom-alert-icon.error {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+    }
+
+    .custom-alert-icon.warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+    }
+
+    .custom-alert-icon.info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+    }
+
+    .custom-alert-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .custom-alert-message {
+        padding: 0 2rem 2rem 2rem;
+        font-size: 1rem;
+        color: #6b7280;
+        line-height: 1.6;
+        text-align: center;
+    }
+
+    .custom-alert-footer {
+        padding: 1rem 2rem 2rem 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+    }
+
+    .custom-alert-btn {
+        padding: 0.75rem 2rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .custom-alert-btn.primary {
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .custom-alert-btn.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .custom-alert-btn.secondary {
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+
+    .custom-alert-btn.secondary:hover {
+        background: #e5e7eb;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.8) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @keyframes scaleIn {
+        0% {
+            transform: scale(0);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
 </style>
 {% endblock %}
 
@@ -55,23 +212,23 @@
                     <div class="hero-content">
                         <div class="hero-badge mb-3">
                             <i class="fas fa-rocket me-2"></i>
-                            <span>Análisis IA Avanzado</span>
+                            <span>Analisis IA Avanzado</span>
                         </div>
                         <h1 class="hero-title">
-                            Sube tu <span class="text-gradient">Presentación</span>
+                            Sube tu <span class="text-gradient">Presentacion</span>
                         </h1>
                         <p class="hero-subtitle">
-                            Obtén feedback inteligente instantáneo con nuestro sistema de IA que analiza tu 
-                            exposición.
+                            Obten feedback inteligente instantaneo con nuestro sistema de IA que analiza tu 
+                            exposicion.
                         </p>
                         <div class="hero-stats">
                             <div class="stat-item">
                                 <div class="stat-number">95%</div>
-                                <div class="stat-label">Precisión IA</div>
+                                <div class="stat-label">Precision IA</div>
                             </div>
                             <div class="stat-item">
-                                <div class="stat-number">Transcripción</div>
-                                <div class="stat-label">Instantánea</div>
+                                <div class="stat-number">Transcripcion</div>
+                                <div class="stat-label">Instantanea</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-number">24/7</div>
@@ -99,7 +256,7 @@
                     <div class="upload-step-indicator">
                         <div class="step active">
                             <div class="step-number">1</div>
-                            <div class="step-label">Información</div>
+                            <div class="step-label">Informacion</div>
                         </div>
                         <div class="step-line"></div>
                         <div class="step">
@@ -109,7 +266,7 @@
                         <div class="step-line"></div>
                         <div class="step">
                             <div class="step-number">3</div>
-                            <div class="step-label">Análisis</div>
+                            <div class="step-label">Analisis</div>
                         </div>
                     </div>
                 </div>
@@ -146,7 +303,7 @@
                                         {% if form.assignment.errors %}
                                             <div class="error-message">{{ form.assignment.errors }}</div>
                                         {% endif %}
-                                        <div class="field-hint">Selecciona la asignación para la cual subes esta presentación</div>
+                                        <div class="field-hint">Selecciona la asignacion para la cual subes esta presentacion</div>
                                     </div>
                                 </div>
                             </div>
@@ -156,11 +313,11 @@
                                 <div class="card-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-bottom: 2px solid rgba(99, 102, 241, 0.2);">
                                     <h6 class="mb-0">
                                         <i class="fas fa-info-circle me-2 text-primary"></i>
-                                        <strong>Detalles de la Asignación</strong>
+                                        <strong>Detalles de la Asignacion</strong>
                                     </h6>
                                 </div>
                                 <div class="card-body" id="assignment-info-upload">
-                                    <!-- Se llenará dinámicamente con AJAX -->
+                                    <!-- Se llenan dinamicamente con AJAX -->
                                 </div>
                             </div>
 
@@ -178,7 +335,7 @@
                                         {% if form.title.errors %}
                                             <div class="error-message">{{ form.title.errors }}</div>
                                         {% endif %}
-                                        <div class="field-hint">Dale un título descriptivo y atractivo a tu presentación</div>
+                                        <div class="field-hint">Dale un titulo descriptivo y atractivo a tu presentacion</div>
                                     </div>
                                 </div>
                             </div>
@@ -200,14 +357,14 @@
                                                 <div class="wave wave-3"></div>
                                             </div>
                                         </div>
-                                        <h4 class="upload-title">Arrastra tu video aquí</h4>
+                                        <h4 class="upload-title">Arrastra tu video aqui</h4>
                                         <p class="upload-subtitle">o haz clic para seleccionar desde tu dispositivo</p>
                                         <div class="upload-specs">
                                             <span class="spec-item">
                                                 <i class="fas fa-check-circle"></i>MP4, AVI, MOV, MKV
                                             </span>
                                             <span class="spec-item">
-                                                <i class="fas fa-weight-hanging"></i>Máx. 500MB
+                                                <i class="fas fa-weight-hanging"></i>Max. 500MB
                                             </span>
                                             <span class="spec-item">
                                                 <i class="fas fa-clock"></i>Hasta 30min
@@ -257,7 +414,7 @@
                                         {% if form.description.errors %}
                                             <div class="error-message">{{ form.description.errors }}</div>
                                         {% endif %}
-                                        <div class="field-hint">Comparte detalles adicionales que puedan ayudar en el análisis</div>
+                                        <div class="field-hint">Comparte detalles adicionales que puedan ayudar en el analisis</div>
                                     </div>
                                 </div>
                             </div>
@@ -271,7 +428,7 @@
                                 <button type="submit" class="btn-primary-modern" id="submitBtn">
                                     <div class="btn-content">
                                         <i class="fas fa-rocket" id="submitIcon"></i>
-                                        <span id="submitText">Subir Presentación</span>
+                                        <span id="submitText">Subir Presentacion</span>
                                     </div>
                                     <div class="btn-loading" id="submitLoading" style="display: none;">
                                         <div class="spinner"></div>
@@ -292,10 +449,10 @@
                                 </div>
                                 <div class="input-field">
                                     <label for="recording_assignment_top" class="form-label-modern">
-                                        Asignación <span class="text-danger">*</span>
+                                        Asignacion <span class="text-danger">*</span>
                                     </label>
                                     <select class="form-select" id="recording_assignment_top" name="assignment" required>
-                                        <option value="">Selecciona una asignación...</option>
+                                        <option value="">Selecciona una asignacion...</option>
                                         {% for assignment in available_assignments %}
                                         <option value="{{ assignment.id }}"
                                                 data-course="{{ assignment.course.name }}"
@@ -315,7 +472,7 @@
                                     {% else %}
                                     <div class="field-hint">
                                         <i class="fas fa-info-circle me-1"></i>
-                                        Solo se muestran asignaciones activas donde no has subido presentación
+                                        Solo se muestran asignaciones activas donde no has subido presentacion
                                     </div>
                                     {% endif %}
                                 </div>
@@ -327,11 +484,11 @@
                             <div class="card-header" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); border-bottom: 2px solid rgba(99, 102, 241, 0.2);">
                                 <h6 class="mb-0">
                                     <i class="fas fa-info-circle me-2 text-primary"></i>
-                                    <strong>Detalles de la Asignación</strong>
+                                    <strong>Detalles de la Asignacion</strong>
                                 </h6>
                             </div>
                             <div class="card-body" id="assignment-info-recording">
-                                <!-- Se llenará dinámicamente con AJAX -->
+                                <!-- Se llenara dinamicamente con AJAX -->
                             </div>
                         </div>
                         
@@ -344,7 +501,7 @@
                                 <strong>Listo para grabar</strong>
                             </h6>
                             <p class="mb-0" style="font-size: 0.95rem; color: var(--text-muted);">
-                                Revisa las instrucciones arriba antes de comenzar. Asegúrate de tener buena iluminación y un ambiente silencioso.
+                                Revisa las instrucciones arriba antes de comenzar. Asegurate de tener buena iluminacion y un ambiente silencioso.
                             </p>
                         </div>
                         
@@ -365,17 +522,17 @@
                                 <div class="device-info mb-3">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <p class="mb-2"><strong><i class="fas fa-camera me-2"></i>Cámara:</strong> <span id="cameraName">Detectando...</span></p>
+                                            <p class="mb-2"><strong><i class="fas fa-camera me-2"></i>Camara:</strong> <span id="cameraName">Detectando...</span></p>
                                         </div>
                                         <div class="col-md-6">
-                                            <p class="mb-0"><strong><i class="fas fa-microphone me-2"></i>Micrófono:</strong> <span id="microphoneName">Detectando...</span></p>
+                                            <p class="mb-0"><strong><i class="fas fa-microphone me-2"></i>Microfono:</strong> <span id="microphoneName">Detectando...</span></p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Recorded Video Preview -->
                                 <div id="recordedPreview" class="recorded-preview" style="display: none;">
-                                    <h6 class="mb-3"><i class="fas fa-eye me-2"></i>Vista Previa de la Grabación</h6>
+                                    <h6 class="mb-3"><i class="fas fa-eye me-2"></i>Vista Previa de la Grabacion</h6>
                                     <video id="recordedVideo" class="recorded-video" controls controlsList="nodownload" preload="metadata"></video>
                                     <button class="btn btn-outline-danger btn-sm mt-3" onclick="deleteRecording()">
                                         <i class="fas fa-trash me-2"></i>Descartar y Grabar de Nuevo
@@ -409,7 +566,7 @@
                                     <div class="multiple-faces-warning mb-3" id="multipleFacesWarning" style="display: none;">
                                         <div class="warning-content">
                                             <i class="fas fa-exclamation-triangle"></i>
-                                            <span>¡Advertencia! Se detectaron <strong id="faceCount">0</strong> personas en la cámara.</span>
+                                            <span>Advertencia! Se detectaron <strong id="faceCount">0</strong> personas en la camara.</span>
                                             <p class="mb-0 mt-1 small">Solo debe haber 1 persona visible para grabar.</p>
                                         </div>
                                     </div>
@@ -417,7 +574,7 @@
                                     <!-- Control Buttons -->
                                     <div class="control-buttons-vertical">
                                         <button id="startBtn" class="btn btn-success btn-lg w-100 mb-3" onclick="startRecording()" disabled>
-                                            <i class="fas fa-play-circle me-2"></i>Iniciar Grabación
+                                            <i class="fas fa-play-circle me-2"></i>Iniciar Grabacion
                                         </button>
                                         <button id="pauseBtn" class="btn btn-warning btn-lg w-100 mb-3" onclick="pauseRecording()" style="display:none;">
                                             <i class="fas fa-pause-circle me-2"></i>Pausar
@@ -429,7 +586,7 @@
                                             <i class="fas fa-redo me-2"></i>Reiniciar
                                         </button>
                                         <button id="stopBtn" class="btn btn-danger btn-lg w-100 mb-3" onclick="stopRecording()" style="display:none;">
-                                            <i class="fas fa-stop-circle me-2"></i>Detener Grabación
+                                            <i class="fas fa-stop-circle me-2"></i>Detener Grabacion
                                         </button>
                                     </div>
                                 </div>
@@ -441,7 +598,7 @@
                         <div id="recordingForm" class="row mt-4" style="display: none;">
                             <div class="col-lg-8">
                                 <hr class="my-4">
-                                <h5 class="mb-4"><i class="fas fa-save me-2"></i>Guardar Presentación</h5>
+                                <h5 class="mb-4"><i class="fas fa-save me-2"></i>Guardar Presentacion</h5>
                                 
                                 <form id="liveRecordForm" method="post" action="{% url 'presentations:live_record' %}">
                                     {% csrf_token %}
@@ -457,10 +614,10 @@
                                         </div>
                                         <div class="input-field">
                                             <label for="recording_title" class="form-label-modern">
-                                                Título
+                                                Titulo
                                             </label>
                                             <input type="text" class="form-control" id="recording_title" name="title" required>
-                                            <div class="field-hint">Dale un título descriptivo a tu presentación</div>
+                                            <div class="field-hint">Dale un titulo descriptivo a tu presentacion</div>
                                         </div>
                                     </div>
                                 </div>
@@ -473,7 +630,7 @@
                                         </div>
                                         <div class="input-field">
                                             <label for="recording_description" class="form-label-modern">
-                                                Descripción (Opcional)
+                                                Descripcion (Opcional)
                                             </label>
                                             <textarea class="form-control" id="recording_description" name="description" rows="3"></textarea>
                                             <div class="field-hint">Agrega notas o detalles adicionales</div>
@@ -490,7 +647,7 @@
                                     <button type="submit" class="btn-primary-modern">
                                         <div class="btn-content">
                                             <i class="fas fa-save"></i>
-                                            <span>Guardar Presentación</span>
+                                            <span>Guardar Presentacion</span>
                                         </div>
                                     </button>
                                 </div>
@@ -564,7 +721,7 @@
                         </div>
                         <div class="tip-content">
                             <strong>Calidad de Video</strong>
-                            <p>Buena iluminación y cámara estable para mejor análisis</p>
+                            <p>Buena iluminacion y camara estable para mejor analisis</p>
                         </div>
                     </div>
                     <div class="tip-item">
@@ -573,7 +730,7 @@
                         </div>
                         <div class="tip-content">
                             <strong>Audio Cristalino</strong>
-                            <p>Ambiente silencioso y dicción clara</p>
+                            <p>Ambiente silencioso y diccion clara</p>
                         </div>
                     </div>
                     <div class="tip-item">
@@ -593,7 +750,7 @@
                 <div class="sidebar-card-header">
                     <h6 class="sidebar-card-title">
                         <i class="fas fa-cog me-2"></i>
-                        Especificaciones Técnicas
+                        Especificaciones Tecnicas
                     </h6>
                 </div>
                 <div class="sidebar-card-body">
@@ -611,7 +768,7 @@
                             <i class="fas fa-weight-hanging"></i>
                         </div>
                         <div class="spec-content">
-                            <strong>Tamaño máximo</strong>
+                            <strong>Tamaño maximo</strong>
                             <span>500 MB</span>
                         </div>
                     </div>
@@ -620,8 +777,8 @@
                             <i class="fas fa-clock"></i>
                         </div>
                         <div class="spec-content">
-                            <strong>Duración</strong>
-                            <span>Según asignación</span>
+                            <strong>Duracion</strong>
+                            <span>Segun asignacion</span>
                         </div>
                     </div>
                     <div class="tech-spec">
@@ -629,8 +786,8 @@
                             <i class="fas fa-desktop"></i>
                         </div>
                         <div class="spec-content">
-                            <strong>Resolución</strong>
-                            <span>Mínimo 720p</span>
+                            <strong>Resolucion</strong>
+                            <span>Minimo 720p</span>
                         </div>
                     </div>
                 </div>
@@ -671,8 +828,8 @@
         notification.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.3)';
         notification.innerHTML = `
             <i class="fas fa-bell me-2"></i>
-            <strong>📌 Asignación seleccionada desde tu notificación</strong><br>
-            <small>La asignación ha sido pre-seleccionada automáticamente. Puedes cambiarla si lo deseas.</small>
+            <strong>Asignacion seleccionada desde tu notificacion</strong><br>
+            <small>La asignacion ha sido pre-seleccionada automaticamente. Puedes cambiarla si lo deseas.</small>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
         `;
         const tabsContainer = document.querySelector('.tabs-container');
@@ -750,7 +907,11 @@
             // Validate file type
             const validTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska'];
             if (!validTypes.includes(file.type)) {
-                alert('Formato de archivo no válido. Use MP4, AVI, MOV, MKV o WEBM');
+                showCustomAlert(
+                    'Formato de archivo no valido. Por favor usa MP4, AVI, MOV, MKV o WEBM.',
+                    'error',
+                    'Formato No Valido'
+                );
                 return;
             }
 
@@ -763,7 +924,11 @@
     function handleFileSelection(file) {
         // Validate file size (500MB)
         if (file.size > 500 * 1024 * 1024) {
-            alert('El archivo es demasiado grande. Máximo 500MB');
+            showCustomAlert(
+                'El archivo es demasiado grande. El tamano maximo permitido es 500MB.',
+                'error',
+                'Archivo Muy Grande'
+            );
             return;
         }
 
@@ -793,7 +958,7 @@
     // Assignment details AJAX
     const assignmentSelect = document.getElementById('{{ form.assignment.id_for_label }}');
     
-    // Función para cargar los detalles de una asignación
+    // Funcion para cargar los detalles de una asignacion
     function loadAssignmentDetails(assignmentId) {
         if (assignmentId) {
             fetch(`/presentations/api/assignment-details/?assignment_id=${assignmentId}`)
@@ -806,11 +971,11 @@
                                 <div class="col-md-6">
                                     <p><strong>Curso:</strong> ${data.course}</p>
                                     <p><strong>Tipo:</strong> ${data.type}</p>
-                                    <p><strong>Duración máxima:</strong> ${data.max_duration} min</p>
+                                    <p><strong>Duracion maxima:</strong> ${data.max_duration} min</p>
                                 </div>
                                 <div class="col-md-6">
-                                    <p><strong>Fecha límite:</strong> ${data.due_date}</p>
-                                    <p><strong>Puntaje máximo:</strong> ${data.max_score} puntos</p>
+                                    <p><strong>Fecha limite:</strong> ${data.due_date}</p>
+                                    <p><strong>Puntaje maximo:</strong> ${data.max_score} puntos</p>
                                     <p><strong>Docente:</strong> ${data.teacher}</p>
                                 </div>
                             </div>
@@ -821,7 +986,7 @@
                                 </h6>
                                 <div class="alert alert-primary" style="background-color: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2);">
                                     <i class="fas fa-info-circle me-2"></i>
-                                    ${data.instructions ? data.instructions.replace(/\n/g, '<br>') : 'No hay instrucciones específicas para esta asignación.'}
+                                    ${data.instructions ? data.instructions.replace(/\n/g, '<br>') : 'No hay instrucciones especificas para esta asignacion.'}
                                 </div>
                             </div>
                         `;
@@ -833,7 +998,7 @@
         }
     }
     
-    // Cargar detalles al cambiar la selección
+    // Cargar detalles al cambiar la seleccion
     assignmentSelect.addEventListener('change', function() {
         loadAssignmentDetails(this.value);
         
@@ -843,14 +1008,14 @@
             recordAssignmentTop.value = this.value;
         }
         
-        // Sincronizar con el campo hidden del formulario de grabación
+        // Sincronizar con el campo hidden del formulario de grabacion
         const recordAssignmentHidden = document.getElementById('recording_assignment');
         if (recordAssignmentHidden) {
             recordAssignmentHidden.value = this.value;
         }
     });
     
-    // Cargar detalles automáticamente si ya hay una asignación seleccionada al cargar la página
+    // Cargar detalles automaticamente si ya hay una asignacion seleccionada al cargar la pagina
     if (assignmentSelect.value) {
         loadAssignmentDetails(assignmentSelect.value);
     }
@@ -869,12 +1034,12 @@
     // Assignment details for live recording tab
     const recordingAssignmentSelect = document.getElementById('recording_assignment_top');
     if (recordingAssignmentSelect) {
-        // Función para cargar detalles en el tab de grabación
+        // Funcion para cargar detalles en el tab de grabacion
         function loadRecordingAssignmentDetails(assignmentId) {
             const startBtn = document.getElementById('startBtn');
             
             if (assignmentId) {
-                // Habilitar botón de inicio si hay rostro detectado
+                // Habilitar boton de inicio si hay rostro detectado
                 if (startBtn && faceDetected) {
                     startBtn.disabled = false;
                 }
@@ -889,11 +1054,11 @@
                                     <div class="col-md-6">
                                         <p><strong>Curso:</strong> ${data.course}</p>
                                         <p><strong>Tipo:</strong> ${data.type}</p>
-                                        <p><strong>Duración máxima:</strong> ${data.max_duration} min</p>
+                                        <p><strong>Duracion maxima:</strong> ${data.max_duration} min</p>
                                     </div>
                                     <div class="col-md-6">
-                                        <p><strong>Fecha límite:</strong> ${data.due_date}</p>
-                                        <p><strong>Puntaje máximo:</strong> ${data.max_score} puntos</p>
+                                        <p><strong>Fecha limite:</strong> ${data.due_date}</p>
+                                        <p><strong>Puntaje maximo:</strong> ${data.max_score} puntos</p>
                                         <p><strong>Docente:</strong> ${data.teacher}</p>
                                     </div>
                                 </div>
@@ -904,7 +1069,7 @@
                                     </h6>
                                     <div class="alert alert-primary" style="background-color: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.2);">
                                         <i class="fas fa-info-circle me-2"></i>
-                                        ${data.instructions ? data.instructions.replace(/\n/g, '<br>') : 'No hay instrucciones específicas para esta asignación.'}
+                                        ${data.instructions ? data.instructions.replace(/\n/g, '<br>') : 'No hay instrucciones especificas para esta asignacion.'}
                                     </div>
                                 </div>
                             `;
@@ -912,7 +1077,7 @@
                     })
                     .catch(error => console.error('Error:', error));
             } else {
-                // Deshabilitar botón si no hay asignación seleccionada
+                // Deshabilitar boton si no hay asignacion seleccionada
                 if (startBtn) {
                     startBtn.disabled = true;
                 }
@@ -920,11 +1085,11 @@
             }
         }
         
-        // Cargar detalles al cambiar la selección
+        // Cargar detalles al cambiar la seleccion
         recordingAssignmentSelect.addEventListener('change', function() {
             loadRecordingAssignmentDetails(this.value);
             
-            // Sincronizar con el campo hidden del formulario de grabación
+            // Sincronizar con el campo hidden del formulario de grabacion
             const bottomSelect = document.getElementById('recording_assignment');
             if (bottomSelect) {
                 bottomSelect.value = this.value;
@@ -968,7 +1133,7 @@
             if (uploadAssignment && uploadAssignment.value) {
                 if (recordAssignmentTop) {
                     recordAssignmentTop.value = uploadAssignment.value;
-                    // Cargar las instrucciones si hay una asignación seleccionada
+                    // Cargar las instrucciones si hay una asignacion seleccionada
                     recordAssignmentTop.dispatchEvent(new Event('change'));
                 }
                 if (recordAssignmentHidden) {
@@ -985,7 +1150,7 @@
             
             if (recordAssignmentTop && recordAssignmentTop.value && uploadAssignment) {
                 uploadAssignment.value = recordAssignmentTop.value;
-                // Cargar las instrucciones si hay una asignación seleccionada
+                // Cargar las instrucciones si hay una asignacion seleccionada
                 uploadAssignment.dispatchEvent(new Event('change'));
             }
         }
@@ -1014,9 +1179,9 @@
             const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
             await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
             modelsLoaded = true;
-            console.log('Modelos de detección facial cargados');
+            console.log('Modelos de deteccion facial cargados');
         } catch (error) {
-            console.error('Error al cargar modelos de detección facial:', error);
+            console.error('Error al cargar modelos de deteccion facial:', error);
         }
     }
     
@@ -1054,7 +1219,11 @@
                     // If recording, pause automatically
                     if (mediaRecorder && mediaRecorder.state === 'recording') {
                         pauseRecording();
-                        alert('⚠️ Grabación pausada: Se detectaron múltiples personas. Solo debe haber 1 persona visible.');
+                        showCustomAlert(
+                            'Se detectaron multiples personas. Solo debe haber 1 persona visible.',
+                            'warning',
+                            'Grabacion Pausada'
+                        );
                     }
                 }
                 
@@ -1062,7 +1231,7 @@
                 faceDetected = false;
                 faceStatusElement.classList.remove('detected');
                 faceIconElement.className = 'fas fa-users';
-                faceTextElement.textContent = 'Múltiples personas detectadas';
+                faceTextElement.textContent = 'Multiples personas detectadas';
                 
             } else if (detections.length === 1) {
                 // Exactly one face detected (correct state)
@@ -1072,7 +1241,7 @@
                     multipleFacesWarning.style.display = 'none';
                     faceStatusElement.classList.add('detected');
                     faceIconElement.className = 'fas fa-user-check';
-                    faceTextElement.textContent = '¡Rostro detectado! ✓';
+                    faceTextElement.textContent = 'Rostro detectado!';
                     
                     // Enable start button only if not currently recording
                     if (!mediaRecorder || mediaRecorder.state !== 'recording') {
@@ -1092,7 +1261,7 @@
                 }
             }
         } catch (error) {
-            console.error('Error en detección facial:', error);
+            console.error('Error en deteccion facial:', error);
         }
     }
 
@@ -1137,8 +1306,8 @@
             const videoDevice = devices.find(device => device.kind === 'videoinput' && device.deviceId === stream.getVideoTracks()[0].getSettings().deviceId);
             const audioDevice = devices.find(device => device.kind === 'audioinput' && device.deviceId === stream.getAudioTracks()[0].getSettings().deviceId);
 
-            document.getElementById('cameraName').textContent = videoDevice ? videoDevice.label : 'Cámara predeterminada';
-            document.getElementById('microphoneName').textContent = audioDevice ? audioDevice.label : 'Micrófono predeterminado';
+            document.getElementById('cameraName').textContent = videoDevice ? videoDevice.label : 'Camara predeterminada';
+            document.getElementById('microphoneName').textContent = audioDevice ? audioDevice.label : 'Microfono predeterminado';
 
             // Load face detection models and start detection when video is ready
             videoPreview.addEventListener('loadedmetadata', async () => {
@@ -1147,28 +1316,44 @@
             });
 
         } catch (error) {
-            console.error('Error al acceder a la cámara:', error);
-            alert('No se pudo acceder a la cámara y micrófono. Por favor, verifica los permisos.');
+            console.error('Error al acceder a la camara:', error);
+            showCustomAlert(
+                'No se pudo acceder a la camara y microfono. Por favor, verifica los permisos en la configuracion de tu navegador.',
+                'error',
+                'Acceso Denegado'
+            );
         }
     }
 
     function startRecording() {
-        // Verificar que se haya seleccionado una asignación
+        // Verificar que se haya seleccionado una asignacion
         const recordingAssignment = document.getElementById('recording_assignment_top');
         if (!recordingAssignment || !recordingAssignment.value) {
-            alert('âš ï¸ Por favor, selecciona una asignación antes de iniciar la grabación.');
+            showCustomAlert(
+                'Por favor, selecciona una asignacion antes de iniciar la grabacion.',
+                'warning',
+                'Asignacion Requerida'
+            );
             return;
         }
         
         // Verify face detection before starting
         if (!faceDetected) {
-            alert('âš ï¸ Por favor, asegúrate de que tu rostro sea visible en la cámara antes de iniciar la grabación.');
+            showCustomAlert(
+                'Por favor, asegurate de que tu rostro sea visible en la camara antes de iniciar la grabacion.',
+                'warning',
+                'Rostro No Detectado'
+            );
             return;
         }
         
         // Check for multiple faces
         if (multipleFacesDetected) {
-            alert('⚠️ Se detectaron múltiples personas. Solo debe haber 1 persona visible para iniciar la grabación.');
+            showCustomAlert(
+                'Se detectaron multiples personas. Solo debe haber 1 persona visible para iniciar la grabacion.',
+                'warning',
+                'Multiples Personas'
+            );
             return;
         }
 
@@ -1201,7 +1386,7 @@
 
             mediaRecorder.onstop = function() {
                 // Recording completed
-                console.log('Grabación completada');
+                console.log('Grabacion completada');
             };
 
             mediaRecorder.start(1000); // Collect data every second
@@ -1308,7 +1493,7 @@
             const multipleFacesWarning = document.getElementById('multipleFacesWarning');
             if (multipleFacesWarning) multipleFacesWarning.style.display = 'none';
             
-            console.log('Grabación reiniciada - lista para iniciar de nuevo');
+            console.log('Grabacion reiniciada - lista para iniciar de nuevo');
         }
     }
 
@@ -1384,7 +1569,11 @@
                 // Check if max duration reached
                 if (seconds >= MAX_DURATION) {
                     stopRecording();
-                    alert('Se alcanzó la duración máxima de grabación (30 minutos)');
+                    showCustomAlert(
+                        'Se alcanzo la duracion maxima de grabacion (30 minutos). La grabacion se detuvo automaticamente.',
+                        'warning',
+                        'Duracion Maxima Alcanzada'
+                    );
                 }
             }
         }, 1000);
@@ -1414,7 +1603,11 @@
         e.preventDefault();
 
         if (recordedChunks.length === 0) {
-            alert('No hay grabación para guardar');
+            showCustomAlert(
+                'No hay grabacion para guardar. Por favor, graba un video antes de intentar guardarlo.',
+                'warning',
+                'Sin Grabacion'
+            );
             return;
         }
 
@@ -1445,7 +1638,11 @@
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Error del servidor:', errorText);
-                alert(`Error al guardar (${response.status}): ${response.statusText}`);
+                showCustomAlert(
+                    `Error al guardar: ${response.status} - ${response.statusText}`,
+                    'error',
+                    'Error del Servidor'
+                );
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalContent;
                 return;
@@ -1459,31 +1656,46 @@
                 console.error('Error al parsear JSON:', jsonError);
                 const responseText = await response.text();
                 console.error('Respuesta recibida:', responseText);
-                alert('Error: El servidor no respondió correctamente. Verifica la consola para más detalles.');
+                showCustomAlert(
+                    'El servidor no respondio correctamente. Por favor, verifica la consola para mas detalles.',
+                    'error',
+                    'Error de Comunicacion'
+                );
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalContent;
                 return;
             }
 
             if (data.success) {
-                // Mostrar mensaje de éxito
-                let message = data.message || '¡Presentación guardada exitosamente!';
+                // Mostrar mensaje de �xito
+                let message = data.message || '�Presentaci�n guardada exitosamente!';
                 
                 // Agregar mensaje de Cloudinary si existe
                 if (data.cloudinary_status && data.cloudinary_status.message) {
                     message += '\n' + data.cloudinary_status.message;
                 }
                 
-                alert(message);
-                window.location.href = data.redirect || '{% url "presentations:my_presentations" %}';
+                showCustomAlert(message, 'success', '¡Exito!');
+                // Redirigir despues de 2 segundos
+                setTimeout(() => {
+                    window.location.href = data.redirect || '{% url "presentations:my_presentations" %}';
+                }, 2000);
             } else {
-                alert('Error al guardar: ' + (data.error || 'Error desconocido'));
+                showCustomAlert(
+                    data.error || 'Error desconocido al guardar la presentacion.',
+                    'error',
+                    'Error al Guardar'
+                );
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalContent;
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al enviar la grabación');
+            showCustomAlert(
+                'Ocurrio un error al enviar la grabacion. Por favor, intenta nuevamente.',
+                'error',
+                'Error de Conexion'
+            );
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalContent;
         }
@@ -1524,17 +1736,113 @@
                 }
             }
             
-            // Establecer en el campo hidden del formulario de grabación
+            // Establecer en el campo hidden del formulario de grabaci�n
             const recordAssignmentHidden = document.getElementById('recording_assignment');
             if (recordAssignmentHidden) {
                 recordAssignmentHidden.value = assignmentId;
             }
         }
         
-        // Si viene con tab=record, cambiar al tab de grabación
+        // Si viene con tab=record, cambiar al tab de grabaci�n
         if (tab === 'record') {
             switchTab('record-tab');
         }
     });
 </script>
+
+<!-- Custom Alert Overlay -->
+<div class="custom-alert-overlay" id="customAlertOverlay">
+    <div class="custom-alert-box">
+        <div class="custom-alert-header">
+            <div class="custom-alert-icon" id="customAlertIcon">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="custom-alert-title" id="customAlertTitle">T�tulo</h3>
+        </div>
+        <div class="custom-alert-message" id="customAlertMessage">
+            Mensaje de alerta
+        </div>
+        <div class="custom-alert-footer">
+            <button class="custom-alert-btn primary" id="customAlertBtn" onclick="closeCustomAlert()">
+                Aceptar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // CUSTOM ALERT SYSTEM
+    // ============================================
+    
+    function showCustomAlert(message, type = 'info', title = null) {
+        const overlay = document.getElementById('customAlertOverlay');
+        const icon = document.getElementById('customAlertIcon');
+        const titleElement = document.getElementById('customAlertTitle');
+        const messageElement = document.getElementById('customAlertMessage');
+        
+        // Configurar tipo de alerta
+        const alertTypes = {
+            success: {
+                icon: 'fa-check',
+                title: title || '��xito!',
+                class: 'success'
+            },
+            error: {
+                icon: 'fa-times',
+                title: title || 'Error',
+                class: 'error'
+            },
+            warning: {
+                icon: 'fa-exclamation-triangle',
+                title: title || 'Advertencia',
+                class: 'warning'
+            },
+            info: {
+                icon: 'fa-info',
+                title: title || 'Informaci�n',
+                class: 'info'
+            }
+        };
+        
+        const config = alertTypes[type] || alertTypes.info;
+        
+        // Aplicar configuraci�n
+        icon.className = `custom-alert-icon ${config.class}`;
+        icon.innerHTML = `<i class="fas ${config.icon}"></i>`;
+        titleElement.textContent = config.title;
+        messageElement.textContent = message;
+        
+        // Mostrar overlay
+        overlay.classList.add('active');
+        
+        // Auto-cerrar para mensajes de �xito despu�s de 3 segundos
+        if (type === 'success') {
+            setTimeout(() => {
+                closeCustomAlert();
+            }, 3000);
+        }
+    }
+    
+    function closeCustomAlert() {
+        const overlay = document.getElementById('customAlertOverlay');
+        overlay.classList.remove('active');
+    }
+    
+    // Cerrar al hacer clic fuera del cuadro
+    document.getElementById('customAlertOverlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCustomAlert();
+        }
+    });
+    
+    // Cerrar con tecla ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCustomAlert();
+        }
+    });
+</script>
+
 {% endblock %}
+
