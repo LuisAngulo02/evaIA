@@ -1,6 +1,6 @@
-# 📚 DOCUMENTACIÓN COMPLETA DEL SISTEMA EVALEXPO AI
+# DOCUMENTACIÓN COMPLETA DEL SISTEMA EVALEXPO AI
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 1. [Introducción General](#introducción-general)
 2. [Arquitectura del Sistema](#arquitectura-del-sistema)
 3. [Tecnologías Utilizadas](#tecnologías-utilizadas)
@@ -107,47 +107,77 @@ El sistema está construido siguiendo el patrón MVT de Django, una variación d
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **Python** | 3.10+ | Lenguaje principal |
-| **Django** | 5.2.7 | Framework web |
+| **Python** | 3.11.8 | Lenguaje principal |
+| **Django** | 5.2.1 | Framework web |
 | **PostgreSQL** | 15.x | Base de datos relacional |
-| **psycopg2** | 2.9.11 | Adaptador PostgreSQL para Python |
+| **psycopg2** | 2.9.10 | Adaptador PostgreSQL para Python |
+| **psycopg2-binary** | 2.9.10 | Versión binaria precompilada |
 
 ### Inteligencia Artificial
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
 | **Groq SDK** | 0.32.0 | API para modelos LLM (Llama 3.3 70B) |
-| **OpenAI Whisper** | 20231117 | Transcripción de audio |
-| **PyTorch** | 2.5.1 | Framework de Deep Learning |
+| **OpenAI** | 1.91.0 | Cliente de OpenAI API |
+| **OpenAI Whisper** | 20250625 | Transcripción de audio |
+| **PyTorch** | 2.8.0 | Framework de Deep Learning |
+| **TorchAudio** | 2.8.0 | Procesamiento de audio con PyTorch |
+| **TorchVision** | 0.23.0 | Visión por computadora con PyTorch |
 | **Transformers** | 4.46.3 | Modelos de Hugging Face |
-| **Sentence-Transformers** | 3.3.1 | Embeddings semánticos |
+| **Sentence-Transformers** | 5.1.1 | Embeddings semánticos |
 | **MediaPipe** | 0.10.21 | Detección facial y tracking |
+| **JAX** | 0.7.1 | Computación numérica de alto rendimiento |
+| **JAXlib** | 0.7.1 | Biblioteca de bajo nivel para JAX |
 
 ### Procesamiento Multimedia
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **OpenCV** | 4.9.0.80 | Visión por computadora |
+| **OpenCV** | 4.12.0.88 | Visión por computadora |
+| **OpenCV-Contrib** | 4.12.0.88 | Módulos adicionales de OpenCV |
 | **MoviePy** | 2.2.1 | Procesamiento de video |
 | **Librosa** | 0.11.0 | Análisis de audio |
 | **Pydub** | 0.25.1 | Manipulación de audio |
+| **SoundFile** | 0.13.1 | Lectura/escritura de archivos de audio |
+| **SoundDevice** | 0.5.2 | Captura de audio en tiempo real |
+| **Soxr** | 1.0.0 | Remuestreo de audio de alta calidad |
+| **AudioRead** | 3.0.1 | Decodificación de audio |
+| **ImageIO** | 2.37.0 | Lectura/escritura de imágenes |
+| **ImageIO-FFmpeg** | 0.6.0 | Soporte FFmpeg para ImageIO |
 | **FFmpeg** | (binario) | Codecs y conversión |
 
 ### Ciencia de Datos
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **NumPy** | 1.26.4 | Operaciones numéricas |
-| **Pandas** | 2.2.3 | Manipulación de datos |
-| **Scikit-learn** | 1.5.2 | Machine Learning clásico |
-| **Matplotlib** | 3.9.3 | Visualización de datos |
+| **NumPy** | 2.2.6 | Operaciones numéricas |
+| **Pandas** | 2.3.3 | Manipulación de datos |
+| **Scikit-learn** | 1.7.2 | Machine Learning clásico |
+| **Matplotlib** | 3.9.2 | Visualización de datos |
 | **SciPy** | 1.14.1 | Computación científica |
+| **Joblib** | 1.5.2 | Serialización y paralelización |
 
 ### Almacenamiento en la Nube
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
 | **Cloudinary** | 1.44.1 | CDN y almacenamiento de videos |
+| **django-cloudinary-storage** | 0.3.0 | Integración con Django |
+
+### Servidor Web y Producción
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Gunicorn** | 23.0.0 | Servidor WSGI para producción |
+| **WhiteNoise** | 6.8.2 | Servir archivos estáticos |
+
+### Django Extensions
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **django-extensions** | 4.1 | Comandos adicionales de Django |
+| **django-widget-tweaks** | 1.5.0 | Utilidades para formularios |
+| **djangorestframework** | 3.16.0 | API REST framework |
 | **django-cloudinary-storage** | 0.3.0 | Integración con Django |
 
 ### Frontend
@@ -982,7 +1012,7 @@ Aspectos clave:
 
 ---
 
-## 📊 MÉTRICAS Y ESTADÍSTICAS
+## MÉTRICAS Y ESTADÍSTICAS
 
 El sistema genera múltiples métricas:
 
@@ -1006,7 +1036,7 @@ El sistema genera múltiples métricas:
 
 ---
 
-## 🔄 CICLO DE VIDA DE UNA PRESENTACIÓN
+## CICLO DE VIDA DE UNA PRESENTACIÓN
 
 ```
 Día 1:
@@ -1028,69 +1058,6 @@ Día 3:
   10:05 - Sistema genera reporte PDF
 ```
 
----
+--
 
-## 🚀 ROADMAP FUTURO
-
-### Funcionalidades planificadas:
-
-1. **IA Avanzada**:
-   - Análisis de emociones con reconocimiento facial
-   - Detección de nerviosismo por voz
-   - Sugerencias de mejora en tiempo real
-
-2. **Grabación en vivo**:
-   - Grabar directamente desde navegador
-   - Detección de liveness (anti-trampa)
-   - Streaming en vivo
-
-3. **Gamificación**:
-   - Insignias y logros
-   - Rankings de estudiantes
-   - Desafíos semanales
-
-4. **Integraciones**:
-   - Google Classroom
-   - Microsoft Teams
-   - Canvas LMS
-   - Moodle
-
-5. **Móvil**:
-   - App nativa iOS/Android
-   - Grabación móvil optimizada
-   - Notificaciones push
-
----
-
-## 📞 SOPORTE Y CONTACTO
-
-- **GitHub**: https://github.com/LuisAngulo02/evaIA
-- **Documentación**: `docs/`
-- **Issues**: Reportar bugs en GitHub Issues
-
----
-
-## 📝 LICENCIA
-
-Este proyecto es privado y de uso académico.
-
----
-
-## 🙏 AGRADECIMIENTOS
-
-- **OpenAI** - Whisper para transcripción
-- **Groq** - API de LLMs de alta velocidad
-- **Google** - MediaPipe para detección facial
-- **Cloudinary** - Almacenamiento en la nube
-- **Django Community** - Framework web excepcional
-
----
-
-**Última actualización**: Octubre 2025  
-**Versión del sistema**: 0.5  
-**Autor**: Luis Angulo  
-**Email**: contacto@evalexpoai.com
-
----
-
-¡Gracias por usar EvalExpo AI! 🎓✨
+Gracias por usar EvalExpo AI.
