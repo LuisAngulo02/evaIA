@@ -512,7 +512,7 @@
                                    max="{{ presentation.assignment.max_score }}" 
                                    step="0.1"
                                    placeholder="0.0"
-                                   value="{% if presentation.final_score %}{{ presentation.final_score }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
+                                   value="{% if presentation.final_score is not None %}{{ presentation.final_score|unlocalize }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
                                    required>
                             <span class="score-max">/ {{ presentation.assignment.max_score }}</span>
                         </div>

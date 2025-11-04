@@ -1429,3 +1429,413 @@
         flex-wrap: wrap;
     }
 }
+
+/* ========== CALIFICACIÓN DEL PROFESOR - DISEÑO MEJORADO ========== */
+.teacher-grade-card {
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    border: none;
+    position: relative;
+}
+
+.teacher-grade-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-decoration {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="stars" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="0.5" fill="white" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23stars)"/></svg>');
+    opacity: 0.3;
+}
+
+.header-content {
+    position: relative;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.header-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.header-text h3 {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-text p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.teacher-grade-body {
+    padding: 3rem 2rem;
+}
+
+.grade-main-section {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 3rem;
+    align-items: start;
+}
+
+/* Sección del Círculo de Calificación */
+.grade-showcase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.grade-circle-animated {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1),
+                inset 0 0 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: scaleIn 0.6s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.grade-circle-animated:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15),
+                inset 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Círculo con borde según calificación */
+.grade-excellent {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 8px solid #28a745;
+    box-shadow: 0 10px 40px rgba(40, 167, 69, 0.3),
+                inset 0 0 30px rgba(40, 167, 69, 0.1);
+}
+
+.grade-very-good {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    border: 8px solid #17a2b8;
+    box-shadow: 0 10px 40px rgba(23, 162, 184, 0.3),
+                inset 0 0 30px rgba(23, 162, 184, 0.1);
+}
+
+.grade-good {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 8px solid #ffc107;
+    box-shadow: 0 10px 40px rgba(255, 193, 7, 0.3),
+                inset 0 0 30px rgba(255, 193, 7, 0.1);
+}
+
+.grade-acceptable {
+    background: linear-gradient(135deg, #ffe5d0, #fdd0a2);
+    border: 8px solid #fd7e14;
+    box-shadow: 0 10px 40px rgba(253, 126, 20, 0.3),
+                inset 0 0 30px rgba(253, 126, 20, 0.1);
+}
+
+.grade-low {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border: 8px solid #dc3545;
+    box-shadow: 0 10px 40px rgba(220, 53, 69, 0.3),
+                inset 0 0 30px rgba(220, 53, 69, 0.1);
+}
+
+.grade-inner-circle {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+
+.grade-numbers {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.3rem;
+    animation: fadeIn 0.8s ease-out 0.3s both;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.grade-score {
+    font-size: 4.5rem;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.grade-separator {
+    font-size: 2.5rem;
+    color: #adb5bd;
+    font-weight: 600;
+    margin: 0 0.2rem;
+}
+
+.grade-total {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #6c757d;
+}
+
+/* Eliminar el anillo SVG problemático */
+.grade-ring {
+    display: none;
+}
+
+.grade-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 50px;
+    font-weight: 600;
+    color: #495057;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.grade-type-badge i {
+    font-size: 1.1rem;
+    color: #667eea;
+}
+
+.grade-percentage {
+    text-align: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
+.percentage-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.percentage-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* Sección de Detalles */
+.grade-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.feedback-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.feedback-section.feedback-empty {
+    border-left-color: #6c757d;
+    background: linear-gradient(135deg, #f1f3f5, #e9ecef);
+}
+
+.feedback-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+}
+
+.feedback-header i {
+    font-size: 1.5rem;
+    color: #667eea;
+}
+
+.feedback-header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.feedback-content {
+    color: #495057;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+.feedback-content p {
+    margin-bottom: 0.75rem;
+}
+
+.evaluator-info {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 2px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.info-row {
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-row:first-child {
+    padding-top: 0;
+}
+
+.info-row i {
+    font-size: 1.25rem;
+    color: #667eea;
+    margin-top: 0.25rem;
+    min-width: 20px;
+}
+
+.info-row > div {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 1rem;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .grade-main-section {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .grade-showcase {
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e9ecef;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        padding: 1.5rem;
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .teacher-grade-body {
+        padding: 2rem 1.5rem;
+    }
+    
+    .grade-circle-animated {
+        width: 160px;
+        height: 160px;
+    }
+    
+    .grade-score {
+        font-size: 3rem;
+    }
+    
+    .header-text h3 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animación de entrada */
+.teacher-grade-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
