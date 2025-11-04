@@ -376,9 +376,15 @@
                         <button class="video-action-btn" onclick="toggleFullscreen()" title="Pantalla completa">
                             <i class="fas fa-expand"></i>
                         </button>
-                        <button class="video-action-btn" onclick="downloadVideo()" title="Descargar">
-                            <i class="fas fa-download"></i>
-                        </button>
+                        {% if presentation.is_stored_in_cloud %}
+                            <a href="{{ presentation.cloudinary_url }}" class="video-action-btn" download title="Descargar">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        {% else %}
+                            <a href="{{ presentation.video_file.url }}" class="video-action-btn" download title="Descargar">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        {% endif %}
                         <button class="video-action-btn" onclick="shareVideo()" title="Compartir">
                             <i class="fas fa-share-alt"></i>
                         </button>
@@ -1028,18 +1034,7 @@ function toggleFullscreen() {
 })();
 
 // Funciones adicionales para compartir y descargar video
-function downloadVideo() {
-    const video = document.getElementById('videoPlayer');
-    if (video && video.currentSrc) {
-        const a = document.createElement('a');
-        a.href = video.currentSrc;
-        a.download = 'presentacion.mp4';
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-}
+
 
 function shareVideo() {
     if (navigator.share) {
