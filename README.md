@@ -29,27 +29,34 @@
 
 #### 1.1 Instalar Python
 
-**Versión requerida: Python 3.11.8 o superior**
+**⚠️ IMPORTANTE: Este proyecto SOLO es compatible con Python 3.11.8**
+
+Las dependencias de PyTorch, transformers, sentence-transformers y otras bibliotecas de IA/ML requieren específicamente Python 3.11.8. Versiones superiores (como Python 3.13) NO son compatibles con las versiones especificadas en `requirements.txt`.
 
 **Windows:**
 ```bash
-# Descargar Python 3.11.8 desde https://www.python.org/downloads/
-# Asegurarse de marcar "Add Python to PATH" durante la instalación
-python --version
-# Debe mostrar: Python 3.11.8 o superior
+# Descargar Python 3.11.8 desde: https://www.python.org/downloads/release/python-3118/
+# Seleccionar: "Windows installer (64-bit)"
+# ⚠️ IMPORTANTE: Marcar "Add Python to PATH" durante la instalación
+
+# Verificar la instalación:
+py -3.11 --version
+# Debe mostrar exactamente: Python 3.11.8
 ```
 
 **macOS:**
 ```bash
 brew install python@3.11
-python3 --version
+python3.11 --version
+# Debe mostrar: Python 3.11.8
 ```
 
 **Linux (Ubuntu/Debian):**
 ```bash
 sudo apt update
-sudo apt install python3.11 python3-pip python3-venv
-python3 --version
+sudo apt install python3.11 python3.11-venv python3-pip
+python3.11 --version
+# Debe mostrar: Python 3.11.8
 ```
 
 #### 1.2 Instalar PostgreSQL
@@ -124,25 +131,41 @@ GRANT ALL PRIVILEGES ON DATABASE evalexpo_db TO evalexpo_user;
 
 ### Paso 4: Configurar el Entorno Virtual
 
+**IMPORTANTE: Usar Python 3.11.8 específicamente**
+
 **Windows (PowerShell):**
 ```powershell
-# Crear entorno virtual
-python -m venv venv
+# Navegar a la carpeta del proyecto
+cd d:\evailIA\evaIA
+
+# Crear entorno virtual con Python 3.11.8
+py -3.11 -m venv venv
 
 # Activar entorno virtual
 .\venv\Scripts\Activate.ps1
 
 # Si hay error de permisos, ejecutar:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Verificar que estás usando Python 3.11.8
+python --version
+# Debe mostrar: Python 3.11.8
 ```
 
 **macOS/Linux:**
 ```bash
-# Crear entorno virtual
-python3 -m venv venv
+# Navegar a la carpeta del proyecto
+cd ~/evailIA/evaIA
+
+# Crear entorno virtual con Python 3.11
+python3.11 -m venv venv
 
 # Activar entorno virtual
 source venv/bin/activate
+
+# Verificar que estás usando Python 3.11.8
+python --version
+# Debe mostrar: Python 3.11.8
 ```
 
 ### Paso 5: Instalar Dependencias
@@ -155,7 +178,16 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**Nota:** La instalación de PyTorch puede tardar varios minutos dependiendo de tu conexión.
+**⚠️ Notas importantes:**
+
+1. **PyTorch y dependencias de IA**: La instalación puede tardar varios minutos dependiendo de tu conexión.
+
+2. **Si obtienes error con `openai-whisper`**: Este paquete requiere Rust y herramientas de compilación. Si falla, comenta la línea en `requirements.txt`:
+   ```python
+   # openai-whisper==20231117  # Requiere Rust
+   ```
+
+3. **Compatibilidad**: Todas las versiones en `requirements.txt` están probadas y son compatibles ÚNICAMENTE con Python 3.11.8.
 
 ### Paso 6: Configurar Variables de Entorno
 
