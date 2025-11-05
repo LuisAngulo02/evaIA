@@ -119,7 +119,7 @@ cd C:\Projects  # Windows
 git clone https://github.com/LuisAngulo02/evaIA.git
 
 # O si ya tienes la carpeta, navegar a ella
-cd "EvaIa V1.0.10"
+cd "EvaIa"
 ```
 
 ### Paso 3: Crear la Base de Datos
