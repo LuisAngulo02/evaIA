@@ -29,7 +29,7 @@
 
 #### 1.1 Instalar Python
 
-**⚠️ IMPORTANTE: Este proyecto SOLO es compatible con Python 3.11.8**
+**IMPORTANTE: Este proyecto SOLO es compatible con Python 3.11.8**
 
 Las dependencias de PyTorch, transformers, sentence-transformers y otras bibliotecas de IA/ML requieren específicamente Python 3.11.8. Versiones superiores (como Python 3.13) NO son compatibles con las versiones especificadas en `requirements.txt`.
 
@@ -37,7 +37,7 @@ Las dependencias de PyTorch, transformers, sentence-transformers y otras bibliot
 ```bash
 # Descargar Python 3.11.8 desde: https://www.python.org/downloads/release/python-3118/
 # Seleccionar: "Windows installer (64-bit)"
-# ⚠️ IMPORTANTE: Marcar "Add Python to PATH" durante la instalación
+# IMPORTANTE: Marcar "Add Python to PATH" durante la instalación
 
 # Verificar la instalación:
 py -3.11 --version
@@ -178,7 +178,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**⚠️ Notas importantes:**
+**Notas importantes:**
 
 1. **PyTorch y dependencias de IA**: La instalación puede tardar varios minutos dependiendo de tu conexión.
 
