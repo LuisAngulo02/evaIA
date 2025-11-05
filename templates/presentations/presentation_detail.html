@@ -878,7 +878,7 @@
 })();
 
 // Video Player Functions
-function playVideo() {
+window.playVideo = function playVideo() {
     const video = document.getElementById('videoPlayer');
     const overlay = document.getElementById('videoOverlay');
     
@@ -891,7 +891,7 @@ function playVideo() {
     }
 }
 
-function togglePlayPause() {
+window.togglePlayPause = function togglePlayPause() {
     const video = document.getElementById('videoPlayer');
     const icon = document.getElementById('playPauseIcon');
     
@@ -906,48 +906,60 @@ function togglePlayPause() {
     }
 }
 
-function skipTime(seconds) {
+window.skipTime = function skipTime(seconds) {
     const video = document.getElementById('videoPlayer');
     if (!video) {
         console.warn('Video element not found');
         return;
     }
     
-    // Verificar que el video tenga duración válida
-    if (!video.duration || isNaN(video.duration) || video.duration === 0 || video.duration === Infinity) {
-        console.warn('Video duration not available:', video.duration);
-        // Intentar cargar el video primero
-        if (video.readyState < 1) {
-            video.load();
-            video.addEventListener('loadedmetadata', function onLoaded() {
-                skipTime(seconds);
-            }, { once: true });
-        }
-        return;
-    }
-    
-    // Calcular el nuevo tiempo
+    // Calcular el nuevo tiempo basado en la posición actual
     let newTime = video.currentTime + seconds;
     
-    // Asegurar que no se pase de los límites
-    newTime = Math.max(0, Math.min(newTime, video.duration));
+    // Asegurar que no sea negativo
+    newTime = Math.max(0, newTime);
     
-    // Verificar que la posición sea seekable
+    // Si el video tiene duración válida, verificar límite superior
+    if (isFinite(video.duration) && video.duration > 0 && video.duration !== Infinity) {
+        newTime = Math.min(newTime, video.duration);
+    }
+    
+    // Verificar que la posición sea seekable usando los rangos buffereados
     let isSeekable = false;
+    let maxSeekable = newTime;
+    
     if (video.seekable && video.seekable.length > 0) {
         for (let i = 0; i < video.seekable.length; i++) {
-            if (newTime >= video.seekable.start(i) && newTime <= video.seekable.end(i)) {
+            const rangeStart = video.seekable.start(i);
+            const rangeEnd = video.seekable.end(i);
+            
+            // Actualizar el máximo seekable
+            if (isFinite(rangeEnd)) {
+                maxSeekable = Math.max(maxSeekable, rangeEnd);
+            }
+            
+            // Verificar si newTime está dentro de este rango
+            if (newTime >= rangeStart && 
+                (newTime <= rangeEnd || !isFinite(rangeEnd))) {
                 isSeekable = true;
                 break;
             }
         }
+        
+        // Si no es seekable pero está fuera del rango, ajustar al máximo seekable
+        if (!isSeekable && newTime > maxSeekable && isFinite(maxSeekable)) {
+            console.warn(`Posición ${newTime.toFixed(2)}s no disponible, usando máximo seekable ${maxSeekable.toFixed(2)}s`);
+            newTime = maxSeekable;
+            isSeekable = true;
+        }
     } else {
-        // Si no hay información de seekable, asumir que es seekable
+        // Si no hay información de seekable, intentar de todos modos
         isSeekable = true;
+        console.log('No hay rangos seekable, intentando seek directo');
     }
     
     if (!isSeekable) {
-        console.warn('La posición', newTime, 'no es seekable aún. Esperando...');
+        console.warn(`La posición ${newTime.toFixed(2)}s no es seekable aún. Esperando...`);
         // Esperar a que se pueda hacer seek
         setTimeout(() => skipTime(seconds), 500);
         return;
@@ -1061,10 +1073,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // Marcar el video como listo cuando se carguen los metadatos
         video.addEventListener('loadedmetadata', () => {
             video.dataset.ready = 'true';
-            console.log('📹 Video listo. Duración:', video.duration.toFixed(2), 'segundos');
+            const duration = video.duration;
+            
+            if (isFinite(duration) && duration > 0 && duration !== Infinity) {
+                console.log('📹 Video listo. Duración:', duration.toFixed(2), 'segundos');
+            } else {
+                console.warn('⚠️ Video cargado pero duración inválida:', duration);
+                console.log('📊 ReadyState:', video.readyState);
+                console.log('📊 NetworkState:', video.networkState);
+            }
+            
             console.log('📊 Seekable ranges:', video.seekable.length);
             for (let i = 0; i < video.seekable.length; i++) {
-                console.log(`  Range ${i}: ${video.seekable.start(i).toFixed(2)}s - ${video.seekable.end(i).toFixed(2)}s`);
+                const start = video.seekable.start(i);
+                const end = video.seekable.end(i);
+                if (isFinite(start) && isFinite(end)) {
+                    console.log(`  Range ${i}: ${start.toFixed(2)}s - ${end.toFixed(2)}s`);
+                } else {
+                    console.warn(`  Range ${i}: ${start}s - ${end}s (inválido)`);
+                }
             }
         });
         
@@ -1072,8 +1099,14 @@ document.addEventListener('DOMContentLoaded', function() {
         video.addEventListener('progress', () => {
             if (video.buffered.length > 0) {
                 const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-                const bufferedPercent = (bufferedEnd / video.duration * 100).toFixed(1);
-                console.log(`📥 Buffer: ${bufferedEnd.toFixed(2)}s / ${video.duration.toFixed(2)}s (${bufferedPercent}%)`);
+                const duration = video.duration;
+                
+                if (isFinite(duration) && duration > 0 && duration !== Infinity) {
+                    const bufferedPercent = (bufferedEnd / duration * 100).toFixed(1);
+                    console.log(`📥 Buffer: ${bufferedEnd.toFixed(2)}s / ${duration.toFixed(2)}s (${bufferedPercent}%)`);
+                } else {
+                    console.log(`📥 Buffer: ${bufferedEnd.toFixed(2)}s cargados (duración desconocida)`);
+                }
             }
         });
         
@@ -1136,123 +1169,218 @@ function initParticipantsTimeline() {
     const legendContainer = document.getElementById('timelineLegend');
     
     if (!video || !timelineContainer || !legendContainer || !participantsData || participantsData.length === 0) {
+        console.warn('Timeline: Elementos faltantes', {
+            video: !!video,
+            timelineContainer: !!timelineContainer,
+            legendContainer: !!legendContainer,
+            participantsData: participantsData ? participantsData.length : 0
+        });
         return;
     }
     
-    const videoDuration = video.duration || 100;
-    
-    // Colores para cada participante
-    const colors = [
-        '#3498db', // Azul
-        '#2ecc71', // Verde
-        '#f39c12', // Naranja
-        '#9b59b6', // Púrpura
-        '#e74c3c', // Rojo
-        '#1abc9c', // Turquesa
-        '#34495e', // Gris oscuro
-        '#e67e22'  // Naranja oscuro
-    ];
-    
-    // Asignar colores a cada participante
-    participantsData.forEach((participant, index) => {
-        participant.color = colors[index % colors.length];
-    });
-    
-    // Renderizar timeline
-    const timelineTrack = document.createElement('div');
-    timelineTrack.className = 'timeline-track';
-    
-    participantsData.forEach(participant => {
-        if (!participant.segments || participant.segments.length === 0) return;
+    // Función para renderizar el timeline con la duración del video
+    function renderTimeline() {
+        // Limpiar contenido previo
+        timelineContainer.innerHTML = '';
+        legendContainer.innerHTML = '';
         
-        participant.segments.forEach(segment => {
-            const startPercent = (segment.start / videoDuration) * 100;
-            const endPercent = (segment.end / videoDuration) * 100;
-            const widthPercent = endPercent - startPercent;
-            
-            const segmentDiv = document.createElement('div');
-            segmentDiv.className = 'timeline-segment';
-            segmentDiv.style.left = `${startPercent}%`;
-            segmentDiv.style.width = `${widthPercent}%`;
-            segmentDiv.style.backgroundColor = participant.color;
-            segmentDiv.title = `${participant.label}: ${segment.start.toFixed(1)}s - ${segment.end.toFixed(1)}s`;
-            
-            // Agregar label si el segmento es suficientemente ancho
-            if (widthPercent > 5) {
-                const label = document.createElement('span');
-                label.className = 'timeline-segment-label';
-                label.textContent = participant.label;
-                segmentDiv.appendChild(label);
-            }
-            
-            // Click para saltar al tiempo del video
-            segmentDiv.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetTime = parseFloat(segment.start);
-                if (!isNaN(targetTime)) {
-                    video.currentTime = targetTime;
-                    if (video.paused) {
-                        video.play();
-                    }
+        // Obtener duración del video o calcular desde los segmentos
+        let videoDuration = video.duration;
+        
+        // Si el video tiene duración inválida (Infinity, NaN, 0), calcular desde los segmentos
+        if (!videoDuration || isNaN(videoDuration) || videoDuration === 0 || videoDuration === Infinity) {
+            console.warn('Timeline: Duración del video inválida (' + videoDuration + '), calculando desde segmentos');
+            videoDuration = 0;
+            participantsData.forEach(participant => {
+                if (participant.segments && participant.segments.length > 0) {
+                    participant.segments.forEach(segment => {
+                        if (segment.end > videoDuration) {
+                            videoDuration = segment.end;
+                        }
+                    });
                 }
             });
             
-            timelineTrack.appendChild(segmentDiv);
+            // Si aún no hay duración, usar 100 como fallback
+            if (videoDuration === 0) {
+                console.warn('Timeline: No se pudo calcular duración desde segmentos, usando fallback de 100s');
+                videoDuration = 100;
+            } else {
+                // Agregar un pequeño margen (5%) para visualización
+                videoDuration = videoDuration * 1.05;
+            }
+        }
+        
+        console.log('Timeline: Duración del video =', videoDuration, 'segundos');
+        
+        // Validar que la duración sea un número válido
+        if (!isFinite(videoDuration) || videoDuration <= 0) {
+            console.error('Timeline: Duración inválida después de cálculos:', videoDuration);
+            return;
+        }
+        
+        // Colores para cada participante
+        const colors = [
+            '#3498db', // Azul
+            '#2ecc71', // Verde
+            '#f39c12', // Naranja
+            '#9b59b6', // Púrpura
+            '#e74c3c', // Rojo
+            '#1abc9c', // Turquesa
+            '#34495e', // Gris oscuro
+            '#e67e22'  // Naranja oscuro
+        ];
+        
+        // Asignar colores a cada participante
+        participantsData.forEach((participant, index) => {
+            participant.color = colors[index % colors.length];
         });
-    });
-    
-    timelineContainer.appendChild(timelineTrack);
-    
-    // Renderizar leyenda
-    participantsData.forEach(participant => {
-        if (!participant.segments || participant.segments.length === 0) return;
         
-        // Calcular tiempo total
-        const totalTime = participant.segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
-        const minutes = Math.floor(totalTime / 60);
-        const seconds = Math.floor(totalTime % 60);
+        // Renderizar timeline
+        const timelineTrack = document.createElement('div');
+        timelineTrack.className = 'timeline-track';
         
-        const legendItem = document.createElement('div');
-        legendItem.className = 'legend-item';
-        legendItem.innerHTML = `
-            <div class="legend-color" style="background-color: ${participant.color};"></div>
-            <span class="legend-label">${participant.label}</span>
-            <span class="legend-time">(${minutes}:${seconds.toString().padStart(2, '0')})</span>
-        `;
-        
-        // Click para resaltar segmentos
-        legendItem.addEventListener('click', () => {
-            document.querySelectorAll('.timeline-segment').forEach(seg => {
-                seg.style.opacity = '0.3';
-            });
+        participantsData.forEach(participant => {
+            if (!participant.segments || participant.segments.length === 0) {
+                console.warn('Timeline: Participante sin segmentos', participant.label);
+                return;
+            }
             
-            document.querySelectorAll(`[title^="${participant.label}:"]`).forEach(seg => {
-                seg.style.opacity = '1';
-                seg.style.transform = 'scaleY(1.1)';
-            });
+            console.log(`Timeline: Renderizando ${participant.label} con ${participant.segments.length} segmento(s)`);
             
-            // Restaurar después de 2 segundos
-            setTimeout(() => {
-                document.querySelectorAll('.timeline-segment').forEach(seg => {
-                    seg.style.opacity = '1';
-                    seg.style.transform = 'scaleY(1)';
+            participant.segments.forEach((segment, idx) => {
+                // Validar que el segmento tenga valores válidos
+                if (!segment.start && segment.start !== 0) {
+                    console.warn(`Timeline: Segmento ${idx} sin start para ${participant.label}`);
+                    return;
+                }
+                if (!segment.end && segment.end !== 0) {
+                    console.warn(`Timeline: Segmento ${idx} sin end para ${participant.label}`);
+                    return;
+                }
+                
+                const startPercent = (segment.start / videoDuration) * 100;
+                const endPercent = (segment.end / videoDuration) * 100;
+                const widthPercent = endPercent - startPercent;
+                
+                // Validar porcentajes
+                if (widthPercent <= 0 || widthPercent > 100) {
+                    console.warn(`Timeline: Ancho inválido para ${participant.label}`, {
+                        start: segment.start,
+                        end: segment.end,
+                        startPercent,
+                        endPercent,
+                        widthPercent
+                    });
+                    return;
+                }
+                
+                const segmentDiv = document.createElement('div');
+                segmentDiv.className = 'timeline-segment';
+                segmentDiv.style.left = `${startPercent}%`;
+                segmentDiv.style.width = `${widthPercent}%`;
+                segmentDiv.style.backgroundColor = participant.color;
+                segmentDiv.title = `${participant.label}: ${segment.start.toFixed(1)}s - ${segment.end.toFixed(1)}s`;
+                
+                console.log(`Timeline: Segmento creado - ${participant.label} [${startPercent.toFixed(2)}% - ${widthPercent.toFixed(2)}%]`);
+                
+                // Agregar label si el segmento es suficientemente ancho
+                if (widthPercent > 5) {
+                    const label = document.createElement('span');
+                    label.className = 'timeline-segment-label';
+                    label.textContent = participant.label;
+                    segmentDiv.appendChild(label);
+                }
+                
+                // Click para saltar al tiempo del video
+                segmentDiv.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetTime = parseFloat(segment.start);
+                    if (!isNaN(targetTime)) {
+                        video.currentTime = targetTime;
+                        if (video.paused) {
+                            video.play();
+                        }
+                    }
                 });
-            }, 2000);
+                
+                timelineTrack.appendChild(segmentDiv);
+            });
         });
         
-        legendContainer.appendChild(legendItem);
-    });
-    
-    // Actualizar duración cuando el video se cargue (solo una vez)
-    if (!video.dataset.timelineInitialized) {
-        video.addEventListener('loadedmetadata', function initializeOnce() {
-            // Recrear timeline con la duración correcta
-            timelineContainer.innerHTML = '';
-            legendContainer.innerHTML = '';
-            video.dataset.timelineInitialized = 'true';
-            video.removeEventListener('loadedmetadata', initializeOnce);
-            initParticipantsTimeline();
+        timelineContainer.appendChild(timelineTrack);
+        console.log('Timeline: Track agregado con', timelineTrack.children.length, 'segmentos');
+        
+        // Renderizar leyenda
+        participantsData.forEach(participant => {
+            if (!participant.segments || participant.segments.length === 0) return;
+            
+            // Calcular tiempo total
+            const totalTime = participant.segments.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+            const minutes = Math.floor(totalTime / 60);
+            const seconds = Math.floor(totalTime % 60);
+            
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            legendItem.innerHTML = `
+                <div class="legend-color" style="background-color: ${participant.color};"></div>
+                <span class="legend-label">${participant.label}</span>
+                <span class="legend-time">(${minutes}:${seconds.toString().padStart(2, '0')})</span>
+            `;
+            
+            // Click para resaltar segmentos
+            legendItem.addEventListener('click', () => {
+                document.querySelectorAll('.timeline-segment').forEach(seg => {
+                    seg.style.opacity = '0.3';
+                });
+                
+                document.querySelectorAll(`[title^="${participant.label}:"]`).forEach(seg => {
+                    seg.style.opacity = '1';
+                });
+            });
+            
+            legendContainer.appendChild(legendItem);
         });
+        
+        console.log('Timeline: Renderizado completado');
+    }
+    
+    // Intentar renderizar cuando el video esté listo
+    if (video.readyState >= 1 && isFinite(video.duration) && video.duration > 0) {
+        // El video ya tiene metadatos válidos cargados
+        console.log('Timeline: Video ya cargado con duración válida, renderizando inmediatamente');
+        renderTimeline();
+    } else {
+        // Esperar a que el video cargue sus metadatos con duración válida
+        console.log('Timeline: Esperando a que el video cargue duración válida...');
+        
+        let metadataAttempts = 0;
+        const maxAttempts = 10;
+        
+        function tryRenderWhenReady() {
+            metadataAttempts++;
+            
+            if (isFinite(video.duration) && video.duration > 0 && video.duration !== Infinity) {
+                console.log('Timeline: Video cargado con duración válida, renderizando');
+                renderTimeline();
+            } else if (metadataAttempts < maxAttempts) {
+                console.log('Timeline: Intento', metadataAttempts, '- Duración aún inválida:', video.duration);
+                setTimeout(tryRenderWhenReady, 300);
+            } else {
+                console.warn('Timeline: Máximo de intentos alcanzado - renderizando con duración calculada');
+                renderTimeline();
+            }
+        }
+        
+        video.addEventListener('loadedmetadata', tryRenderWhenReady, { once: true });
+        
+        // Timeout de seguridad: renderizar después de 3 segundos aunque el video no cargue
+        setTimeout(() => {
+            if (timelineContainer.children.length === 0) {
+                console.warn('Timeline: Timeout - renderizando sin duración del video');
+                renderTimeline();
+            }
+        }, 3000);
     }
 }
 {% endif %}
