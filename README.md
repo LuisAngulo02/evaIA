@@ -147,8 +147,8 @@ GRANT ALL PRIVILEGES ON DATABASE evalexpo_db TO evalexpo_user;
 # Navegar a la carpeta del proyecto
 cd c:\Users\user\Desktop\evaIA
 
-# Crear entorno virtual con Python
-python -m venv venv
+# Crear entorno virtual con Python 3.11
+py -3.11 -m venv venv
 
 # Activar entorno virtual
 .\venv\Scripts\Activate.ps1
@@ -200,7 +200,7 @@ pip install -r requirements.txt
 
 ### Paso 6: Configurar Variables de Entorno
 
-Crear un archivo `.env` en la raíz del proyecto:
+Crear un archivo `.env` en la raíz del proyecto (solo si no existe):
 
 ```bash
 # En Windows
@@ -286,13 +286,13 @@ python manage.py test
 
 **Windows (PowerShell):**
 ```powershell
-cd "d:\Descargas\EvaIa V1.0.10"
+cd "d:\Descargas\EvaIa"
 .\venv\Scripts\Activate.ps1
 ```
 
 **macOS/Linux:**
 ```bash
-cd ~/Descargas/EvaIa\ V1.0.10
+cd ~/Descargas/EvaIa
 source venv/bin/activate
 ```
 
