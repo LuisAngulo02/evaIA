@@ -3,8 +3,8 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-1.0.10-blue.svg)
-![Python](https://img.shields.io/badge/python-3.11.8-green.svg)
-![Django](https://img.shields.io/badge/django-5.2.1-darkgreen.svg)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-green.svg)
+![Django](https://img.shields.io/badge/django-5.2.7-darkgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-orange.svg)
 
 **Sistema inteligente para evaluar presentaciones académicas mediante Inteligencia Artificial**
@@ -29,34 +29,45 @@
 
 #### 1.1 Instalar Python
 
-**IMPORTANTE: Este proyecto SOLO es compatible con Python 3.11.8**
+**IMPORTANTE: Este proyecto es compatible con Python 3.11+ (incluyendo Python 3.12)**
 
-Las dependencias de PyTorch, transformers, sentence-transformers y otras bibliotecas de IA/ML requieren específicamente Python 3.11.8. Versiones superiores (como Python 3.13) NO son compatibles con las versiones especificadas en `requirements.txt`.
+Las dependencias del proyecto están actualizadas y son compatibles con versiones modernas de Python. Se recomienda usar Python 3.11.8 o superior (hasta Python 3.12).
 
 **Windows:**
 ```bash
-# Descargar Python 3.11.8 desde: https://www.python.org/downloads/release/python-3118/
+# Opción 1: Descargar Python 3.12 desde: https://www.python.org/downloads/
+# Opción 2: Descargar Python 3.11.8 desde: https://www.python.org/downloads/release/python-3118/
 # Seleccionar: "Windows installer (64-bit)"
 # IMPORTANTE: Marcar "Add Python to PATH" durante la instalación
 
 # Verificar la instalación:
-py -3.11 --version
-# Debe mostrar exactamente: Python 3.11.8
+python --version
+# Debe mostrar: Python 3.11.x o Python 3.12.x
 ```
 
 **macOS:**
 ```bash
+# Para Python 3.12
+brew install python@3.12
+
+# O para Python 3.11
 brew install python@3.11
-python3.11 --version
-# Debe mostrar: Python 3.11.8
+
+python3 --version
+# Debe mostrar: Python 3.11.x o Python 3.12.x
 ```
 
 **Linux (Ubuntu/Debian):**
 ```bash
 sudo apt update
+# Para Python 3.12
+sudo apt install python3.12 python3.12-venv python3-pip
+
+# O para Python 3.11
 sudo apt install python3.11 python3.11-venv python3-pip
-python3.11 --version
-# Debe mostrar: Python 3.11.8
+
+python3 --version
+# Debe mostrar: Python 3.11.x o Python 3.12.x
 ```
 
 #### 1.2 Instalar PostgreSQL
@@ -131,15 +142,13 @@ GRANT ALL PRIVILEGES ON DATABASE evalexpo_db TO evalexpo_user;
 
 ### Paso 4: Configurar el Entorno Virtual
 
-**IMPORTANTE: Usar Python 3.11.8 específicamente**
-
 **Windows (PowerShell):**
 ```powershell
 # Navegar a la carpeta del proyecto
-cd d:\evailIA\evaIA
+cd c:\Users\user\Desktop\evaIA
 
-# Crear entorno virtual con Python 3.11.8
-py -3.11 -m venv venv
+# Crear entorno virtual con Python
+python -m venv venv
 
 # Activar entorno virtual
 .\venv\Scripts\Activate.ps1
@@ -147,25 +156,25 @@ py -3.11 -m venv venv
 # Si hay error de permisos, ejecutar:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-# Verificar que estás usando Python 3.11.8
+# Verificar la versión de Python
 python --version
-# Debe mostrar: Python 3.11.8
+# Debe mostrar: Python 3.11.x o Python 3.12.x
 ```
 
 **macOS/Linux:**
 ```bash
 # Navegar a la carpeta del proyecto
-cd ~/evailIA/evaIA
+cd ~/Desktop/evaIA
 
-# Crear entorno virtual con Python 3.11
-python3.11 -m venv venv
+# Crear entorno virtual
+python3 -m venv venv
 
 # Activar entorno virtual
 source venv/bin/activate
 
-# Verificar que estás usando Python 3.11.8
+# Verificar la versión de Python
 python --version
-# Debe mostrar: Python 3.11.8
+# Debe mostrar: Python 3.11.x o Python 3.12.x
 ```
 
 ### Paso 5: Instalar Dependencias
@@ -187,7 +196,7 @@ pip install -r requirements.txt
    # openai-whisper==20231117  # Requiere Rust
    ```
 
-3. **Compatibilidad**: Todas las versiones en `requirements.txt` están probadas y son compatibles ÚNICAMENTE con Python 3.11.8.
+3. **Compatibilidad**: Todas las versiones en `requirements.txt` están probadas y son compatibles con Python 3.11.8 y Python 3.12.
 
 ### Paso 6: Configurar Variables de Entorno
 

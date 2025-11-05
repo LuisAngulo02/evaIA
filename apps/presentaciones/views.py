@@ -348,7 +348,7 @@ def presentation_detail_view(request, presentation_id):
                         'start': float(current_time),
                         'end': float(current_time + participation_time_float)
                     }]
-                    current_time += participation_time_float + 2  # +2 segundos de espacio
+                    current_time += participation_time_float  # Sin espacio artificial
             else:
                 segments = []
         
@@ -817,7 +817,7 @@ def grade_presentation_detail_view(request, presentation_id):
                         'start': float(current_time),
                         'end': float(current_time + participation_time_float)
                     }]
-                    current_time += participation_time_float + 2  # +2 segundos de espacio
+                    current_time += participation_time_float  # Sin espacio artificial
             else:
                 segments = []
         

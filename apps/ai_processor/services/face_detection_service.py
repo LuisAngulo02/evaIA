@@ -670,13 +670,22 @@ class FaceDetectionService:
             logger.info(f"📹 Total de frames procesados: {processed_frames}")
             logger.info(f"📊 Promedio de rostros por frame: {total_appearances / processed_frames:.2f}")
             
-            # Filtrar tracks con muy pocas apariciones (ruido)
-            # Reducido a 1 para capturar personas que aparecen brevemente
-            min_appearances = 1  # Al menos 1 aparición válida
-            valid_tracks = [track for track in face_tracks 
-                           if len(track['appearances']) >= min_appearances]
+            # Filtrar tracks con muy pocas apariciones o tiempo muy corto (ruido)
+            # MÍNIMO 1 SEGUNDO de tiempo en pantalla para ser considerado participante válido
+            min_time_seconds = 1.0  # Reducido de 2.0 a 1.0 para detectar apariciones más breves
+            valid_tracks = []
             
-            logger.info(f"✅ Participantes válidos (>={min_appearances} apariciones): {len(valid_tracks)}")
+            for track in face_tracks:
+                appearances = len(track['appearances'])
+                time_seconds = (appearances * sample_rate) / fps
+                
+                if time_seconds >= min_time_seconds:
+                    valid_tracks.append(track)
+                    logger.info(f"✅ {track['label']} aceptado: {time_seconds:.1f}s")
+                else:
+                    logger.info(f"🚫 {track['label']} descartado: {time_seconds:.1f}s (menos de {min_time_seconds}s)")
+            
+            logger.info(f"✅ Participantes válidos (>= {min_time_seconds}s): {len(valid_tracks)}")
             
             # Crear directorio para fotos si no existe
             if presentation_id:

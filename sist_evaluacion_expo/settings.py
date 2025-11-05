@@ -96,7 +96,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sist_evaluacion_expo_db',
         'USER': 'postgres',
-        'PASSWORD': '12345',
+        'PASSWORD': '123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
