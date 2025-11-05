@@ -117,16 +117,16 @@
                 </div>
                 
                 <div class="video-tools">
-                    <button class="video-tool-btn" onclick="skipTime(-10)">
+                    <button class="video-tool-btn" onclick="window.skipTime(-10)">
                         <i class="fas fa-backward"></i> -10s
                     </button>
-                    <button class="video-tool-btn" onclick="togglePlayPause()">
+                    <button class="video-tool-btn" onclick="window.togglePlayPause()">
                         <i class="fas fa-play" id="playPauseIcon"></i>
                     </button>
-                    <button class="video-tool-btn" onclick="skipTime(10)">
+                    <button class="video-tool-btn" onclick="window.skipTime(10)">
                         <i class="fas fa-forward"></i> +10s
                     </button>
-                    <button class="video-tool-btn" onclick="toggleFullscreen()">
+                    <button class="video-tool-btn" onclick="window.toggleFullscreen()">
                         <i class="fas fa-expand"></i>
                     </button>
                 </div>
@@ -512,7 +512,7 @@
                                    max="{{ presentation.assignment.max_score }}" 
                                    step="0.1"
                                    placeholder="0.0"
-                                   value="{% if presentation.final_score is not None %}{{ presentation.final_score|unlocalize }}{% elif suggested_grade %}{{ suggested_grade }}{% endif %}"
+                                   value="{% if presentation.final_score is not None %}{{ presentation.final_score|unlocalize }}{% elif suggested_grade %}{{ suggested_grade|unlocalize }}{% endif %}"
                                    required>
                             <span class="score-max">/ {{ presentation.assignment.max_score }}</span>
                         </div>
@@ -520,7 +520,7 @@
                             <small class="text-muted">
                                 Puntuación de 0 a {{ presentation.assignment.max_score }} puntos
                                 {% if suggested_grade and not presentation.final_score %}
-                                    <br><span class="text-success">✨ Calificación sugerida por IA: {{ suggested_grade }} puntos</span>
+                                    <br><span class="text-success">✨ Calificación autorrellenada con sugerencia IA: {{ suggested_grade|floatformat:1 }} puntos (puedes editarla)</span>
                                 {% elif presentation.overall_ai_score %}
                                     <br>Sugerencia IA: {{ presentation.overall_ai_score|floatformat:1 }}%
                                 {% endif %}
@@ -548,8 +548,8 @@
                                   placeholder="Proporciona comentarios constructivos sobre la presentación...">{% if presentation.teacher_feedback %}{{ presentation.teacher_feedback }}{% elif suggested_feedback %}{{ suggested_feedback }}{% endif %}</textarea>
                         
                         {% if suggested_feedback and not presentation.teacher_feedback %}
-                        <small class="text-muted mt-2 d-block">
-                            <i class="fas fa-magic me-1"></i>Retroalimentación generada por IA. Puedes editarla antes de guardar.
+                        <small class="text-success mt-2 d-block">
+                            <i class="fas fa-magic me-1"></i>✨ Retroalimentación autorrellenada con sugerencia de IA. Puedes editarla antes de guardar.
                         </small>
                         {% endif %}
                     </div>
@@ -584,14 +584,42 @@ function initParticipantsTimeline() {
     const legendContainer = document.getElementById('timelineLegend');
     
     if (!video || !timelineContainer || !legendContainer) {
+        console.log('Timeline: Missing required elements');
         return;
     }
     
     if (!participantsSegmentsData || participantsSegmentsData.length === 0) {
+        console.log('Timeline: No participants data');
         return;
     }
     
-    const videoDuration = video.duration || 100;
+    // Validar duración del video
+    let videoDuration = video.duration;
+    
+    // Si la duración es inválida (NaN, Infinity, 0), calcularla desde los segmentos
+    if (!videoDuration || !isFinite(videoDuration) || videoDuration === 0) {
+        console.log('Timeline: Invalid video duration, calculating from segments');
+        videoDuration = 0;
+        participantsSegmentsData.forEach(participant => {
+            if (participant.segments && participant.segments.length > 0) {
+                participant.segments.forEach(segment => {
+                    if (segment.end > videoDuration) {
+                        videoDuration = segment.end;
+                    }
+                });
+            }
+        });
+        
+        // Si aún no hay duración válida, usar valor por defecto
+        if (!videoDuration || videoDuration === 0) {
+            videoDuration = 100;
+            console.log('Timeline: Using default duration of 100s');
+        } else {
+            console.log('Timeline: Calculated duration from segments:', videoDuration + 's');
+        }
+    } else {
+        console.log('Timeline: Using video duration:', videoDuration + 's');
+    }
     
     // Limpiar contenedores primero
     timelineContainer.innerHTML = '';
@@ -687,13 +715,29 @@ function initParticipantsTimeline() {
         
         legendContainer.appendChild(legendItem);
     });
+}
+
+// Intentar renderizar cuando el video esté listo
+function tryRenderWhenReady() {
+    const video = document.getElementById('presentationVideo');
+    if (!video) return;
     
-    // Actualizar cuando el video se cargue
-    video.addEventListener('loadedmetadata', () => {
-        timelineContainer.innerHTML = '';
-        legendContainer.innerHTML = '';
+    if (video.readyState >= 1) {
+        // Video metadata loaded
         initParticipantsTimeline();
-    });
+    } else {
+        // Wait for metadata
+        video.addEventListener('loadedmetadata', () => {
+            initParticipantsTimeline();
+        }, { once: true });
+    }
+}
+
+// Call on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryRenderWhenReady);
+} else {
+    tryRenderWhenReady();
 }
 {% endif %}
 

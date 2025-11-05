@@ -571,6 +571,17 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Skip Face Detection Option -->
+                                    <!-- <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="skipFaceDetection" onchange="toggleFaceDetection()">
+                                        <label class="form-check-label" for="skipFaceDetection">
+                                            <small>
+                                                <i class="fas fa-video-slash me-1"></i>
+                                                Omitir detección facial (útil para cámaras virtuales o pruebas)
+                                            </small>
+                                        </label>
+                                    </div> -->
+                                    
                                     <!-- Control Buttons -->
                                     <div class="control-buttons-vertical">
                                         <button id="startBtn" class="btn btn-success btn-lg w-100 mb-3" onclick="startRecording()" disabled>
@@ -1172,6 +1183,51 @@
     let faceDetected = false;
     let multipleFacesDetected = false;
     let modelsLoaded = false;
+    let faceDetectionEnabled = true; // Nueva variable para controlar si la detección está activa
+
+    /**
+     * Alterna la detección facial
+     */
+    function toggleFaceDetection() {
+        const skipCheckbox = document.getElementById('skipFaceDetection');
+        const startBtn = document.getElementById('startBtn');
+        const faceStatusElement = document.getElementById('faceDetectionStatus');
+        const faceIconElement = document.getElementById('faceIcon');
+        const faceTextElement = document.getElementById('faceStatusText');
+        
+        faceDetectionEnabled = !skipCheckbox.checked;
+        
+        if (!faceDetectionEnabled) {
+            // Detección deshabilitada - permitir grabación sin validar rostro
+            stopFaceDetection();
+            faceDetected = true; // Simular que hay rostro detectado
+            
+            // Actualizar UI
+            faceStatusElement.classList.add('detected');
+            faceIconElement.className = 'fas fa-video';
+            faceTextElement.textContent = 'Detección facial deshabilitada (modo manual)';
+            
+            // Habilitar botón de inicio si hay asignación seleccionada
+            const recordingAssignment = document.getElementById('recording_assignment_top');
+            if (startBtn && recordingAssignment && recordingAssignment.value) {
+                startBtn.disabled = false;
+            }
+        } else {
+            // Detección habilitada - reanudar validación normal
+            faceDetected = false;
+            faceStatusElement.classList.remove('detected');
+            faceIconElement.className = 'fas fa-user-slash';
+            faceTextElement.textContent = 'Esperando rostro...';
+            
+            // Deshabilitar botón hasta que se detecte rostro
+            if (startBtn) {
+                startBtn.disabled = true;
+            }
+            
+            // Reiniciar detección facial
+            startFaceDetection();
+        }
+    }
 
     // Load face detection models
     async function loadFaceDetectionModels() {
@@ -1187,7 +1243,7 @@
     
     // Detect faces in video stream
     async function detectFace() {
-        if (!modelsLoaded) return;
+        if (!modelsLoaded || !faceDetectionEnabled) return;
         
         const videoPreview = document.getElementById('videoPreview');
         if (!videoPreview || videoPreview.paused || videoPreview.ended) return;
@@ -1243,8 +1299,9 @@
                     faceIconElement.className = 'fas fa-user-check';
                     faceTextElement.textContent = 'Rostro detectado!';
                     
-                    // Enable start button only if not currently recording
-                    if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+                    // Enable start button only if not currently recording and assignment selected
+                    const recordingAssignment = document.getElementById('recording_assignment_top');
+                    if ((!mediaRecorder || mediaRecorder.state !== 'recording') && recordingAssignment && recordingAssignment.value) {
                         startBtn.disabled = false;
                     }
                 }
@@ -1337,27 +1394,30 @@
             return;
         }
         
-        // Verify face detection before starting
-        if (!faceDetected) {
-            showCustomAlert(
-                'Por favor, asegurate de que tu rostro sea visible en la camara antes de iniciar la grabacion.',
-                'warning',
-                'Rostro No Detectado'
-            );
-            return;
-        }
-        
-        // Check for multiple faces
-        if (multipleFacesDetected) {
-            showCustomAlert(
-                'Se detectaron multiples personas. Solo debe haber 1 persona visible para iniciar la grabacion.',
-                'warning',
-                'Multiples Personas'
-            );
-            return;
+        // Verificar detección facial solo si está habilitada
+        if (faceDetectionEnabled) {
+            // Verify face detection before starting
+            if (!faceDetected) {
+                showCustomAlert(
+                    'Por favor, asegurate de que tu rostro sea visible en la camara antes de iniciar la grabacion.',
+                    'warning',
+                    'Rostro No Detectado'
+                );
+                return;
+            }
+            
+            // Check for multiple faces
+            if (multipleFacesDetected) {
+                showCustomAlert(
+                    'Se detectaron multiples personas. Solo debe haber 1 persona visible para iniciar la grabacion.',
+                    'warning',
+                    'Multiples Personas'
+                );
+                return;
+            }
         }
 
-        // KEEP face detection active during recording to monitor for multiple people
+        // KEEP face detection active during recording to monitor for multiple people (only if enabled)
         // Do NOT stop face detection - we need to monitor continuously
 
         // Show countdown
@@ -1529,30 +1589,8 @@
 
     function deleteRecording() {
         if (confirm('¿Estás seguro de que deseas descartar esta grabación y empezar de nuevo?')) {
-            // Clear recorded data
-            recordedChunks = [];
-            seconds = 0;
-            
-            // Reset UI
-            document.getElementById('timer').textContent = '00:00:00';
-            document.getElementById('timer').className = 'timer';
-            document.getElementById('recordingForm').style.display = 'none';
-            document.getElementById('recordedPreview').style.display = 'none';
-            document.getElementById('recordedVideo').src = '';
-            document.getElementById('startBtn').style.display = 'inline-block';
-            
-            // Show controls sidebar again
-            const controlsSidebar = document.querySelector('.controls-sidebar');
-            if (controlsSidebar) {
-                controlsSidebar.style.display = 'block';
-            }
-            
-            // Clear form
-            document.getElementById('recording_title').value = '';
-            document.getElementById('recording_description').value = '';
-
-            // Restart face detection
-            startFaceDetection();
+            // Recargar la página completa para resetear todo
+            window.location.reload();
         }
     }
 

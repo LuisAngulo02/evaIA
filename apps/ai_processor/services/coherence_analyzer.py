@@ -379,16 +379,21 @@ class CoherenceAnalyzer:
             
             logger.info(f"📊 {resultado['etiqueta']}: {resultado['calificacion_final']:.1f}/{max_score} | Coherencia: {nota_para_nivel:.1f}/100 → {resultado['nivel']}")
         
-        # Normalizar porcentajes de aporte para que sumen 100%
-        suma_aportes = sum(r['porcentaje_aporte'] for r in resultados)
-        if suma_aportes > 0:
-            for resultado in resultados:
-                resultado['porcentaje_aporte_normalizado'] = round(
-                    (resultado['porcentaje_aporte'] / suma_aportes) * 100, 2
-                )
-        else:
-            for resultado in resultados:
-                resultado['porcentaje_aporte_normalizado'] = 0
+        # Calcular porcentaje de aporte normalizado
+        # El aporte considera TIEMPO + CALIDAD (coherencia)
+        # NO normalizar - usar valores directos que reflejen la calidad real
+        for resultado in resultados:
+            # Aporte = (tiempo% × coherencia/100)
+            # Ejemplo: 33% tiempo × 80% coherencia = 26.4% aporte
+            # Ejemplo: 33% tiempo × 60% coherencia = 19.8% aporte
+            tiempo_pct = resultado['porcentaje_tiempo']
+            coherencia_factor = resultado['nota_coherencia'] / 100
+            
+            # Aporte ponderado que refleja tiempo Y calidad
+            aporte_real = tiempo_pct * coherencia_factor
+            resultado['porcentaje_aporte_normalizado'] = round(aporte_real, 2)
+            
+            logger.info(f"   📈 {resultado['etiqueta']}: Tiempo={tiempo_pct:.1f}% × Coherencia={resultado['nota_coherencia']:.1f}% = Aporte={aporte_real:.1f}%")
         
         return resultados
     
@@ -424,7 +429,9 @@ class CoherenceAnalyzer:
                 'nivel': nivel,
                 'observacion': observacion + " (análisis básico)",
                 'palabras_totales': len(texto.split()),
-                'caracteres': len(texto)
+                'caracteres': len(texto),
+                'time_segments': participacion.get('time_segments', []),  # Preservar segmentos
+                'foto_url': participacion.get('foto_url')  # Preservar foto
             })
         
         return self._calcular_calificaciones_finales(resultados, max_score)
@@ -563,6 +570,7 @@ class CoherenceAnalyzer:
                     'puntaje_palabras_clave': coherence_score,  # Aproximación
                     'puntaje_profundidad': coherence_score,  # Aproximación
                     'foto_url': participacion.get('foto_url'),
+                    'time_segments': participacion.get('time_segments', []),  # Preservar segmentos de tiempo
                     
                     # Detalles de IA avanzada
                     'ai_powered': True,
@@ -592,7 +600,14 @@ class CoherenceAnalyzer:
                     (resultado['tiempo_participacion'] / tiempo_total * 100) 
                     if tiempo_total > 0 else 0
                 )
-                resultado['porcentaje_aporte_normalizado'] = resultado['porcentaje_tiempo']
+                # Calcular aporte considerando tiempo Y calidad
+                tiempo_pct = resultado['porcentaje_tiempo']
+                coherencia = resultado.get('nota_coherencia', 0)  # Usar 'nota_coherencia' en lugar de 'coherence_score'
+                coherencia_factor = coherencia / 100
+                aporte_real = tiempo_pct * coherencia_factor
+                resultado['porcentaje_aporte_normalizado'] = round(aporte_real, 2)
+                
+                logger.info(f"   📈 {resultado['etiqueta']}: Tiempo={tiempo_pct:.1f}% × Coherencia={coherencia:.1f}% = Aporte={aporte_real:.1f}%")
         
         return resultados
     
