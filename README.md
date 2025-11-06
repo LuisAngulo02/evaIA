@@ -245,6 +245,9 @@ ALLOWED_HOSTS=127.0.0.1,localhost
 python manage.py makemigrations
 python manage.py migrate
 
+# Crear grupos de usuarios (Estudiante y Docente) - IMPORTANTE
+python manage.py create_groups
+
 # Crear superusuario para el panel de administración
 python manage.py createsuperuser
 # Seguir las instrucciones en pantalla
