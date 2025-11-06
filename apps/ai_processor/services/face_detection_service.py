@@ -98,6 +98,9 @@ class FaceDetectionService:
         Método con MediaPipe - detecta múltiples rostros en tiempo real (mejor opción)
         """
         logger.info(f"🎥 Iniciando detección de rostros con MediaPipe: {video_path}")
+        logger.info(f"🔧 Parámetros de detección:")
+        logger.info(f"   - Tolerance: {self.tolerance}")
+        logger.info(f"   - Sample rate: {self.sample_rate}")
         
         try:
             cap = cv2.VideoCapture(video_path)
@@ -112,7 +115,9 @@ class FaceDetectionService:
             
             logger.info(f"📊 Video: {total_frames} frames, {fps:.2f} FPS, {duration:.2f}s duración")
             
-            # Procesar frames
+            if fps <= 0:
+                logger.error(f"❌ FPS inválido: {fps}. No se puede procesar el video.")
+                raise Exception(f"FPS inválido: {fps}")            # Procesar frames
             frame_count = 0
             processed_frames = 0
             face_detections = []
@@ -286,9 +291,10 @@ class FaceDetectionService:
                     # Calcular similitud visual
                     similarity_score = self._calculate_visual_similarity(face_i, face_j)
                     
-                    # Threshold más permisivo para fusionar duplicados (0.38)
-                    # Aumentado de 0.32 a 0.38 para capturar duplicados con más variación
-                    if similarity_score < 0.38:
+                    # Threshold MUY permisivo para fusionar duplicados (0.50)
+                    # Aumentado de 0.38 a 0.50 para fusionar rostros con mayor variación
+                    # Score < 0.50 = mismo rostro (50% de similitud)
+                    if similarity_score < 0.50:
                         logger.info(f"🔗 Fusionando {track_i['label']} y {track_j['label']} (similitud: {similarity_score:.3f})")
                         
                         # Agregar apariciones del track duplicado al master
@@ -296,7 +302,7 @@ class FaceDetectionService:
                         
                         # Marcar como usado
                         used_indices.add(j)
-                    elif similarity_score < 0.45:
+                    elif similarity_score < 0.60:
                         # Log de advertencia para similitudes cercanas al threshold
                         logger.warning(f"⚠️ {track_i['label']} y {track_j['label']} son similares (score: {similarity_score:.3f}) pero no fusionados")
                         
@@ -453,10 +459,10 @@ class FaceDetectionService:
             
             logger.info(f"📊 Video: {duration:.1f}s, {fps:.1f} FPS, {total_frames} frames")
             
-            # Inicializar MediaPipe con parámetros moderados
+            # Inicializar MediaPipe con parámetros MUY permisivos
             mp_face_detection = mp.solutions.face_detection
             face_detection = mp_face_detection.FaceDetection(
-                min_detection_confidence=0.50,  # Moderado - más permisivo
+                min_detection_confidence=0.40,  # MUY permisivo - detecta rostros con poca confianza
                 model_selection=1  # Modelo de largo alcance
             )
             
@@ -476,6 +482,7 @@ class FaceDetectionService:
             
             frame_count = 0
             processed_frames = 0
+            frames_with_detections = 0  # Contador de frames con rostros detectados
             sample_rate = 3  # Procesar cada 3 frames (máxima frecuencia razonable)
             
             logger.info(f"🔍 Iniciando detección ULTRA-SENSIBLE... (procesando 1/{sample_rate} frames)")
@@ -497,17 +504,21 @@ class FaceDetectionService:
                     
                     if results.detections:
                         current_faces = []
+                        frames_with_detections += 1  # Incrementar contador
                         
-                        # Log detallado de detecciones (solo primeros 100 frames procesados)
-                        if processed_frames < 100:
-                            logger.debug(f" Frame {frame_count} (t={timestamp:.1f}s): {len(results.detections)} rostro(s) detectado(s)")
+                        # Log detallado de detecciones (primeros 50 frames para no saturar)
+                        if processed_frames < 50:
+                            logger.info(f"⭐ Frame {frame_count} (t={timestamp:.1f}s): {len(results.detections)} rostro(s) DETECTADO(S) por MediaPipe")
                         
                         for detection in results.detections:
                             # Verificar score de confianza
                             confidence = detection.score[0]
-                            if confidence < 0.5:  # Umbral moderado de confianza
-                                if processed_frames < 10:  # Solo log los primeros frames
-                                    logger.debug(f"🚫 Rostro descartado por baja confianza: {confidence:.2f}")
+                            if processed_frames < 50:
+                                logger.info(f"   📊 Confianza del rostro: {confidence:.3f}")
+                            
+                            if confidence < 0.40:  # Umbral MUY permisivo de confianza
+                                if processed_frames < 50:
+                                    logger.warning(f"   🚫 DESCARTADO por baja confianza: {confidence:.3f} < 0.40")
                                 continue
                             
                             # Obtener bounding box
@@ -529,16 +540,18 @@ class FaceDetectionService:
                                 face_mesh_results = face_mesh.process(face_roi)
                                 # Si Face Mesh no detecta landmarks faciales, probablemente no es un rostro humano
                                 if not face_mesh_results.multi_face_landmarks:
-                                    if processed_frames < 10:
-                                        logger.debug(f"🚫 Sin características faciales humanas - descartado")
+                                    if processed_frames < 50:
+                                        logger.warning(f"   🚫 DESCARTADO: Sin características faciales humanas (Face Mesh)")
                                     continue
+                                elif processed_frames < 50:
+                                    logger.info(f"   ✅ Face Mesh: Rostro humano confirmado")
                             
                             center_x = x + w // 2
                             center_y = y + h // 2
                             
                             # ✅ Rostro humano real detectado
-                            if processed_frames < 10:
-                                logger.debug(f"✅ Rostro humano detectado: conf={confidence:.2f}, size={w}x{h}, pos=({x},{y})")
+                            if processed_frames < 50:
+                                logger.info(f"   ✅ ACEPTADO: Rostro humano válido - conf={confidence:.3f}, size={w}x{h}, pos=({x},{y})")
                             
                             current_faces.append({
                                 'center': (center_x, center_y),
@@ -547,6 +560,10 @@ class FaceDetectionService:
                                 'frame': frame_count,
                                 'confidence': confidence
                             })
+                        
+                        # Log de rostros aceptados en este frame
+                        if processed_frames < 50:
+                            logger.info(f"   🎯 Total rostros aceptados en este frame: {len(current_faces)}")
                         
                         # Actualizar tracks con algoritmo mejorado (distancia + similitud visual)
                         frame_diagonal = np.sqrt(iw**2 + ih**2)
@@ -619,9 +636,9 @@ class FaceDetectionService:
                                     best_score = combined_score
                                     best_match = i
                             
-                            # Threshold más estricto: score < 0.45 = mismo rostro
-                            # Reducido de 0.50 a 0.45 para evitar crear duplicados
-                            if best_match is not None and best_score < 0.45:
+                            # Threshold MUY permisivo: score < 0.55 = mismo rostro
+                            # Aumentado de 0.45 a 0.55 para evitar crear duplicados
+                            if best_match is not None and best_score < 0.55:
                                 face_tracks[best_match]['appearances'].append(face)
                                 used_tracks.add(best_match)
                             else:
@@ -636,6 +653,10 @@ class FaceDetectionService:
                                 })
                                 logger.info(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto capturada")
                                 next_face_id += 1
+                    else:
+                        # NO se detectaron rostros en este frame
+                        if processed_frames < 50:
+                            logger.warning(f"❌ Frame {frame_count} (t={timestamp:.1f}s): MediaPipe NO detectó ningún rostro")
                     
                     processed_frames += 1
                     
@@ -650,15 +671,29 @@ class FaceDetectionService:
             face_detection.close()
             face_mesh.close()
             
-            logger.info(f"✅ Detección finalizada: {len(face_tracks)} tracks encontrados")
+            logger.info(f"")
+            logger.info(f"=" * 80)
+            logger.info(f"✅ DETECCIÓN FINALIZADA: {len(face_tracks)} tracks encontrados")
+            logger.info(f"📹 Frames procesados: {processed_frames}")
+            logger.info(f"✅ Frames CON rostros: {frames_with_detections} ({frames_with_detections/processed_frames*100:.1f}%)")
+            logger.info(f"❌ Frames SIN rostros: {processed_frames - frames_with_detections} ({(processed_frames - frames_with_detections)/processed_frames*100:.1f}%)")
+            logger.info(f"=" * 80)
+            
+            # Mostrar detalles de cada track ANTES de fusionar
+            for idx, track in enumerate(face_tracks):
+                logger.info(f"Track {idx+1}: {len(track['appearances'])} apariciones")
             
             # POST-PROCESAMIENTO: Fusionar tracks duplicados
+            logger.info(f"")
             logger.info(f"🔄 Iniciando fusión de tracks duplicados...")
             face_tracks = self._merge_duplicate_tracks(face_tracks)
             logger.info(f"✅ Después de fusión: {len(face_tracks)} tracks únicos")
+            logger.info(f"")
             
             # Mostrar TODOS los tracks detectados (incluso con pocas apariciones)
-            logger.info(f"📊 Resumen de detecciones:")
+            logger.info(f"=" * 80)
+            logger.info(f"📊 RESUMEN DE DETECCIONES:")
+            logger.info(f"=" * 80)
             total_appearances = 0
             for track in face_tracks:
                 appearances = len(track['appearances'])
@@ -666,26 +701,43 @@ class FaceDetectionService:
                 time_seconds = (appearances * sample_rate) / fps
                 logger.info(f"   🔍 {track['label']}: {appearances} apariciones ({time_seconds:.1f}s)")
             
+            logger.info(f"")
             logger.info(f"📈 Total de apariciones registradas: {total_appearances}")
             logger.info(f"📹 Total de frames procesados: {processed_frames}")
-            logger.info(f"📊 Promedio de rostros por frame: {total_appearances / processed_frames:.2f}")
+            if processed_frames > 0:
+                logger.info(f"📊 Promedio de rostros por frame procesado: {total_appearances / processed_frames:.2f}")
+            logger.info(f"")
             
             # Filtrar tracks con muy pocas apariciones o tiempo muy corto (ruido)
-            # MÍNIMO 1 SEGUNDO de tiempo en pantalla para ser considerado participante válido
-            min_time_seconds = 1.0  # Reducido de 2.0 a 1.0 para detectar apariciones más breves
+            # MÍNIMO 0.3 SEGUNDOS de tiempo en pantalla para ser considerado participante válido
+            min_time_seconds = 0.3  # Reducido de 0.5 a 0.3 para detectar apariciones MUY breves
             valid_tracks = []
+            
+            logger.info(f"=" * 80)
+            logger.info(f"🔍 FILTRADO DE TRACKS (mínimo {min_time_seconds}s):")
+            logger.info(f"🎬 FPS del video: {fps:.2f}")
+            logger.info(f"📊 Sample rate: {sample_rate} (procesa 1 de cada {sample_rate} frames)")
+            logger.info(f"=" * 80)
             
             for track in face_tracks:
                 appearances = len(track['appearances'])
                 time_seconds = (appearances * sample_rate) / fps
                 
+                logger.info(f"")
+                logger.info(f"🔍 Evaluando {track['label']}:")
+                logger.info(f"   📊 Apariciones: {appearances}")
+                logger.info(f"   🧮 Cálculo: ({appearances} × {sample_rate}) / {fps:.2f} = {time_seconds:.3f}s")
+                logger.info(f"   ⚖️  Comparación: {time_seconds:.3f}s >= {min_time_seconds}s? {time_seconds >= min_time_seconds}")
+                
                 if time_seconds >= min_time_seconds:
                     valid_tracks.append(track)
-                    logger.info(f"✅ {track['label']} aceptado: {time_seconds:.1f}s")
+                    logger.info(f"   ✅ ACEPTADO")
                 else:
-                    logger.info(f"🚫 {track['label']} descartado: {time_seconds:.1f}s (menos de {min_time_seconds}s)")
+                    logger.info(f"   🚫 DESCARTADO (tiempo insuficiente)")
             
-            logger.info(f"✅ Participantes válidos (>= {min_time_seconds}s): {len(valid_tracks)}")
+            logger.info(f"")
+            logger.info(f"✅ Participantes válidos totales: {len(valid_tracks)}")
+            logger.info(f"")
             
             # Crear directorio para fotos si no existe
             if presentation_id:
