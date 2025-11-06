@@ -15,6 +15,7 @@ import json
 from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
+import logging
 
 
 class AudioSegmentationService:
@@ -146,8 +147,19 @@ class AudioSegmentationService:
         2. Para cada segmento de habla, determinar qué participante está visible
         3. Asignar el texto al participante más visible en ese momento
         """
+        logger = logging.getLogger(__name__)
+
         # Extraer segmentos de Whisper con timestamps
         whisper_segments = transcription_data.get('segments', [])
+
+        logger.info(f"🔊 VAD_WHISPER: {len(whisper_segments)} segmentos de Whisper recibidos")
+
+        # Mostrar resumen de participantes y sus apariciones
+        for p in participants:
+            apps = p.get('appearances', [])
+            logger.info(f"👤 Participant {p.get('participant_id')} - {len(apps)} apariciones")
+            for a in apps[:5]:
+                logger.debug(f"    appearance: start={a.get('start_time')} end={a.get('end_time')}")
         
         if not whisper_segments:
             # Si Whisper no tiene segments, usar método simple
@@ -159,6 +171,8 @@ class AudioSegmentationService:
             participant['transcription'] = ''
         
         # Asignar cada segmento de Whisper al participante más visible
+        unassigned_segments = []  # Segmentos sin asignar
+        
         for segment in whisper_segments:
             start_time = segment.get('start', 0)
             end_time = segment.get('end', 0)
@@ -173,13 +187,71 @@ class AudioSegmentationService:
                 start_time,
                 end_time
             )
-            
-            if best_participant:
+
+            if best_participant is None:
+                logger.warning(f"❌ Ningún participante visible para segmento [{start_time:.2f}-{end_time:.2f}] '{text[:40]}...'")
+                unassigned_segments.append({
+                    'start': start_time,
+                    'end': end_time,
+                    'text': text
+                })
+            else:
+                logger.info(f"➡️ Asignando segmento [{start_time:.2f}-{end_time:.2f}] a participant {best_participant.get('participant_id')}")
                 best_participant['speech_segments'].append({
                     'start': start_time,
                     'end': end_time,
                     'text': text
                 })
+        
+        # FALLBACK: Asignar segmentos no asignados al participante más cercano en el tiempo
+        if unassigned_segments:
+            logger.warning(f"⚠️ {len(unassigned_segments)} segmentos sin asignar. Aplicando fallback...")
+            
+            for segment in unassigned_segments:
+                start_time = segment['start']
+                end_time = segment['end']
+                mid_time = (start_time + end_time) / 2
+                
+                # Buscar participante con aparición más cercana en el tiempo
+                closest_participant = None
+                min_distance = float('inf')
+                
+                for participant in participants:
+                    appearances = participant.get('appearances', [])
+                    
+                    for appearance in appearances:
+                        app_start = appearance.get('start_time', 0)
+                        app_end = appearance.get('end_time', 0)
+                        app_mid = (app_start + app_end) / 2
+                        
+                        # Calcular distancia temporal al centro del segmento
+                        distance = abs(mid_time - app_mid)
+                        
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest_participant = participant
+                
+                if closest_participant:
+                    logger.info(f"✅ FALLBACK: Asignando segmento [{start_time:.2f}-{end_time:.2f}] '{segment['text'][:40]}...' a participant {closest_participant.get('participant_id')} (distancia: {min_distance:.2f}s)")
+                    closest_participant['speech_segments'].append({
+                        'start': start_time,
+                        'end': end_time,
+                        'text': segment['text']
+                    })
+                else:
+                    # Último recurso: distribuir equitativamente entre participantes
+                    logger.warning(f"⚠️ No hay participante cercano. Distribuyendo equitativamente...")
+                    # Asignar al participante con MENOS texto asignado (para balancear)
+                    min_text_participant = min(
+                        participants,
+                        key=lambda p: len(p.get('speech_segments', []))
+                    )
+                    min_text_participant['speech_segments'].append({
+                        'start': start_time,
+                        'end': end_time,
+                        'text': segment['text']
+                    })
+                    logger.info(f"✅ Asignado a participant {min_text_participant.get('participant_id')} (tiene menos segmentos)")
         
         # Construir transcripción completa para cada participante
         for participant in participants:
@@ -187,6 +259,10 @@ class AudioSegmentationService:
             participant['transcription'] = ' '.join(
                 seg['text'] for seg in segments
             )
+
+        # Log final con cantidad de palabras por participante
+        for participant in participants:
+            logger.info(f"📄 Participant {participant.get('participant_id')}: {len(participant.get('speech_segments', []))} segmentos asignados, {len(participant.get('transcription','').split())} palabras")
         
         return participants
     
