@@ -56,6 +56,9 @@ joblib==1.4.2
 opencv-python==4.9.0.80
 opencv-contrib-python==4.9.0.80
 mediapipe==0.10.21
+deepface==0.0.95
+tensorflow==2.20.0
+tf-keras==2.20.1
 Pillow==11.3.0
 
 

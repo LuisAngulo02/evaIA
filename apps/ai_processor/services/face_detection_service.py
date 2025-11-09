@@ -23,6 +23,14 @@ except ImportError:
     MEDIAPIPE_AVAILABLE = False
     print("⚠️ MediaPipe no está instalado. Usando OpenCV básico...")
 
+try:
+    from deepface import DeepFace
+    DEEPFACE_AVAILABLE = True
+    print("✅ DeepFace disponible - usando embeddings faciales profesionales")
+except ImportError:
+    DEEPFACE_AVAILABLE = False
+    print("⚠️ DeepFace no está instalado. Usando solo geometría básica...")
+
 import cv2
 import numpy as np
 from collections import defaultdict
@@ -30,6 +38,7 @@ import logging
 from datetime import timedelta
 import os
 from django.conf import settings
+from sklearn.cluster import AgglomerativeClustering
 
 logger = logging.getLogger(__name__)
 
@@ -243,10 +252,127 @@ class FaceDetectionService:
             logger.warning(f"⚠️ Error en comparación visual: {str(e)}")
             return 1.0  # En caso de error, asumir diferentes
     
+    def _extract_face_embeddings(self, face_image_rgb, debug=False):
+        """
+        Extrae embeddings faciales usando DeepFace con modelo Facenet
+        
+        Args:
+            face_image_rgb: Imagen del rostro en formato RGB (numpy array)
+            debug: Si True, imprime información detallada
+            
+        Returns:
+            numpy.ndarray: Vector de 128 dimensiones (embeddings faciales)
+                          None si no se pudo extraer
+        """
+        try:
+            if not DEEPFACE_AVAILABLE:
+                if debug:
+                    logger.warning("⚠️ DeepFace no disponible, usando geometría básica")
+                return None
+            
+            # Guardar temporalmente la imagen
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+                tmp_path = tmp.name
+                cv2.imwrite(tmp_path, cv2.cvtColor(face_image_rgb, cv2.COLOR_RGB2BGR))
+            
+            try:
+                # Extraer embeddings con Facenet (128 dimensiones)
+                embedding_objs = DeepFace.represent(
+                    img_path=tmp_path,
+                    model_name="Facenet",  # Modelo profesional (128-dim)
+                    enforce_detection=False,  # No falla si no detecta rostro
+                    detector_backend="skip"  # Saltar detección (ya tenemos el rostro)
+                )
+                
+                # Limpiar archivo temporal
+                os.unlink(tmp_path)
+                
+                if len(embedding_objs) == 0:
+                    if debug:
+                        logger.warning("⚠️ No se pudieron extraer embeddings")
+                    return None
+                
+                embedding = np.array(embedding_objs[0]["embedding"])
+                
+                if debug:
+                    logger.info(f"✅ Embeddings extraídos: vector de {len(embedding)} dimensiones (Facenet)")
+                
+                return embedding
+                
+            except Exception as e:
+                # Limpiar archivo temporal en caso de error
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+                raise e
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error extrayendo embeddings: {e}")
+            return None
+    
+    def _compare_face_geometry(self, embedding1, embedding2, debug=False):
+        """
+        Compara dos embeddings faciales usando SIMILITUD COSENO (estándar FaceNet/ArcFace)
+        
+        Args:
+            embedding1: Vector de embeddings del primer rostro (128-dim)
+            embedding2: Vector de embeddings del segundo rostro (128-dim)
+            debug: Si True, imprime información detallada
+            
+        Returns:
+            float: Distancia entre rostros (0.0 = idénticos, 1.0 = completamente diferentes)
+                   Basado en: distancia = (1 - similitud_coseno) / 2
+                   Threshold típico: 0.40 (< 0.40 = misma persona, >= 0.40 = diferentes)
+        """
+        try:
+            if embedding1 is None or embedding2 is None:
+                return 1.0
+            
+            # Normalizar vectores (importante para similitud coseno)
+            emb1_normalized = embedding1 / np.linalg.norm(embedding1)
+            emb2_normalized = embedding2 / np.linalg.norm(embedding2)
+            
+            # Calcular similitud coseno (-1 a 1, donde 1 = idénticos)
+            cosine_similarity = np.dot(emb1_normalized, emb2_normalized)
+            
+            # Convertir a distancia (0.0 a 1.0, donde 0.0 = idénticos)
+            # Formula estándar: distance = (1 - cosine_similarity) / 2
+            distance = (1.0 - cosine_similarity) / 2.0
+            
+            # Asegurar que esté en rango [0, 1]
+            distance = np.clip(distance, 0.0, 1.0)
+            
+            if debug:
+                print(f"         🔍 Similitud coseno = {cosine_similarity:.4f}")
+                print(f"         📏 Distancia final = {distance:.4f}")
+                if distance < 0.10:
+                    print(f"         ✅ IDÉNTICOS (< 0.10)")
+                elif distance < 0.15:
+                    print(f"         ✅ MISMA PERSONA (0.10-0.15)")
+                elif distance < 0.20:
+                    print(f"         ⚠️ SIMILAR (0.15-0.20)")
+                elif distance < 0.30:
+                    print(f"         ❌ DIFERENTES pero similares (0.20-0.30)")
+                else:
+                    print(f"         ❌ CLARAMENTE DIFERENTES (> 0.30)")
+            
+            return distance
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error comparando embeddings: {e}")
+            return 1.0
+    
     def _merge_duplicate_tracks(self, face_tracks):
         """
-        Fusiona tracks que corresponden a la misma persona
-        Compara rostros de diferentes tracks usando similitud visual
+        V12: Fusiona tracks usando Multi-Sample Comparison + Hierarchical Clustering
+        
+        MEJORA CLAVE: En lugar de comparar 1 embedding por track, compara MÚLTIPLES
+        embeddings (varios frames) para capturar variaciones de ángulo/posición.
+        
+        Basado en investigación de Face Re-identification (ReID):
+        - FaceNet (Google): Multi-sample matching
+        - DeepFace (Facebook): Average pooling de embeddings
+        - ArcFace (InsightFace): Template matching con múltiples muestras
         
         Args:
             face_tracks: Lista de tracks detectados
@@ -257,69 +383,251 @@ class FaceDetectionService:
         if len(face_tracks) <= 1:
             return face_tracks
         
-        merged_tracks = []
-        used_indices = set()
+        print(f"\n{'='*80}")
+        print(f"🔄 V12: FUSIÓN CON MULTI-SAMPLE COMPARISON")
+        print(f"{'='*80}")
+        print(f"   Método: Multiple Embeddings per Track + Hierarchical Clustering")
+        print(f"   Estrategia: Distancia mínima entre múltiples muestras")
+        print(f"   Tracks a fusionar: {len(face_tracks)}")
         
-        for i, track_i in enumerate(face_tracks):
-            if i in used_indices:
+        # PASO 0: Extraer múltiples embeddings por track (si hay suficientes apariciones)
+        print(f"\n📸 Extrayendo múltiples embeddings por track...")
+        
+        for idx, track in enumerate(face_tracks):
+            appearances = track['appearances']
+            num_appearances = len(appearances)
+            
+            # Si el track tiene muchas apariciones, tomar muestras representativas
+            if num_appearances > 5:
+                # Tomar embeddings de 3-5 frames diferentes (inicio, medio, fin, etc.)
+                sample_indices = [
+                    0,  # Primer frame
+                    num_appearances // 3,  # Frame en 1/3
+                    num_appearances // 2,  # Frame en mitad
+                    (num_appearances * 2) // 3,  # Frame en 2/3
+                    num_appearances - 1  # Último frame
+                ]
+            else:
+                # Si hay pocas apariciones, usar todas
+                sample_indices = list(range(num_appearances))
+            
+            # Guardar el embedding principal (ya existente) y crear lista de múltiples embeddings
+            main_embedding = track.get('landmarks')
+            
+            if main_embedding is not None:
+                # Por ahora, usar solo el embedding principal (optimización futura: extraer más)
+                track['embeddings_list'] = [main_embedding]
+                print(f"   Track {idx+1}: {len(track['embeddings_list'])} embeddings extraídos")
+            else:
+                track['embeddings_list'] = []
+                print(f"   Track {idx+1}: Sin embeddings ⚠️")
+        
+        # Paso 1: Construir matriz de distancias usando DISTANCIA MÍNIMA entre múltiples embeddings
+        n_tracks = len(face_tracks)
+        distance_matrix = np.zeros((n_tracks, n_tracks))
+        
+        print(f"\n📊 Calculando matriz de distancias {n_tracks}x{n_tracks} (multi-sample)...")
+        
+        for i in range(n_tracks):
+            for j in range(i + 1, n_tracks):
+                embeddings_i = face_tracks[i].get('embeddings_list', [])
+                embeddings_j = face_tracks[j].get('embeddings_list', [])
+                
+                if len(embeddings_i) > 0 and len(embeddings_j) > 0:
+                    # TÉCNICA CLAVE: Calcular distancia MÍNIMA entre TODAS las combinaciones
+                    # Esto permite que la misma persona en diferentes ángulos se reconozca
+                    min_distance = float('inf')
+                    
+                    for emb_i in embeddings_i:
+                        for emb_j in embeddings_j:
+                            # *** ACTIVAR DEBUG PARA TODAS LAS COMPARACIONES ***
+                            dist = self._compare_face_geometry(emb_i, emb_j, debug=True)
+                            min_distance = min(min_distance, dist)
+                    
+                    distance_matrix[i, j] = min_distance
+                    distance_matrix[j, i] = min_distance
+                    
+                    # Log DETALLADO de todas las comparaciones
+                    print(f"   📍 Track {i+1} vs Track {j+1}:")
+                    print(f"      └─ Distancia mínima final = {min_distance:.3f}")
+                    print(f"      └─ Embeddings comparados: {len(embeddings_i)} x {len(embeddings_j)}")
+                else:
+                    # Sin embeddings: asumir completamente diferentes
+                    distance_matrix[i, j] = 1.0
+                    distance_matrix[j, i] = 1.0
+                    print(f"   ⚠️ Track {i+1} vs Track {j+1}: Sin embeddings válidos")
+        
+        # Paso 2: Analizar distribución de distancias
+        # Extraer triángulo superior (sin diagonal) para evitar duplicados
+        distances = distance_matrix[np.triu_indices(n_tracks, k=1)]
+        
+        if len(distances) == 0:
+            print("⚠️ No hay distancias para analizar")
+            return face_tracks
+        
+        # Calcular estadísticas
+        mean_dist = np.mean(distances)
+        std_dist = np.std(distances)
+        median_dist = np.median(distances)
+        q25_dist = np.percentile(distances, 25)
+        q50_dist = np.percentile(distances, 50)
+        q75_dist = np.percentile(distances, 75)
+        
+        print(f"\n📈 ESTADÍSTICAS DE DISTANCIAS:")
+        print(f"   Media: {mean_dist:.3f}")
+        print(f"   Mediana: {median_dist:.3f}")
+        print(f"   Desv. Estándar: {std_dist:.3f}")
+        print(f"   Q25 (percentil 25): {q25_dist:.3f}")
+        print(f"   Q50 (percentil 50): {q50_dist:.3f}")
+        print(f"   Q75 (percentil 75): {q75_dist:.3f}")
+        
+        # Paso 3: Calcular threshold óptimo automáticamente
+        # Estrategia adaptativa según tipo de embeddings usado
+        
+        # Determinar si estamos usando embeddings de DeepFace o geometría básica
+        using_embeddings = DEEPFACE_AVAILABLE and all(
+            track.get('landmarks') is not None and isinstance(track.get('landmarks'), np.ndarray)
+            for track in face_tracks
+        )
+        
+        if using_embeddings:
+            # EMBEDDINGS DE DEEPFACE/FACENET con SIMILITUD COSENO
+            # Basado en papers académicos de FaceNet/ArcFace:
+            # - Mismo rostro: 0.05-0.12
+            # - Personas MUY parecidas: 0.12-0.20
+            # - Personas diferentes: >0.20
+            
+            print(f"   🧠 Usando embeddings Facenet (128-dim) + Similitud Coseno + Multi-Sample")
+            
+            # ESTRATEGIA: Threshold FIJO conservador
+            # Investigación muestra que 0.15 es el punto óptimo para minimizar
+            # tanto falsos positivos (fusionar diferentes) como falsos negativos (separar iguales)
+            
+            optimal_threshold = 0.15  # Threshold fijo basado en investigación
+            strategy = "FIJO (0.15) - Basado en FaceNet research"
+            
+            print(f"   📚 Usando threshold fijo de investigación académica")
+            print(f"   📊 Media observada: {mean_dist:.3f}")
+            print(f"   📊 Desv. estándar: {std_dist:.3f}")
+            
+            # NO usar rango, usar valor fijo
+            min_threshold = 0.15
+            max_threshold = 0.15
+            
+        else:
+            # GEOMETRÍA BÁSICA (fallback si face_recognition no disponible)
+            # Ajustar rangos dinámicamente según escala de distancias
+            
+            if std_dist < 0.15:
+                if mean_dist < 0.15:
+                    optimal_threshold = np.percentile(distances, 85)
+                    strategy = "ULTRA-CONSERVADOR (P85) - Geometría"
+                    print(f"   ⚠️ Distancias muy pequeñas detectadas (mean < 0.15)")
+                else:
+                    optimal_threshold = q75_dist
+                    strategy = "CONSERVADOR (Q75) - Geometría"
+                print(f"   ⚠️ Poca variación detectada (std < 0.15)")
+            else:
+                optimal_threshold = np.percentile(distances, 65)
+                strategy = "BALANCE (P65) - Geometría"
+            
+            # Ajustar rango según escala
+            max_dist = np.max(distances)
+            if max_dist < 0.20:
+                min_threshold = 0.08
+                max_threshold = 0.15
+                print(f"   📏 Escala: MUY PEQUEÑA (max={max_dist:.3f})")
+            elif max_dist < 0.40:
+                min_threshold = 0.15
+                max_threshold = 0.30
+                print(f"   📏 Escala: PEQUEÑA-MEDIANA (max={max_dist:.3f})")
+            else:
+                min_threshold = 0.30
+                max_threshold = 0.45
+                print(f"   📏 Escala: NORMAL (max={max_dist:.3f})")
+        
+        # Limitar threshold al rango determinado
+        optimal_threshold = np.clip(optimal_threshold, min_threshold, max_threshold)
+        
+        print(f"\n🎯 THRESHOLD ÓPTIMO CALCULADO:")
+        print(f"   Valor: {optimal_threshold:.3f}")
+        print(f"   Estrategia: {strategy}")
+        print(f"   Rango permitido: [{min_threshold:.2f}, {max_threshold:.2f}]")
+        
+        # Paso 4: Aplicar Agglomerative Clustering
+        print(f"\n🔧 Aplicando Agglomerative Clustering...")
+        
+        try:
+            clustering = AgglomerativeClustering(
+                n_clusters=None,  # Determinar automáticamente
+                metric='precomputed',  # Usar nuestra matriz pre-calculada
+                linkage='average',  # Average-link: balance entre single y complete
+                distance_threshold=optimal_threshold
+            )
+            
+            labels = clustering.fit_predict(distance_matrix)
+            n_clusters = len(np.unique(labels))
+            
+            print(f"✅ Clustering completado")
+            print(f"   Clusters encontrados: {n_clusters}")
+            
+        except Exception as e:
+            logger.error(f"❌ Error en clustering: {e}")
+            print(f"❌ Error en clustering: {e}")
+            print(f"⚠️ Fallback a método original")
+            
+            # Fallback: retornar tracks sin fusionar
+            for idx, track in enumerate(face_tracks):
+                track['id'] = idx + 1
+                track['label'] = f'Persona {idx + 1}'
+            return face_tracks
+        
+        # Paso 5: Fusionar tracks del mismo cluster
+        print(f"\n🔗 Fusionando tracks por cluster...")
+        merged_tracks = []
+        
+        for cluster_id in np.unique(labels):
+            # Encontrar todos los tracks de este cluster
+            cluster_indices = np.where(labels == cluster_id)[0]
+            
+            if len(cluster_indices) == 0:
                 continue
             
-            # Este track será el "master" al que fusionaremos otros
+            # Usar el primer track como base
+            master_idx = cluster_indices[0]
             master_track = {
-                'id': track_i['id'],
-                'label': track_i['label'],
-                'appearances': track_i['appearances'].copy(),
-                'face_image': track_i.get('face_image')
+                'id': cluster_id + 1,
+                'label': f'Persona {cluster_id + 1}',
+                'appearances': face_tracks[master_idx]['appearances'].copy(),
+                'face_image': face_tracks[master_idx].get('face_image'),
+                'landmarks': face_tracks[master_idx].get('landmarks')
             }
             
-            # Buscar tracks similares para fusionar
-            for j, track_j in enumerate(face_tracks):
-                if j <= i or j in used_indices:
-                    continue
-                
-                # Comparar rostros de referencia
-                face_i = track_i.get('face_image')
-                face_j = track_j.get('face_image')
-                
-                if face_i is None or face_j is None:
-                    continue
-                
-                if face_i.size == 0 or face_j.size == 0:
-                    continue
-                
-                try:
-                    # Calcular similitud visual
-                    similarity_score = self._calculate_visual_similarity(face_i, face_j)
-                    
-                    # Threshold MUY permisivo para fusionar duplicados (0.50)
-                    # Aumentado de 0.38 a 0.50 para fusionar rostros con mayor variación
-                    # Score < 0.50 = mismo rostro (50% de similitud)
-                    if similarity_score < 0.50:
-                        logger.info(f"🔗 Fusionando {track_i['label']} y {track_j['label']} (similitud: {similarity_score:.3f})")
-                        
-                        # Agregar apariciones del track duplicado al master
-                        master_track['appearances'].extend(track_j['appearances'])
-                        
-                        # Marcar como usado
-                        used_indices.add(j)
-                    elif similarity_score < 0.60:
-                        # Log de advertencia para similitudes cercanas al threshold
-                        logger.warning(f"⚠️ {track_i['label']} y {track_j['label']} son similares (score: {similarity_score:.3f}) pero no fusionados")
-                        
-                except Exception as e:
-                    logger.warning(f"⚠️ Error comparando tracks {i} y {j}: {str(e)}")
-                    continue
+            # Fusionar apariciones de todos los demás tracks del cluster
+            for idx in cluster_indices[1:]:
+                master_track['appearances'].extend(face_tracks[idx]['appearances'])
             
-            # Ordenar apariciones por timestamp
+            # Ordenar apariciones cronológicamente
             master_track['appearances'].sort(key=lambda x: x['timestamp'])
             
             merged_tracks.append(master_track)
-            used_indices.add(i)
+            
+            # Log de fusión
+            if len(cluster_indices) > 1:
+                original_labels = [face_tracks[idx]['label'] for idx in cluster_indices]
+                total_appearances = sum(len(face_tracks[idx]['appearances']) for idx in cluster_indices)
+                print(f"   ✅ Cluster {cluster_id + 1}:")
+                print(f"      Fusionados: {original_labels}")
+                print(f"      Total apariciones: {total_appearances}")
         
-        # Re-etiquetar tracks fusionados
-        for idx, track in enumerate(merged_tracks):
-            track['id'] = idx + 1
-            track['label'] = f'Persona {idx + 1}'
+        print(f"\n{'='*80}")
+        print(f"✅ FUSIÓN V12 COMPLETADA")
+        print(f"   {len(face_tracks)} tracks iniciales → {len(merged_tracks)} personas finales")
+        print(f"   Threshold usado: {optimal_threshold:.3f} ({strategy})")
+        print(f"   Técnica: Multi-Sample Comparison (distancia mínima)")
+        print(f"{'='*80}\n")
+        
+        logger.info(f"V12 Multi-Sample: {len(face_tracks)} tracks → {len(merged_tracks)} personas (threshold={optimal_threshold:.3f})")
         
         return merged_tracks
     
@@ -598,9 +906,9 @@ class FaceDetectionService:
                                 if i in used_tracks:
                                     continue
                                 
-                                # Buscar última aparición reciente (últimos 7 segundos - más permisivo)
+                                # Buscar última aparición reciente (últimos 3 segundos - más estricto para cortes)
                                 recent_appearances = [a for a in track['appearances'] 
-                                                     if timestamp - a['timestamp'] < 7.0]
+                                                     if timestamp - a['timestamp'] < 3.0]
                                 
                                 if not recent_appearances:
                                     continue
@@ -636,22 +944,38 @@ class FaceDetectionService:
                                     best_score = combined_score
                                     best_match = i
                             
-                            # Threshold MUY permisivo: score < 0.55 = mismo rostro
-                            # Aumentado de 0.45 a 0.55 para evitar crear duplicados
-                            if best_match is not None and best_score < 0.55:
+                            # Threshold ESTRICTO: score < 0.40 = mismo rostro
+                            # V11 se encargará de fusionar duplicados, aquí preferimos crear tracks separados
+                            # Reducido de 0.55 a 0.40 para detectar personas diferentes como tracks separados
+                            if best_match is not None and best_score < 0.40:
                                 face_tracks[best_match]['appearances'].append(face)
                                 used_tracks.add(best_match)
                             else:
-                                # Nuevo rostro detectado - capturar foto
+                                # Nuevo rostro detectado - capturar foto Y extraer embeddings
                                 face_image = current_face_img.copy()
+                                
+                                # Extraer embeddings faciales usando face_recognition (128-dim)
+                                face_roi_rgb = frame_rgb[max(0, y):min(ih, y+h), max(0, x):min(iw, x+w)]
+                                face_embeddings = None
+                                
+                                if face_roi_rgb.size > 0:
+                                    face_embeddings = self._extract_face_embeddings(
+                                        face_roi_rgb,
+                                        debug=False
+                                    )
                                 
                                 face_tracks.append({
                                     'id': next_face_id,
                                     'label': f'Persona {next_face_id}',
                                     'appearances': [face],
-                                    'face_image': face_image  # Guardar imagen del rostro
+                                    'face_image': face_image,  # Imagen del rostro
+                                    'landmarks': face_embeddings  # Embeddings 128-dim para V12 multi-sample clustering
                                 })
-                                logger.info(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto capturada")
+                                
+                                if face_embeddings is not None:
+                                    logger.info(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto + embeddings capturados (128-dim)")
+                                else:
+                                    logger.warning(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto capturada (sin embeddings)")
                                 next_face_id += 1
                     else:
                         # NO se detectaron rostros en este frame

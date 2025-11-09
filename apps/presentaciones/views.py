@@ -54,15 +54,16 @@ def upload_presentation_view(request):
                         presentation.video_height = props.get('height')
                     
                     # Guardar miniatura si se generó
-                    if validation_result['thumbnail_generated']:
+                    if validation_result.get('thumbnail_generated'):
                         from django.core.files import File
-                        thumb_path = validation_result['thumbnail_path']
-                        with open(thumb_path, 'rb') as f:
-                            presentation.video_thumbnail.save(
-                                os.path.basename(thumb_path),
-                                File(f),
-                                save=False
-                            )
+                        thumb_path = validation_result.get('thumbnail_path')
+                        if thumb_path and os.path.exists(thumb_path):
+                            with open(thumb_path, 'rb') as f:
+                                presentation.video_thumbnail.save(
+                                    os.path.basename(thumb_path),
+                                    File(f),
+                                    save=False
+                                )
                     
                     presentation.save()
                     
