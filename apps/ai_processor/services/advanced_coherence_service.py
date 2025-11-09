@@ -205,40 +205,76 @@ class AdvancedCoherenceService:
 🔴 NIVEL DE EVALUACIÓN: ESTRICTO
 
 CRITERIOS DE CALIFICACIÓN:
-- Requiere dominio COMPLETO y PROFUNDO del tema
-- Penaliza fuertemente imprecisiones, falta de profundidad o contenido superficial
-- Exige estructura clara, ejemplos concretos y datos específicos
-- Solo calificaciones altas (85-100) para exposiciones EXCEPCIONALES con dominio total
-- Calificaciones medias (70-84) para presentaciones correctas pero no excepcionales
-- Calificaciones bajas (<70) si hay errores conceptuales o falta de profundidad
+- **REQUISITO ABSOLUTO:** El contenido DEBE estar directamente relacionado con el tema asignado
+- Si habla de un tema DIFERENTE: califica 0% (no importa la calidad, está fuera de tema)
+- Si menciona el tema de paso pero no lo desarrolla: califica 20-40%
+- Si aborda el tema pero superficialmente: califica 50-65%
+- Si desarrolla el tema correctamente: califica 70-80%
+- Si domina el tema con profundidad y ejemplos: califica 85-95%
+- Solo 95-100% para exposiciones EXCEPCIONALES que demuestren dominio total
 
-SÉ MUY EXIGENTE: El estudiante debe demostrar comprensión profunda y manejo experto del tema.""",
+VERIFICACIÓN TEMÁTICA RIGUROSA:
+❌ Tema diferente → 0% (descalificación inmediata)
+⚠️ Tema correcto pero superficial → 40-65% (insuficiente)
+✔️ Tema bien desarrollado → 70-85% (satisfactorio)
+✅ Dominio excepcional del tema → 85-100% (excelente)
+
+EXIGENCIA MÁXIMA:
+- Requiere dominio COMPLETO y PROFUNDO del tema asignado
+- Penaliza severamente desviaciones del tema
+- Exige estructura clara, ejemplos concretos y datos específicos
+- No hay crédito por esfuerzo si el contenido no es relevante
+- Penaliza imprecisiones, falta de profundidad o contenido superficial
+
+SÉ MUY EXIGENTE: El estudiante debe demostrar comprensión profunda del tema CORRECTO.""",
             
             'moderate': """
 🟡 NIVEL DE EVALUACIÓN: MODERADO (RECOMENDADO)
 
 CRITERIOS DE CALIFICACIÓN:
-- Califica 70-95% para presentaciones bien desarrolladas que cubran el tema adecuadamente
-- Califica 85-95% para presentaciones sobresalientes con buen dominio
-- Busca un balance entre exigencia académica y comprensión razonable
-- Valora la profundidad y relevancia del contenido
-- Penaliza divagaciones importantes o errores conceptuales graves
-- Reconoce el esfuerzo cuando hay comprensión básica sólida
+- **REQUISITO FUNDAMENTAL:** El contenido DEBE estar relacionado con el tema de la asignación
+- Si habla de un tema COMPLETAMENTE DIFERENTE: califica 0-30% (penaliza fuertemente)
+- Si menciona el tema pero mayormente divaga: califica 40-60%
+- Si aborda el tema pero de forma básica: califica 65-75%
+- Si desarrolla bien el tema con buenos argumentos: califica 75-85%
+- Si demuestra excelente dominio del tema: califica 85-95%
 
-SÉ JUSTO: Evalúa objetivamente el cumplimiento de las instrucciones con criterio balanceado.""",
+IMPORTANTE - VERIFICACIÓN TEMÁTICA ESTRICTA:
+✅ Contenido relevante al tema → Evalúa profundidad y calidad
+❌ Tema TOTALMENTE diferente → Califica MUY BAJO (0-30%) independiente del esfuerzo
+⚠️ Tema correcto pero superficial → Califica medio-bajo (40-65%)
+✔️ Tema correcto con buen desarrollo → Califica alto (70-95%)
+
+ENFOQUE BALANCEADO:
+- Busca balance entre exigencia académica y reconocimiento del esfuerzo
+- Valora profundidad cuando el tema es correcto
+- Penaliza fuertemente si no habla del tema asignado
+- Reconoce esfuerzo solo si está enfocado en el tema correcto
+
+SÉ JUSTO pero ESTRICTO CON RELEVANCIA: Evalúa objetivamente si cumple con lo pedido.""",
             
             'lenient': """
 🟢 NIVEL DE EVALUACIÓN: SUAVE
 
 CRITERIOS DE CALIFICACIÓN:
-- Califica 70-80% si demuestra comprensión BÁSICA del tema
-- Califica 85-95% si el contenido es relevante y muestra esfuerzo
-- Valora el esfuerzo, la participación y el intento de cumplir las instrucciones
-- Enfócate en reforzar lo POSITIVO más que en señalar deficiencias
-- Sé tolerante con imprecisiones menores si la idea general es correcta
-- Reconoce cualquier conexión válida con el tema asignado
+- **REQUISITO MÍNIMO:** El contenido DEBE estar relacionado con el tema asignado (al menos 60% del contenido)
+- Si habla de un tema TOTALMENTE DIFERENTE: califica 0-40% (aunque se esfuerce)
+- Si toca el tema pero superficialmente: califica 50-70%
+- Si el contenido es relevante al tema y muestra esfuerzo: califica 70-85%
+- Si demuestra buena comprensión del tema: califica 85-95%
 
-SÉ COMPRENSIVO: Busca aspectos positivos y da crédito por el esfuerzo demostrado."""
+IMPORTANTE - VERIFICACIÓN TEMÁTICA:
+✅ SI habla del tema asignado → Valora el esfuerzo y sé generoso (70-95%)
+❌ SI habla de OTRO tema completamente → Califica bajo (0-40%) sin importar el esfuerzo
+⚠️ SI menciona el tema pero divaga mucho → Califica medio (50-70%)
+
+ENFOQUE:
+- Valora el esfuerzo y participación cuando SÍ aborda el tema correcto
+- Sé tolerante con imprecisiones menores si está en el tema
+- Reconoce cualquier conexión válida con el tema asignado
+- Pero NO recompenses hablar de un tema totalmente diferente
+
+SÉ COMPRENSIVO pero VERIFICA QUE HABLE DEL TEMA: Busca aspectos positivos cuando el contenido es relevante."""
         }
         
         return instructions.get(strictness_level, instructions['moderate'])
@@ -246,19 +282,27 @@ SÉ COMPRENSIVO: Busca aspectos positivos y da crédito por el esfuerzo demostra
     def _get_system_prompt(self) -> str:
         """Prompt del sistema que define el rol de la IA"""
         return """Eres un evaluador académico experto especializado en:
-- Análisis de coherencia y relevancia en exposiciones orales
+- Análisis de coherencia y relevancia temática en exposiciones orales
 - Evaluación de comprensión y profundidad de contenido
 - Retroalimentación constructiva y específica para estudiantes
 
 Tu objetivo es evaluar objetivamente si lo que el estudiante dijo (según la transcripción) 
 es coherente con las instrucciones de la asignación que se le dio.
 
+⚠️ VERIFICACIÓN TEMÁTICA PRIORITARIA:
+1. PRIMERO: Verifica si el estudiante habla del tema correcto asignado
+2. SEGUNDO: Si el tema es correcto, evalúa la profundidad y calidad
+3. TERCERO: Si el tema es incorrecto, califica bajo independiente del esfuerzo
+
 IMPORTANTE:
-- Sé justo pero exigente
+- La RELEVANCIA TEMÁTICA es el criterio MÁS IMPORTANTE (40% del peso)
+- NO des buenas calificaciones si habla de un tema completamente diferente
+- Valora el esfuerzo SOLO cuando está enfocado en el tema correcto
+- Sé justo pero exigente con la coherencia temática
 - Proporciona feedback específico y útil
-- Detecta si el estudiante comprendió realmente el tema
-- Identifica si el contenido es relevante o si divaga
-- Reconoce tanto fortalezas como áreas de mejora"""
+- Detecta si el estudiante comprendió realmente el tema ASIGNADO
+- Identifica claramente si el contenido es relevante o si divaga
+- Reconoce fortalezas solo cuando están relacionadas con el tema correcto"""
     
     def _build_evaluation_prompt(
         self,
@@ -306,22 +350,40 @@ Evalúa la coherencia entre lo que el estudiante dijo y las instrucciones de la 
 📊 CRITERIOS DE EVALUACIÓN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+⚠️ PASO 1 - VERIFICACIÓN TEMÁTICA (CRÍTICO):
+Antes de evaluar calidad, verifica si el estudiante habla del tema correcto:
+- ✅ ¿El contenido se relaciona directamente con "{assignment_title}"?
+- ✅ ¿Al menos 60-70% de lo que dijo es relevante al tema asignado?
+- ❌ ¿Habla de un tema completamente diferente?
+- ⚠️ ¿Menciona el tema pero dedica la mayoría del tiempo a otros temas?
+
+SI HABLA DE OTRO TEMA → Califica MUY BAJO en "COHERENCIA TEMÁTICA" (0-40%)
+SI ESTÁ EN EL TEMA CORRECTO → Evalúa la profundidad y calidad
+
 Evalúa de 0-100 cada criterio:
 
-1. **COHERENCIA TEMÁTICA (40%):**
-   - ¿Aborda el tema/instrucciones de la asignación?
-   - ¿Se mantiene enfocado o divaga?
-   - ¿El contenido es pertinente?
+1. **COHERENCIA TEMÁTICA (40% del peso total):**
+   🎯 CRITERIO MÁS IMPORTANTE
+   - ¿Habla específicamente del tema asignado o de otro tema?
+   - ¿Se mantiene enfocado en el tema correcto o divaga a otros temas?
+   - ¿El contenido es pertinente a las instrucciones dadas?
+   
+   ESCALAS DE CALIFICACIÓN:
+   0-30: Habla de un tema totalmente diferente
+   40-50: Menciona el tema pero mayormente habla de otras cosas
+   60-70: Aborda el tema pero superficialmente o con divagaciones
+   75-85: Desarrolla bien el tema asignado con buen enfoque
+   90-100: Dominio excepcional del tema correcto, totalmente enfocado
 
 2. **COMPRENSIÓN Y PROFUNDIDAD (30%):**
-   - ¿Demuestra comprensión del tema?
-   - ¿Incluye detalles, ejemplos o datos?
-   - ¿Es superficial o profundo?
+   - ¿Demuestra comprensión del tema ASIGNADO (no de otros temas)?
+   - ¿Incluye detalles, ejemplos o datos relevantes?
+   - ¿Es superficial o profundo en el tema correcto?
 
 3. **RELEVANCIA DEL CONTENIDO (20%):**
-   - ¿La información aportada es valiosa?
-   - ¿Responde a lo que se pedía?
-   - ¿Evita contenido irrelevante?
+   - ¿La información aportada es valiosa para el tema asignado?
+   - ¿Responde a lo que se pedía en las instrucciones?
+   - ¿Evita contenido irrelevante o tangencial?
 
 4. **ESTRUCTURA Y CLARIDAD (10%):**
    - ¿El discurso tiene estructura lógica?
