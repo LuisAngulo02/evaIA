@@ -24,6 +24,14 @@ except ImportError:
     print("⚠️ MediaPipe no está instalado. Usando OpenCV básico...")
 
 try:
+    from insightface.app import FaceAnalysis
+    INSIGHTFACE_AVAILABLE = True
+    print("✅ InsightFace disponible - MEJOR modelo de reconocimiento facial")
+except ImportError:
+    INSIGHTFACE_AVAILABLE = False
+    print("⚠️ InsightFace no disponible")
+
+try:
     from deepface import DeepFace
     DEEPFACE_AVAILABLE = True
     print("✅ DeepFace disponible - usando embeddings faciales profesionales")
@@ -60,6 +68,20 @@ class FaceDetectionService:
         self.sample_rate = sample_rate
         self.known_face_encodings = []
         self.participant_data = []
+        
+        # Inicializar InsightFace (MUCHO mejor que DeepFace)
+        self.face_analyzer = None
+        if INSIGHTFACE_AVAILABLE:
+            try:
+                self.face_analyzer = FaceAnalysis(
+                    name='buffalo_l',  # Modelo más preciso
+                    providers=['CPUExecutionProvider']
+                )
+                self.face_analyzer.prepare(ctx_id=0, det_size=(640, 640))
+                print("✅ InsightFace inicializado correctamente")
+            except Exception as e:
+                print(f"⚠️ Error inicializando InsightFace: {e}")
+                self.face_analyzer = None
         
         # Configuración personalizada del docente
         if teacher:
@@ -102,97 +124,13 @@ class FaceDetectionService:
             logger.warning("⚠️ Usando OpenCV básico (detección simple)")
             return self._process_video_opencv_fallback(video_path)
     
-    def _process_video_mediapipe(self, video_path, presentation_id=None):
-        """
-        Método con MediaPipe - detecta múltiples rostros en tiempo real (mejor opción)
-        """
-        logger.info(f"🎥 Iniciando detección de rostros con MediaPipe: {video_path}")
-        logger.info(f"🔧 Parámetros de detección:")
-        logger.info(f"   - Tolerance: {self.tolerance}")
-        logger.info(f"   - Sample rate: {self.sample_rate}")
-        
-        try:
-            cap = cv2.VideoCapture(video_path)
-            
-            if not cap.isOpened():
-                raise Exception(f"No se pudo abrir el video: {video_path}")
-            
-            # Obtener información del video
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            duration = total_frames / fps if fps > 0 else 0
-            
-            logger.info(f"📊 Video: {total_frames} frames, {fps:.2f} FPS, {duration:.2f}s duración")
-            
-            if fps <= 0:
-                logger.error(f"❌ FPS inválido: {fps}. No se puede procesar el video.")
-                raise Exception(f"FPS inválido: {fps}")            # Procesar frames
-            frame_count = 0
-            processed_frames = 0
-            face_detections = []
-            
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                # Procesar solo cada N frames para optimizar
-                if frame_count % self.sample_rate == 0:
-                    timestamp = frame_count / fps
-                    faces = self._detect_faces_in_frame(frame, timestamp)
-                    
-                    if faces:
-                        face_detections.extend(faces)
-                        processed_frames += 1
-                    
-                    # Log de progreso cada 100 frames procesados
-                    if processed_frames % 100 == 0:
-                        progress = (frame_count / total_frames) * 100
-                        logger.info(f"⏳ Progreso: {progress:.1f}% ({processed_frames} frames procesados)")
-                
-                frame_count += 1
-            
-            cap.release()
-            logger.info(f"✅ Detección completada: {len(face_detections)} rostros detectados en {processed_frames} frames")
-            
-            # Agrupar rostros similares en participantes
-            participants = self._cluster_faces(face_detections, fps, duration)
-            
-            # Calcular estadísticas
-            total_detection_time = sum(p['time_seconds'] for p in participants)
-            
-            for participant in participants:
-                participant['percentage'] = (
-                    (participant['time_seconds'] / total_detection_time * 100) 
-                    if total_detection_time > 0 else 0
-                )
-            
-            # Calcular score de equidad
-            score = self._calculate_participation_score(participants)
-            
-            result = {
-                'success': True,
-                'participants': participants,
-                'score': score,
-                'total_participants': len(participants),
-                'video_duration': duration,
-                'frames_analyzed': processed_frames,
-                'faces_detected': len(face_detections)
-            }
-            
-            logger.info(f"🎯 Resultado: {len(participants)} participantes identificados, Score: {score:.1f}/100")
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"❌ Error en detección de rostros: {str(e)}", exc_info=True)
-            return {
-                'success': False,
-                'error': str(e),
-                'participants': [],
-                'score': 0,
-                'total_participants': 0
-            }
+    # MÉTODO OBSOLETO - NO USAR - La versión V12 correcta está más abajo (línea ~760)
+    # def _process_video_mediapipe(self, video_path, presentation_id=None):
+    #     """
+    #     Método con MediaPipe - detecta múltiples rostros en tiempo real (mejor opción)
+    #     OBSOLETO - USAR LA VERSIÓN V12 MÁS ABAJO
+    #     """
+    #     pass
     
     def _calculate_visual_similarity(self, face1, face2):
         """
@@ -254,51 +192,42 @@ class FaceDetectionService:
     
     def _extract_face_embeddings(self, face_image_rgb, debug=False):
         """
-        Extrae embeddings faciales usando DeepFace con modelo Facenet
-        
-        Args:
-            face_image_rgb: Imagen del rostro en formato RGB (numpy array)
-            debug: Si True, imprime información detallada
-            
-        Returns:
-            numpy.ndarray: Vector de 128 dimensiones (embeddings faciales)
-                          None si no se pudo extraer
+        Extrae embeddings faciales usando InsightFace (MEJOR opción)
+        Si InsightFace no está disponible, usa Facenet512
         """
+        # PRIORIDAD 1: InsightFace (EL MEJOR)
+        if self.face_analyzer is not None:
+            try:
+                faces = self.face_analyzer.get(face_image_rgb)
+                if len(faces) > 0:
+                    return faces[0].embedding
+            except:
+                pass
+        
+        # FALLBACK: Facenet512 con DeepFace
         try:
             if not DEEPFACE_AVAILABLE:
-                if debug:
-                    logger.warning("⚠️ DeepFace no disponible, usando geometría básica")
                 return None
             
-            # Guardar temporalmente la imagen
             import tempfile
             with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
                 tmp_path = tmp.name
                 cv2.imwrite(tmp_path, cv2.cvtColor(face_image_rgb, cv2.COLOR_RGB2BGR))
             
             try:
-                # Extraer embeddings con Facenet (128 dimensiones)
                 embedding_objs = DeepFace.represent(
                     img_path=tmp_path,
-                    model_name="Facenet",  # Modelo profesional (128-dim)
-                    enforce_detection=False,  # No falla si no detecta rostro
-                    detector_backend="skip"  # Saltar detección (ya tenemos el rostro)
+                    model_name="Facenet512",
+                    enforce_detection=False,
+                    detector_backend="skip"
                 )
                 
-                # Limpiar archivo temporal
                 os.unlink(tmp_path)
                 
                 if len(embedding_objs) == 0:
-                    if debug:
-                        logger.warning("⚠️ No se pudieron extraer embeddings")
                     return None
                 
-                embedding = np.array(embedding_objs[0]["embedding"])
-                
-                if debug:
-                    logger.info(f"✅ Embeddings extraídos: vector de {len(embedding)} dimensiones (Facenet)")
-                
-                return embedding
+                return np.array(embedding_objs[0]["embedding"])
                 
             except Exception as e:
                 # Limpiar archivo temporal en caso de error
@@ -752,6 +681,9 @@ class FaceDetectionService:
         """
         Método con MediaPipe - detecta múltiples rostros y los rastrea
         """
+        print("\n" + "🔥"*40)
+        print("🚀🚀🚀 VERSIÓN V12 ACTIVADA - DEEPFACE + MEDIAPIPE 🚀🚀🚀")
+        print("🔥"*40 + "\n")
         logger.info(f" Usando detección MediaPipe para múltiples participantes")
         
         try:
@@ -788,6 +720,16 @@ class FaceDetectionService:
             face_tracks = []
             next_face_id = 1
             
+            print(f"\n🎬 INICIANDO TRACKING DE ROSTROS:")
+            print(f"   Modelo: InsightFace buffalo_l (512-dim, MEJOR precisión)")
+            print(f"   Técnica: Multi-Sample Template (MAX + P75)")
+            print(f"   Threshold tracking: 0.30 (InsightFace es MUY discriminativo)")
+            print(f"   Threshold template update: 0.20")
+            print(f"   Threshold fusión: 0.15")
+            print(f"   Max templates por persona: 5")
+            print(f"   Ventana temporal: 3.0s")
+            print(f"   Rechazo si MAX distance > 0.30\n")
+            
             frame_count = 0
             processed_frames = 0
             frames_with_detections = 0  # Contador de frames con rostros detectados
@@ -812,21 +754,13 @@ class FaceDetectionService:
                     
                     if results.detections:
                         current_faces = []
-                        frames_with_detections += 1  # Incrementar contador
-                        
-                        # Log detallado de detecciones (primeros 50 frames para no saturar)
-                        if processed_frames < 50:
-                            logger.info(f"⭐ Frame {frame_count} (t={timestamp:.1f}s): {len(results.detections)} rostro(s) DETECTADO(S) por MediaPipe")
+                        frames_with_detections += 1
                         
                         for detection in results.detections:
                             # Verificar score de confianza
                             confidence = detection.score[0]
-                            if processed_frames < 50:
-                                logger.info(f"   📊 Confianza del rostro: {confidence:.3f}")
                             
-                            if confidence < 0.40:  # Umbral MUY permisivo de confianza
-                                if processed_frames < 50:
-                                    logger.warning(f"   🚫 DESCARTADO por baja confianza: {confidence:.3f} < 0.40")
+                            if confidence < 0.40:
                                 continue
                             
                             # Obtener bounding box
@@ -838,28 +772,15 @@ class FaceDetectionService:
                             w = int(bboxC.width * iw)
                             h = int(bboxC.height * ih)
                             
-                            # Filtro principal: Solo verificar que sea un rostro humano real
-                            # Permitir rostros de cualquier tamaño y en cualquier posición
-                            
                             # Verificación con Face Mesh (detecta características faciales humanas)
-                            # Extraer región del rostro para verificación
                             face_roi = frame_rgb[max(0, y):min(ih, y+h), max(0, x):min(iw, x+w)]
                             if face_roi.size > 0:
                                 face_mesh_results = face_mesh.process(face_roi)
-                                # Si Face Mesh no detecta landmarks faciales, probablemente no es un rostro humano
                                 if not face_mesh_results.multi_face_landmarks:
-                                    if processed_frames < 50:
-                                        logger.warning(f"   🚫 DESCARTADO: Sin características faciales humanas (Face Mesh)")
                                     continue
-                                elif processed_frames < 50:
-                                    logger.info(f"   ✅ Face Mesh: Rostro humano confirmado")
                             
                             center_x = x + w // 2
                             center_y = y + h // 2
-                            
-                            # ✅ Rostro humano real detectado
-                            if processed_frames < 50:
-                                logger.info(f"   ✅ ACEPTADO: Rostro humano válido - conf={confidence:.3f}, size={w}x{h}, pos=({x},{y})")
                             
                             current_faces.append({
                                 'center': (center_x, center_y),
@@ -868,10 +789,6 @@ class FaceDetectionService:
                                 'frame': frame_count,
                                 'confidence': confidence
                             })
-                        
-                        # Log de rostros aceptados en este frame
-                        if processed_frames < 50:
-                            logger.info(f"   🎯 Total rostros aceptados en este frame: {len(current_faces)}")
                         
                         # Actualizar tracks con algoritmo mejorado (distancia + similitud visual)
                         frame_diagonal = np.sqrt(iw**2 + ih**2)
@@ -902,6 +819,15 @@ class FaceDetectionService:
                             best_match = None
                             best_score = float('inf')  # Menor es mejor
                             
+                            # Extraer embedding del rostro actual PRIMERO
+                            current_embedding = None
+                            face_roi_rgb = frame_rgb[max(0, y):min(ih, y+h), max(0, x):min(iw, x+w)]
+                            if face_roi_rgb.size > 0:
+                                current_embedding = self._extract_face_embeddings(
+                                    face_roi_rgb,
+                                    debug=False
+                                )
+                            
                             for i, track in enumerate(face_tracks):
                                 if i in used_tracks:
                                     continue
@@ -923,71 +849,98 @@ class FaceDetectionService:
                                 )
                                 spatial_score = min(1.0, spatial_distance / spatial_threshold)
                                 
-                                # 2. Calcular similitud visual usando histograma de color
-                                try:
-                                    reference_img = track.get('face_image')
-                                    if reference_img is not None and reference_img.size > 0:
-                                        visual_score = self._calculate_visual_similarity(
-                                            reference_img, 
-                                            current_face_img
-                                        )
-                                    else:
-                                        visual_score = 1.0  # Asignar score neutro si no hay referencia
-                                except Exception as e:
-                                    visual_score = 1.0
+                                # 2. PRIORIDAD: Comparar embeddings si están disponibles
+                                # TÉCNICA: Multi-Sample Matching con MEDIANA (más robusto que mínimo)
+                                embedding_score = None
+                                if current_embedding is not None:
+                                    embeddings_list = track.get('embeddings_list', [])
+                                    if len(embeddings_list) > 0:
+                                        # Calcular distancias contra todos los embeddings guardados
+                                        distances = []
+                                        for stored_emb in embeddings_list:
+                                            dist = self._compare_face_geometry(
+                                                current_embedding,
+                                                stored_emb,
+                                                debug=False
+                                            )
+                                            distances.append(dist)
+                                        
+                                        # ESTRATEGIA con InsightFace (EL MÁS DISCRIMINATIVO):
+                                        # InsightFace da la mejor separación entre personas
+                                        # Personas diferentes: scores típicamente > 0.40
+                                        # Misma persona: scores típicamente < 0.30
+                                        max_distance = max(distances)
+                                        
+                                        # Si el peor match está > 0.30, rechazar completamente
+                                        if max_distance > 0.30:
+                                            embedding_score = 1.0  # Forzar rechazo
+                                        else:
+                                            # Si todos los templates están bien, usar P75
+                                            embedding_score = np.percentile(distances, 75)
                                 
-                                # 3. Score combinado: 60% visual + 40% espacial
-                                # Menor score = mejor match
-                                combined_score = (0.6 * visual_score) + (0.4 * spatial_score)
+                                # 3. Si no hay embeddings, usar visual (backup)
+                                visual_score = 1.0
+                                if embedding_score is None:
+                                    try:
+                                        reference_img = track.get('face_image')
+                                        if reference_img is not None and reference_img.size > 0:
+                                            visual_score = self._calculate_visual_similarity(
+                                                reference_img, 
+                                                current_face_img
+                                            )
+                                    except Exception as e:
+                                        pass
+                                
+                                # 4. Score combinado PRIORIZA embeddings
+                                if embedding_score is not None:
+                                    # Usar SOLO embeddings (más confiable que histogramas)
+                                    combined_score = embedding_score
+                                else:
+                                    # Fallback: 60% visual + 40% espacial
+                                    combined_score = (0.6 * visual_score) + (0.4 * spatial_score)
                                 
                                 if combined_score < best_score:
                                     best_score = combined_score
                                     best_match = i
                             
-                            # Threshold ESTRICTO: score < 0.40 = mismo rostro
-                            # V11 se encargará de fusionar duplicados, aquí preferimos crear tracks separados
-                            # Reducido de 0.55 a 0.40 para detectar personas diferentes como tracks separados
-                            if best_match is not None and best_score < 0.40:
+                            # Threshold OPTIMIZADO para tracking con InsightFace:
+                            # - 0.30 con embeddings: InsightFace tiene EXCELENTE separación
+                            #   Scores > 0.30 indican personas diferentes
+                            # - 0.40 con histogramas: menos confiable, más permisivo
+                            # La fusión posterior (0.15) eliminará duplicados verdaderos de la MISMA persona
+                            tracking_threshold = 0.30 if current_embedding is not None else 0.40
+                            
+                            if best_match is not None and best_score < tracking_threshold:
+                                # Asignar a track existente
                                 face_tracks[best_match]['appearances'].append(face)
                                 used_tracks.add(best_match)
+                                
+                                # TÉCNICA: Template Update - agregar embedding si es MUY similar
+                                # Con InsightFace y threshold 0.30, solo agregar templates con score < 0.20
+                                # Esto mantiene templates muy puros de la misma persona
+                                if current_embedding is not None and best_score < 0.20:
+                                    embeddings_list = face_tracks[best_match].get('embeddings_list', [])
+                                    embeddings_list.append(current_embedding)
+                                    # Mantener solo los últimos 5 embeddings (memoria limitada)
+                                    face_tracks[best_match]['embeddings_list'] = embeddings_list[-5:]
                             else:
-                                # Nuevo rostro detectado - capturar foto Y extraer embeddings
+                                # Nuevo rostro detectado - YA tenemos el embedding extraído arriba
                                 face_image = current_face_img.copy()
                                 
-                                # Extraer embeddings faciales usando face_recognition (128-dim)
-                                face_roi_rgb = frame_rgb[max(0, y):min(ih, y+h), max(0, x):min(iw, x+w)]
-                                face_embeddings = None
-                                
-                                if face_roi_rgb.size > 0:
-                                    face_embeddings = self._extract_face_embeddings(
-                                        face_roi_rgb,
-                                        debug=False
-                                    )
+                                # Inicializar lista de embeddings para Multi-Sample Matching
+                                embeddings_list = [current_embedding] if current_embedding is not None else []
                                 
                                 face_tracks.append({
                                     'id': next_face_id,
                                     'label': f'Persona {next_face_id}',
                                     'appearances': [face],
-                                    'face_image': face_image,  # Imagen del rostro
-                                    'landmarks': face_embeddings  # Embeddings 128-dim para V12 multi-sample clustering
+                                    'face_image': face_image,
+                                    'embeddings_list': embeddings_list,
+                                    'landmarks': current_embedding
                                 })
-                                
-                                if face_embeddings is not None:
-                                    logger.info(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto + embeddings capturados (128-dim)")
-                                else:
-                                    logger.warning(f"👤 Persona {next_face_id} detectada en t={timestamp:.1f}s - foto capturada (sin embeddings)")
                                 next_face_id += 1
-                    else:
-                        # NO se detectaron rostros en este frame
-                        if processed_frames < 50:
-                            logger.warning(f"❌ Frame {frame_count} (t={timestamp:.1f}s): MediaPipe NO detectó ningún rostro")
                     
                     processed_frames += 1
-                    
-                    # Log de progreso más frecuente
-                    if processed_frames % 30 == 0:
-                        progress = (frame_count / total_frames) * 100
-                        logger.info(f"⏳ Progreso: {progress:.1f}% ({frame_count}/{total_frames} frames) - {len(face_tracks)} persona(s) detectada(s)")
                 
                 frame_count += 1
             
@@ -995,79 +948,36 @@ class FaceDetectionService:
             face_detection.close()
             face_mesh.close()
             
-            logger.info(f"")
-            logger.info(f"=" * 80)
-            logger.info(f"✅ DETECCIÓN FINALIZADA: {len(face_tracks)} tracks encontrados")
-            logger.info(f"📹 Frames procesados: {processed_frames}")
-            logger.info(f"✅ Frames CON rostros: {frames_with_detections} ({frames_with_detections/processed_frames*100:.1f}%)")
-            logger.info(f"❌ Frames SIN rostros: {processed_frames - frames_with_detections} ({(processed_frames - frames_with_detections)/processed_frames*100:.1f}%)")
-            logger.info(f"=" * 80)
-            
             # Mostrar detalles de cada track ANTES de fusionar
+            print("\n" + "🔵"*40)
+            print(f"📋 TRACKS DETECTADOS ANTES DE FUSIONAR: {len(face_tracks)}")
             for idx, track in enumerate(face_tracks):
-                logger.info(f"Track {idx+1}: {len(track['appearances'])} apariciones")
+                print(f"   Track {idx+1}: {len(track['appearances'])} apariciones")
+            print("🔵"*40 + "\n")
             
             # POST-PROCESAMIENTO: Fusionar tracks duplicados
-            logger.info(f"")
-            logger.info(f"🔄 Iniciando fusión de tracks duplicados...")
+            print("\n⏳ LLAMANDO A _merge_duplicate_tracks()...\n")
             face_tracks = self._merge_duplicate_tracks(face_tracks)
-            logger.info(f"✅ Después de fusión: {len(face_tracks)} tracks únicos")
-            logger.info(f"")
+            print(f"\n✅ FUSIÓN COMPLETADA: {len(face_tracks)} tracks finales\n")
             
-            # Mostrar TODOS los tracks detectados (incluso con pocas apariciones)
-            logger.info(f"=" * 80)
-            logger.info(f"📊 RESUMEN DE DETECCIONES:")
-            logger.info(f"=" * 80)
-            total_appearances = 0
-            for track in face_tracks:
-                appearances = len(track['appearances'])
-                total_appearances += appearances
-                time_seconds = (appearances * sample_rate) / fps
-                logger.info(f"   🔍 {track['label']}: {appearances} apariciones ({time_seconds:.1f}s)")
-            
-            logger.info(f"")
-            logger.info(f"📈 Total de apariciones registradas: {total_appearances}")
-            logger.info(f"📹 Total de frames procesados: {processed_frames}")
-            if processed_frames > 0:
-                logger.info(f"📊 Promedio de rostros por frame procesado: {total_appearances / processed_frames:.2f}")
-            logger.info(f"")
-            
-            # Filtrar tracks con muy pocas apariciones o tiempo muy corto (ruido)
-            # MÍNIMO 0.3 SEGUNDOS de tiempo en pantalla para ser considerado participante válido
-            min_time_seconds = 0.3  # Reducido de 0.5 a 0.3 para detectar apariciones MUY breves
+            # Filtrar tracks con muy pocas apariciones (ruido)
+            min_time_seconds = 0.3
             valid_tracks = []
             
-            logger.info(f"=" * 80)
-            logger.info(f"🔍 FILTRADO DE TRACKS (mínimo {min_time_seconds}s):")
-            logger.info(f"🎬 FPS del video: {fps:.2f}")
-            logger.info(f"📊 Sample rate: {sample_rate} (procesa 1 de cada {sample_rate} frames)")
-            logger.info(f"=" * 80)
-            
             for track in face_tracks:
                 appearances = len(track['appearances'])
                 time_seconds = (appearances * sample_rate) / fps
-                
-                logger.info(f"")
-                logger.info(f"🔍 Evaluando {track['label']}:")
-                logger.info(f"   📊 Apariciones: {appearances}")
-                logger.info(f"   🧮 Cálculo: ({appearances} × {sample_rate}) / {fps:.2f} = {time_seconds:.3f}s")
-                logger.info(f"   ⚖️  Comparación: {time_seconds:.3f}s >= {min_time_seconds}s? {time_seconds >= min_time_seconds}")
                 
                 if time_seconds >= min_time_seconds:
                     valid_tracks.append(track)
-                    logger.info(f"   ✅ ACEPTADO")
-                else:
-                    logger.info(f"   🚫 DESCARTADO (tiempo insuficiente)")
             
-            logger.info(f"")
-            logger.info(f"✅ Participantes válidos totales: {len(valid_tracks)}")
-            logger.info(f"")
+            print(f"✅ Participantes válidos: {len(valid_tracks)}\n")
             
             # Crear directorio para fotos si no existe
+            photos_dir = None
             if presentation_id:
                 photos_dir = os.path.join(settings.MEDIA_ROOT, 'participant_photos', str(presentation_id))
                 os.makedirs(photos_dir, exist_ok=True)
-                logger.info(f"📁 Directorio de fotos: {photos_dir}")
             
             # Analizar resultados
             participants = []
@@ -1082,7 +992,7 @@ class FaceDetectionService:
                 
                 # Guardar foto del participante
                 photo_filename = None
-                if presentation_id and 'face_image' in track and track['face_image'] is not None:
+                if presentation_id and photos_dir and 'face_image' in track and track['face_image'] is not None:
                     photo_filename = f"participant_{idx + 1}.jpg"
                     photo_path = os.path.join(photos_dir, photo_filename)
                     
