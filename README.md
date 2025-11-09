@@ -42,7 +42,7 @@ Es **crucial** utilizar Python 3.11.8 para garantizar la compatibilidad con toda
 python --version
 
 # Crear el entorno virtual
-python -m venv venv
+py -3.11 -m venv venv
 
 # Activar el entorno virtual
 .\venv\Scripts\Activate.ps1
