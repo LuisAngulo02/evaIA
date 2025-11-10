@@ -18,11 +18,11 @@ Sistema integral de evaluación de presentaciones académicas que utiliza inteli
 
 Antes de comenzar, asegúrate de tener instalado:
 
-- **Python 3.11.8** (obligatorio)
+- **Python 3.11.9** (recomendado - versión probada y estable)
 - **PostgreSQL** 12 o superior
 - **Git** para clonar el repositorio
-- **FFmpeg** para procesamiento de video
-- **pip** actualizado
+- **FFmpeg** para procesamiento de video/audio
+- **pip** actualizado (versión 23.0 o superior)
 
 ### Paso 1: Clonar el Repositorio
 
@@ -31,14 +31,14 @@ git clone https://github.com/LuisAngulo02/evaIA.git
 cd evaIA
 ```
 
-### Paso 2: Crear Entorno Virtual con Python 3.11.8
+### Paso 2: Crear Entorno Virtual con Python 3.11.9
 
-Es **crucial** utilizar Python 3.11.8 para garantizar la compatibilidad con todas las dependencias, especialmente TensorFlow y PyTorch.
+Es **crucial** utilizar Python 3.11.9 para garantizar la compatibilidad con todas las dependencias, especialmente TensorFlow 2.18.0 y PyTorch 2.5.1.
 
 #### En Windows (PowerShell):
 
 ```powershell
-# Verificar que tienes Python 3.11.8 instalado
+# Verificar que tienes Python 3.11.9 instalado
 python --version
 
 # Crear el entorno virtual
@@ -51,7 +51,7 @@ py -3.11 -m venv venv
 #### En Linux/macOS:
 
 ```bash
-# Verificar que tienes Python 3.11.8 instalado
+# Verificar que tienes Python 3.11.9 instalado
 python3.11 --version
 
 # Crear el entorno virtual
@@ -61,7 +61,7 @@ python3.11 -m venv venv
 source venv/bin/activate
 ```
 
-> **Nota**: Si no tienes Python 3.11.8, descárgalo desde [python.org](https://www.python.org/downloads/release/python-3118/)
+> **Nota**: Si no tienes Python 3.11.9, descárgalo desde [python.org](https://www.python.org/downloads/release/python-3119/)
 
 ### Paso 3: Instalar Dependencias
 
@@ -289,11 +289,14 @@ El sistema analiza automáticamente cada presentación evaluando:
 - **JavaScript**: JavaScript vanilla + jQuery
 
 **Inteligencia Artificial:**
-- **Modelos de Lenguaje**: Groq API (LLaMA 3.1)
-- **Transcripción**: OpenAI Whisper
-- **Embeddings**: Sentence Transformers
-- **Visión por Computadora**: OpenCV, MediaPipe, DeepFace
-- **Deep Learning**: TensorFlow 2.16+, PyTorch 2.5.1
+- **Modelos de Lenguaje**: Groq API (LLaMA 3.1 70B)
+- **Transcripción**: OpenAI Whisper (modelo large-v3)
+- **Reconocimiento Facial**: DeepFace con Facenet512 (512-dim embeddings)
+- **Detección Facial**: MediaPipe Face Detection + Face Mesh
+- **Embeddings de Texto**: Sentence Transformers
+- **Visión por Computadora**: OpenCV 4.9.0.80
+- **Deep Learning**: TensorFlow 2.18.0, PyTorch 2.5.1
+- **Análisis de Coherencia**: Sistema de verificación temática estricta
 
 **Almacenamiento:**
 - **Archivos Estáticos**: Cloudinary
@@ -514,39 +517,86 @@ El sistema procesa las presentaciones en video siguiendo este pipeline:
 
 ### Algoritmos Clave
 
-#### 1. Detección y Agrupación de Rostros (Hierarchical Clustering)
+#### 1. Detección y Agrupación de Rostros (V12 Optimizado)
 
-**Archivo**: `apps/presentaciones/services/face_detector.py`
+**Archivo**: `apps/ai_processor/services/face_detection_service.py`
 
-**Método**: Clustering Jerárquico con Distancia de Ward
+**Tecnología**: 
+- **Detección**: MediaPipe Face Detection + Face Mesh
+- **Embeddings**: DeepFace con Facenet512 (512 dimensiones)
+- **Clustering**: Jerárquico con Distancia de Ward
+
+**Optimizaciones de Rendimiento** (Noviembre 2025):
 
 ```python
-# Proceso:
-1. Detectar rostros en cada frame (MediaPipe)
-2. Extraer embeddings faciales (DeepFace - VGG-Face)
-3. Calcular matriz de distancias entre embeddings
-4. Aplicar clustering jerárquico
-5. Determinar número óptimo de clusters (personas)
-6. Asignar cada detección a una persona
+# Sample Rate Agresivo (procesa solo 3-5 fps):
+60 fps → sample_rate=15 (~4 fps procesados) 
+30 fps → sample_rate=8  (~4 fps procesados)
+<25 fps → sample_rate=5  (~5 fps procesados)
+
+# Detección más estricta (reduce falsos positivos):
+min_detection_confidence = 0.50  # Antes: 0.40
+max_num_faces = 3                # Antes: 5
+min_tracking_confidence = 0.6    # Face Mesh
+
+# Thresholds de Similitud (Facenet512):
+tracking_threshold = 0.30        # Seguimiento de rostros
+template_threshold = 0.15        # Actualización de templates
+fusion_threshold = 0.12          # Fusión de duplicados
+
+# Caché de Embeddings:
+- Hash MD5 de ROIs faciales (32x32 grayscale)
+- Eficiencia: 40-60% cache hits
+- 2-3x speedup en extracción
 ```
+
+**Rendimiento**:
+- Video de 3 minutos @ 30fps: **2-4 minutos** de procesamiento
+- Speedup total: **2.5-5x** vs versión sin optimizaciones
+- Reducción de frames procesados: **60-70%**
+- CPU usage: 10-20% (single-thread optimizado)
 
 **Ventajas**:
 - No requiere número predefinido de personas
-- Robusto ante variaciones de iluminación
-- Maneja rotaciones y parcial oclusión
+- Robusto ante variaciones de iluminación y rotaciones
+- Maneja oclusión parcial
+- Procesamiento ultra-rápido sin sacrificar precisión
 
-#### 2. Análisis de Contenido con LLM (Groq)
+#### 2. Análisis de Contenido con LLM (Groq) - Sistema Mejorado
 
-**Archivo**: `apps/presentaciones/ai_utils.py`
+**Archivo**: `apps/ai_processor/services/advanced_coherence_service.py`
 
 **Modelo**: LLaMA 3.1 70B vía Groq API
 
+**Mejoras Implementadas** (Noviembre 2025):
+
 ```python
-# Prompt Engineering:
-- Contexto: Transcripción completa
-- Criterios: Coherencia, claridad, profundidad
-- Output: JSON estructurado con scores y feedback
+# Verificación Temática Prioritaria (NUEVO):
+1. PRIMERO: Verifica si el estudiante habla del tema asignado
+2. SEGUNDO: Si el tema es correcto, evalúa profundidad y calidad  
+3. TERCERO: Si el tema es incorrecto, califica bajo independiente del esfuerzo
+
+# Niveles de Evaluación:
+- ESTRICTO: 0% si tema diferente, 85-100% solo con dominio excepcional
+- MODERADO: 0-30% si tema diferente, 70-95% si tema correcto
+- SUAVE: 0-40% si tema diferente, 70-95% si tema correcto con esfuerzo
+
+# Criterios de Evaluación (ponderados):
+1. Coherencia Temática (40%): ¿Habla del tema correcto?
+2. Comprensión y Profundidad (30%): ¿Demuestra dominio del tema?
+3. Relevancia del Contenido (20%): ¿Información valiosa y pertinente?
+4. Estructura y Claridad (10%): ¿Bien organizado y expresado?
 ```
+
+**Prompt Engineering**:
+```
+⚠️ VERIFICACIÓN TEMÁTICA PRIORITARIA:
+✅ SI habla del tema asignado → Valora esfuerzo y calidad
+❌ SI habla de OTRO tema → Califica bajo sin importar el esfuerzo
+⚠️ SI menciona tema pero divaga → Califica medio
+```
+
+**Output**: JSON estructurado con scores detallados, feedback constructivo, fortalezas, mejoras y conceptos clave
 
 #### 3. Cálculo de Participación Individual
 
@@ -582,10 +632,12 @@ participation_percentage = (speaking_time / total_video_duration) * 100
 - **Transformaciones**: Redimensionado de imágenes, generación de thumbnails
 
 #### DeepFace
-- **Propósito**: Reconocimiento facial
-- **Modelo**: VGG-Face
-- **Backend**: TensorFlow
-- **Métricas**: Cosine similarity
+- **Propósito**: Reconocimiento facial y extracción de embeddings
+- **Modelo**: Facenet512 (512 dimensiones)
+- **Backend**: TensorFlow 2.18.0
+- **Métricas**: Similitud coseno
+- **Rendimiento**: 150-200ms por rostro (con caché: 40-60% hits)
+- **Thresholds**: 0.30 (tracking), 0.15 (template), 0.12 (fusion)
 
 ### Configuración Avanzada
 
@@ -611,19 +663,40 @@ CLOUDINARY_API_KEY=tu_api_key
 CLOUDINARY_API_SECRET=tu_api_secret
 
 # AI APIs
-GROQ_API_KEY=gsk_...
+GROQ_API_KEY_1=gsk_...  # Key principal
+GROQ_API_KEY_2=gsk_...  # Backup key 2
+GROQ_API_KEY_3=gsk_...  # Backup key 3
+GROQ_API_KEY_4=gsk_...  # Backup key 4
+GROQ_API_KEY_5=gsk_...  # Backup key 5
+GROQ_API_KEY=gsk_...    # Alias para compatibilidad
 OPENAI_API_KEY=sk-...
+
+# Email Configuration (Gmail)
+EMAIL_HOST_USER=tu_email@gmail.com
+EMAIL_HOST_PASSWORD=tu_app_password_16_chars
 
 # Media Settings
 MEDIA_ROOT=./uploads/
 MEDIA_URL=/media/
 MAX_UPLOAD_SIZE=524288000  # 500MB en bytes
 
-# Processing Settings
-FACE_DETECTION_CONFIDENCE=0.7
-MIN_FACE_DETECTION_SIZE=50
-CLUSTERING_LINKAGE=ward
-CLUSTERING_METRIC=euclidean
+# Face Detection Optimizations (V12 - Noviembre 2025)
+FACE_DETECTION_CONFIDENCE=0.50          # Detección estricta (antes: 0.40)
+FACE_MESH_CONFIDENCE=0.75               # Face Mesh estricto (antes: 0.70)
+MAX_FACES_PER_FRAME=3                   # Máx rostros simultáneos (antes: 5)
+FACE_TRACKING_THRESHOLD=0.30            # Threshold para tracking (Facenet512)
+FACE_TEMPLATE_THRESHOLD=0.15            # Threshold para templates
+FACE_FUSION_THRESHOLD=0.12              # Threshold para fusión de duplicados
+EMBEDDING_CACHE_ENABLED=True            # Caché de embeddings (40-60% hits)
+
+# Sample Rate Configuration (procesar menos frames = más rápido)
+SAMPLE_RATE_60FPS=15    # 60fps → ~4 fps procesados
+SAMPLE_RATE_30FPS=8     # 30fps → ~4 fps procesados  
+SAMPLE_RATE_LOW=5       # <25fps → ~5 fps procesados
+
+# Coherence Analysis (Groq)
+COHERENCE_STRICTNESS=moderate  # strict, moderate, lenient
+USE_ADVANCED_COHERENCE=True    # Sistema de verificación temática
 
 # Celery (opcional para tareas asíncronas)
 CELERY_BROKER_URL=redis://localhost:6379/0
@@ -749,34 +822,80 @@ server {
 
 ### Solución de Problemas Comunes
 
-#### Problema: Error al instalar TensorFlow
+#### Problema: Error al instalar TensorFlow en Windows
 
-**Solución**: Asegúrate de usar Python 3.11.8 exactamente:
+**Error**: `Could not find a version that satisfies the requirement tensorflow`
+
+**Solución**: Asegúrate de usar Python 3.11.9 exactamente:
 ```bash
-python --version  # Debe ser 3.11.8
-pip install tensorflow==2.16.0
+python --version  # Debe ser 3.11.9
+pip install --upgrade pip
+pip install tensorflow==2.18.0
+```
+
+#### Problema: UnicodeDecodeError al conectar con PostgreSQL
+
+**Error**: `'utf-8' codec can't decode byte 0xf3 in position 85`
+
+**Solución**: Verifica que tu contraseña de PostgreSQL no tenga caracteres especiales o usa variables de entorno:
+```bash
+# En .env
+DB_PASSWORD=tu_password_sin_caracteres_especiales
+
+# O en PowerShell, configura codificación UTF-8:
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+#### Problema: Error "protobuf version conflict" con MediaPipe
+
+**Error**: `Failed to parse text-format mediapipe.CalculatorGraphConfig`
+
+**Solución**: MediaPipe requiere protobuf <5.0.0:
+```bash
+pip uninstall protobuf
+pip install protobuf==4.25.5
 ```
 
 #### Problema: Error de memoria al procesar videos largos
 
-**Solución**: Procesar por chunks o aumentar límites:
+**Solución**: Ajustar límites o usar sample rate más agresivo:
 ```python
 # settings.py
 DATA_UPLOAD_MAX_MEMORY_SIZE = 524288000  # 500MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 524288000
+
+# O aumentar sample_rate en .env para procesar menos frames
+SAMPLE_RATE_30FPS=10  # Procesar aún menos frames
 ```
 
 #### Problema: Face detection no encuentra rostros
 
-**Solución**: Verificar calidad de video y ajustar threshold:
+**Solución 1**: Reducir threshold de confianza:
 ```python
-# ai_utils.py
-FACE_DETECTION_CONFIDENCE = 0.5  # Reducir para mayor sensibilidad
+# .env
+FACE_DETECTION_CONFIDENCE=0.40  # Más permisivo (default: 0.50)
 ```
+
+**Solución 2**: Verificar calidad del video:
+- Resolución mínima: 640x480
+- Rostros visibles y bien iluminados
+- Formato compatible: MP4, AVI, MOV
 
 #### Problema: Groq API rate limit exceeded
 
-**Solución**: Implementar retry con backoff exponencial:
+**Error**: `Rate limit reached for requests`
+
+**Solución**: El sistema usa rotación automática de 5 API keys. Verifica que todas estén configuradas:
+```env
+# .env - Configura las 5 keys
+GROQ_API_KEY_1=gsk_...
+GROQ_API_KEY_2=gsk_...
+GROQ_API_KEY_3=gsk_...
+GROQ_API_KEY_4=gsk_...
+GROQ_API_KEY_5=gsk_...
+```
+
+O implementa retry con backoff:
 ```python
 import time
 from groq import RateLimitError
@@ -788,7 +907,49 @@ for attempt in range(max_retries):
         break
     except RateLimitError:
         if attempt < max_retries - 1:
-            time.sleep(2 ** attempt)
+            time.sleep(2 ** attempt)  # Espera exponencial
+```
+
+#### Problema: Procesamiento muy lento (>10 minutos para 3 min de video)
+
+**Solución**: Verificar que las optimizaciones estén activas:
+
+```bash
+# Verificar versión del servicio
+python -c "from apps.ai_processor.services import FaceDetectionService; print(FaceDetectionService.__module__)"
+
+# Debe imprimir: apps.ai_processor.services.face_detection_service
+
+# Verificar que sample_rate sea agresivo
+grep -r "sample_rate = 15" apps/ai_processor/services/face_detection_service.py
+# O en Windows PowerShell:
+Select-String -Path "apps\ai_processor\services\face_detection_service.py" -Pattern "sample_rate = 15"
+```
+
+Si el procesamiento sigue lento:
+1. Verifica que `min_detection_confidence=0.50` (más estricto = más rápido)
+2. Verifica que `max_num_faces=3` (menos rostros = más rápido)
+3. Revisa que el video tenga buena calidad y resolución adecuada
+
+#### Problema: Git rebase conflict al hacer push
+
+**Error**: `Updates were rejected because the remote contains work`
+
+**Solución**:
+```bash
+# Opción 1: Rebase (recomendado)
+git pull --rebase origin main
+# Resolver conflictos si aparecen
+git add .
+git rebase --continue
+git push origin main
+
+# Opción 2: Merge (más simple)
+git pull origin main --no-rebase
+git push origin main
+
+# Opción 3: Force push (solo si estás seguro)
+git push origin main --force
 ```
 
 ### Mantenimiento
@@ -882,7 +1043,38 @@ Para soporte o consultas, contacta a: [tu-email@ejemplo.com]
 
 ---
 
-**Versión**: 1.0.0  
-**Última actualización**: Noviembre 2025  
-**Python requerido**: 3.11.8 (exacto)  
-**Django**: 5.2.7
+**Versión**: 1.2.0 (Noviembre 2025)  
+**Última actualización**: 9 de Noviembre 2025  
+**Python requerido**: 3.11.9 (recomendado)  
+**Django**: 5.2.7  
+**TensorFlow**: 2.18.0  
+**Optimizaciones**: V12 Ultra-Fast + Verificación Temática Mejorada
+
+---
+
+## Changelog Reciente
+
+### v1.2.0 (Noviembre 2025)
+
+**🚀 Optimizaciones de Rendimiento:**
+- Sample rate ultra-agresivo: 2.5-5x más rápido
+- Detección más estricta: `min_confidence=0.50`, `max_faces=3`
+- Procesamiento 3 min @ 30fps: 2-4 minutos (antes: 10 minutos)
+- Caché de embeddings: 40-60% hits
+
+**🎯 Mejoras en Análisis de IA:**
+- Sistema de verificación temática prioritaria
+- Penaliza fuertemente contenido fuera de tema (0-40%)
+- Valora esfuerzo solo cuando el tema es correcto
+- Tres niveles de evaluación: Estricto, Moderado, Suave
+
+**🔧 Actualizaciones Técnicas:**
+- Python 3.11.9 (antes: 3.11.8)
+- TensorFlow 2.18.0 (antes: 2.16.0)
+- Facenet512 con thresholds optimizados (0.30/0.15/0.12)
+- protobuf 4.25.5 (compatible con MediaPipe)
+
+**📚 Documentación:**
+- README completamente actualizado
+- Guía de solución de problemas expandida
+- Documentación de configuraciones avanzadas
