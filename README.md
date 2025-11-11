@@ -832,7 +832,6 @@ Para información técnica más detallada, consulta la carpeta `docs/`:
 
 - **ARQUITECTURA_SISTEMA.md**: Documentación completa de la arquitectura
 - **OPTIMIZACION_RENDIMIENTO.md**: Guías de optimización
-- **V11_HIERARCHICAL_CLUSTERING_SOLUCION_DEFINITIVA.md**: Detalles del algoritmo de clustering
 - **MEJORAS_DETECCION_ROSTROS.md**: Mejoras en detección facial
 
 ---
@@ -853,32 +852,7 @@ Si deseas contribuir al proyecto:
 
 Este proyecto es privado y confidencial. Todos los derechos reservados.
 
----
 
-## Autores
-
-- **Luis Angulo** - Desarrollo principal - [@LuisAngulo02](https://github.com/LuisAngulo02)
-
----
-
-## Contacto
-
-Para soporte o consultas, contacta a: [tu-email@ejemplo.com]
-
----
-
-## Roadmap
-
-### Próximas Funcionalidades
-
-- [ ] Soporte para presentaciones en vivo (streaming)
-- [ ] Análisis de emociones en tiempo real
-- [ ] Integración con Microsoft Teams / Zoom
-- [ ] App móvil (iOS/Android)
-- [ ] Soporte multiidioma completo
-- [ ] Dashboard avanzado con gráficos interactivos
-- [ ] Sistema de gamificación para estudiantes
-- [ ] API REST pública para integraciones
 
 ---
 
