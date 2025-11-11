@@ -377,12 +377,12 @@
                             <i class="fas fa-expand"></i>
                         </button>
                         {% if presentation.is_stored_in_cloud %}
-                            <a href="{{ presentation.cloudinary_url }}" class="video-action-btn" download title="Descargar">
-                                <i class="fas fa-download"></i>
+                            <a href="{{ presentation.cloudinary_url }}" class="video-action-btn" target="_blank" title="Ver video">
+                                <i class="fas fa-eye"></i>
                             </a>
                         {% else %}
-                            <a href="{{ presentation.video_file.url }}" class="video-action-btn" download title="Descargar">
-                                <i class="fas fa-download"></i>
+                            <a href="{{ presentation.video_file.url }}" class="video-action-btn" target="_blank" title="Ver video">
+                                <i class="fas fa-eye"></i>
                             </a>
                         {% endif %}
                         <button class="video-action-btn" onclick="shareVideo()" title="Compartir">
