@@ -470,18 +470,37 @@ class FaceDetectionService:
             
             print(f"   🧠 Usando embeddings Facenet512 (512-dim) + Similitud Coseno + Multi-Sample")
             
-            # ESTRATEGIA: Threshold FIJO conservador para Facenet512
-            # Basado en evaluaciones históricas: 0.12 minimiza fusiones incorrectas
-            optimal_threshold = 0.12  # Threshold fijo para Facenet512
-            strategy = "FIJO (0.12) - Facenet512 default"
+            # ESTRATEGIA ADAPTATIVA: Threshold basado en distribución de distancias
+            # - Si distancias están concentradas (std bajo): personas diferentes → threshold conservador
+            # - Si distancias dispersas (std alto): misma persona en movimiento → threshold agresivo
             
-            print(f"   📚 Usando threshold fijo de referencia para Facenet512")
+            # Analizar distribución de distancias
+            if std_dist < 0.05:
+                # Distribución muy concentrada → Personas CLARAMENTE diferentes
+                # Ejemplo: mean=0.21, std=0.00 → 2 personas diferentes
+                optimal_threshold = mean_dist - 0.05  # Conservador: por debajo de la media
+                strategy = "CONSERVADOR - Personas diferentes detectadas (baja variación)"
+                print(f"   ✅ Distancias concentradas (std={std_dist:.3f}) → Personas diferentes")
+            elif mean_dist > 0.27:
+                # Media muy alta → Misma persona con variación extrema
+                # Ejemplo: mean=0.30, std=0.08 → 1 persona rotando 360°
+                optimal_threshold = 0.32  # Agresivo pero controlado
+                strategy = "AGRESIVO - Una persona con movimiento extremo (media alta)"
+                print(f"   ⚠️ Distancia media alta ({mean_dist:.3f}) → Movimiento extremo")
+            else:
+                # Caso estándar: usar threshold balanceado
+                optimal_threshold = 0.20  # Default seguro
+                strategy = "BALANCEADO (0.20) - Caso estándar"
+                print(f"   📊 Distribución estándar → Threshold balanceado")
+            
+            print(f"   📚 Estrategia seleccionada: {strategy}")
             print(f"   📊 Media observada: {mean_dist:.3f}")
             print(f"   📊 Desv. estándar: {std_dist:.3f}")
+            print(f"   🎯 Threshold calculado: {optimal_threshold:.3f}")
             
             # NO usar rango, usar valor fijo
-            min_threshold = 0.12
-            max_threshold = 0.12
+            min_threshold = optimal_threshold
+            max_threshold = optimal_threshold
             
         else:
             # GEOMETRÍA BÁSICA (fallback si face_recognition no disponible)
@@ -899,33 +918,36 @@ class FaceDetectionService:
                                 spatial_score = min(1.0, spatial_distance / spatial_threshold)
                                 
                                 # 2. PRIORIDAD: Comparar embeddings si están disponibles
-                                # TÉCNICA: Multi-Sample Matching con MEDIANA (más robusto que mínimo)
+                                # ESTRATEGIA HÍBRIDA: Comparar con últimos frames + verificación con primero
+                                # Esto permite seguimiento adaptativo con límite de drift
                                 embedding_score = None
                                 if current_embedding is not None:
                                     embeddings_list = track.get('embeddings_list', [])
                                     if len(embeddings_list) > 0:
-                                        # Calcular distancias contra todos los embeddings guardados
-                                        distances = []
-                                        for stored_emb in embeddings_list:
-                                            dist = self._compare_face_geometry(
-                                                current_embedding,
-                                                stored_emb,
-                                                debug=False
-                                            )
-                                            distances.append(dist)
-                                        
-                                        # ESTRATEGIA con InsightFace (EL MÁS DISCRIMINATIVO):
-                                        # InsightFace da la mejor separación entre personas
-                                        # Personas diferentes: scores típicamente > 0.40
-                                        # Misma persona: scores típicamente < 0.30
-                                        max_distance = max(distances)
-                                        
-                                        # Si el peor match está > 0.30, rechazar completamente
-                                        if max_distance > 0.30:
-                                            embedding_score = 1.0  # Forzar rechazo
+                                        # Comparar con los ÚLTIMOS 3 embeddings (permite movimiento)
+                                        if len(embeddings_list) >= 3:
+                                            recent_embeddings = embeddings_list[-3:]
                                         else:
-                                            # Si todos los templates están bien, usar P75
-                                            embedding_score = np.percentile(distances, 75)
+                                            recent_embeddings = embeddings_list
+                                        
+                                        # Calcular distancia mínima con frames recientes
+                                        min_distance = float('inf')
+                                        for emb in recent_embeddings:
+                                            dist = self._compare_face_geometry(current_embedding, emb, debug=False)
+                                            min_distance = min(min_distance, dist)
+                                        
+                                        # VERIFICACIÓN ANTI-DRIFT: También comparar con primer frame
+                                        # Si la distancia al primero es >0.30, rechazar (drift excesivo)
+                                        # Aumentado de 0.25 a 0.30 para tolerar rotaciones extremas
+                                        first_embedding = embeddings_list[0]
+                                        dist_to_first = self._compare_face_geometry(current_embedding, first_embedding, debug=False)
+                                        
+                                        if dist_to_first > 0.30:
+                                            # Drift excesivo - rechazar
+                                            embedding_score = 1.0
+                                        else:
+                                            # OK - usar distancia mínima con frames recientes
+                                            embedding_score = min_distance
                                 
                                 # 3. Si no hay embeddings, usar visual (backup)
                                 visual_score = 1.0
@@ -952,25 +974,24 @@ class FaceDetectionService:
                                     best_score = combined_score
                                     best_match = i
                             
-                            # Threshold OPTIMIZADO para tracking con Facenet512:
-                            # - 0.30 con embeddings: Facenet512 tiene EXCELENTE separación (512-dim)
-                            #   Scores > 0.30 indican personas diferentes
+                            # THRESHOLD HÍBRIDO: Permisivo para movimiento dinámico
+                            # - 0.18 con embeddings: Permite rotación y cambios de ángulo
+                            #   Persona moviéndose genera distancias 0.15-0.20
+                            #   Verificación anti-drift: dist_to_first < 0.25
                             # - 0.40 con histogramas: menos confiable, más permisivo
-                            # La fusión posterior (0.12) eliminará duplicados verdaderos de la MISMA persona
-                            tracking_threshold = 0.30 if current_embedding is not None else 0.40
+                            tracking_threshold = 0.18 if current_embedding is not None else 0.40
                             
                             if best_match is not None and best_score < tracking_threshold:
                                 # Asignar a track existente
                                 face_tracks[best_match]['appearances'].append(face)
                                 used_tracks.add(best_match)
                                 
-                                # TÉCNICA: Template Update - agregar embedding si es MUY similar
-                                # Con Facenet512 y threshold 0.30, agregar templates con score < 0.15
-                                # Esto mantiene templates muy puros de la misma persona
-                                if current_embedding is not None and best_score < 0.15:
+                                # Actualizar embeddings: agregar siempre para tracking adaptativo
+                                # Mantener últimos 5 para balance entre memoria y flexibilidad
+                                if current_embedding is not None:
                                     embeddings_list = face_tracks[best_match].get('embeddings_list', [])
                                     embeddings_list.append(current_embedding)
-                                    # Mantener solo los últimos 5 embeddings (memoria limitada)
+                                    # Mantener últimos 5 embeddings
                                     face_tracks[best_match]['embeddings_list'] = embeddings_list[-5:]
                             else:
                                 # Nuevo rostro detectado - YA tenemos el embedding extraído arriba
@@ -1024,7 +1045,9 @@ class FaceDetectionService:
             print(f"\n✅ FUSIÓN COMPLETADA: {len(face_tracks)} tracks finales\n")
             
             # Filtrar tracks con muy pocas apariciones (ruido)
-            min_time_seconds = 0.3
+            # Para videos de 1 persona en movimiento, necesitamos filtro más agresivo
+            # Mínimo 3 segundos de aparición para ser considerado participante válido
+            min_time_seconds = 3.0  # Aumentado de 0.3 a 3.0 segundos
             valid_tracks = []
             
             for track in face_tracks:

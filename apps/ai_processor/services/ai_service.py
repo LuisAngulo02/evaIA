@@ -117,9 +117,23 @@ class AIService:
                 # CASO NORMAL: Hay rostros detectados
                 logger.info(f"✅ {len(face_analysis['participants'])} participante(s) detectado(s)")
                 
-                # Preparar tema y descripción
+                # Preparar tema y descripción completa (description + instructions)
                 tema = presentation.assignment.title if presentation.assignment else "Tema general"
-                descripcion_tema = presentation.assignment.description if presentation.assignment else ""
+                
+                # Combinar description e instructions para análisis completo
+                if presentation.assignment:
+                    descripcion_base = presentation.assignment.description or ""
+                    instrucciones = presentation.assignment.instructions or ""
+                    
+                    # Si hay ambos, combinarlos
+                    if descripcion_base and instrucciones:
+                        descripcion_tema = f"{descripcion_base}\n\nINSTRUCCIONES ESPECIFICAS:\n{instrucciones}"
+                    elif instrucciones:
+                        descripcion_tema = instrucciones
+                    else:
+                        descripcion_tema = descripcion_base
+                else:
+                    descripcion_tema = ""
                 
                 # Asignar transcripción completa si solo hay 1 participante
                 # Para múltiples, idealmente se debería segmentar por tiempo
@@ -158,9 +172,24 @@ class AIService:
                 # Análisis solo por audio (voz en off)
                 logger.warning("⚠️ No se detectaron rostros - Análisis solo por audio")
                 
-                # Preparar tema y descripción
+                # Preparar tema y descripción completa (description + instructions)
                 tema = presentation.assignment.title if presentation.assignment else "Tema general"
-                descripcion_tema = presentation.assignment.description if presentation.assignment else ""
+                
+                # Combinar description e instructions para análisis completo
+                if presentation.assignment:
+                    descripcion_base = presentation.assignment.description or ""
+                    instrucciones = presentation.assignment.instructions or ""
+                    
+                    # Si hay ambos, combinarlos
+                    if descripcion_base and instrucciones:
+                        descripcion_tema = f"{descripcion_base}\n\nINSTRUCCIONES ESPECIFICAS:\n{instrucciones}"
+                    elif instrucciones:
+                        descripcion_tema = instrucciones
+                    else:
+                        descripcion_tema = descripcion_base
+                else:
+                    descripcion_tema = ""
+                
                 max_score = float(presentation.assignment.max_score) if presentation.assignment else 20.0
                 
                 # Obtener assignment para configuración de IA
