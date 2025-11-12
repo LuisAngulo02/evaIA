@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Iniciar Sesión - EvalExpo AI{% endblock %}
+{% block title %}Iniciar Sesión - EvaIA{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/login.css' %}">
@@ -16,11 +16,9 @@
                     <!-- Header con gradiente -->
                     <div class="card-header text-white text-center py-4" style="background: var(--primary-gradient) !important;">
                         <div class="mb-3">
-                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-blue bg-opacity-20" style="width: 80px; height: 80px;">
-                                <i class="fas fa-graduation-cap text-white" style="font-size: 2.5rem;"></i>
-                            </div>
+                            <img src="{% static 'img/logo.jpeg' %}" alt="EvaIA Logo" class="rounded-circle shadow" style="width: 100px; height: 100px; object-fit: cover; border: 4px solid rgba(255, 255, 255, 0.3);">
                         </div>
-                        <h2 class="fw-bold mb-1">EvalExpo AI</h2>
+                        <h2 class="fw-bold mb-1">EvaIA</h2>
                         <p class="mb-0 opacity-90">Sistema Inteligente de Evaluación</p>
                     </div>
 

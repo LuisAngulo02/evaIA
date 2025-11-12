@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load auth_extras %}
 
-{% block title %}Dashboard - {{ user.profile.get_role_display }} - EvalExpo AI{% endblock %}
+{% block title %}Dashboard - {{ user.profile.get_role_display }} - EvaIA{% endblock %}
 
 {% block content %}
 <div class="content-wrapper">
@@ -14,7 +14,7 @@
                         ¡Bienvenido, {{ user.first_name|default:user.username }}!
                     </h1>
                     <p class="welcome-subtitle mb-3">
-                        {{ user.profile.get_role_display }} en {{ user.profile.institution|default:"EvalExpo AI" }}
+                        {{ user.profile.get_role_display }} en {{ user.profile.institution|default:"EvaIA" }}
                     </p>
                     <div class="d-flex align-items-center">
                         <span class="badge welcome-badge me-3">

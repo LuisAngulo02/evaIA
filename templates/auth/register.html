@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Crear Cuenta - EvalExpo AI{% endblock %}
+{% block title %}Crear Cuenta - EvaIA{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/register.css' %}">
@@ -16,9 +16,7 @@
                     <!-- Header con gradiente -->
                     <div class="card-header bg-primary text-white text-center py-4" style="background: var(--primary-gradient) !important;">
                         <div class="mb-3">
-                            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-blue bg-opacity-20" style="width: 70px; height: 70px;">
-                                <i class="fas fa-user-plus text-white" style="font-size: 2rem;"></i>
-                            </div>
+                            <img src="{% static 'img/logo.jpeg' %}" alt="EvaIA Logo" class="rounded-circle shadow" style="width: 80px; height: 80px; object-fit: cover; border: 4px solid rgba(255, 255, 255, 0.3);">
                         </div>
                         <h2 class="fw-bold mb-1">Crear Cuenta</h2>
                         <p class="mb-0 opacity-90">Únete al futuro de la evaluación educativa</p>
