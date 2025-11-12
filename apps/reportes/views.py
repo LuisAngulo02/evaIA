@@ -354,17 +354,50 @@ def teacher_reports_view(request):
     recent_activity = teacher_presentations.order_by('-uploaded_at')[:10]
     
     # Convertir datos para gráficos (JSON)
+    # IMPORTANTE: Convertir Decimal a float para evitar errores de serialización JSON
     context = {
         'user': request.user,
-        'stats': stats,
+        'stats': {
+            'total_courses': stats['total_courses'],
+            'total_assignments': stats['total_assignments'],
+            'total_presentations': stats['total_presentations'],
+            'pending_grading': stats['pending_grading'],
+            'graded_presentations': stats['graded_presentations'],
+            'average_score': float(stats['average_score']) if stats['average_score'] else 0,
+            'ai_average': float(stats['ai_average']) if stats['ai_average'] else 0,
+            'completion_rate': float(stats['completion_rate']) if stats['completion_rate'] else 0,
+        },
         'grade_distribution': grade_distribution,
         'grade_distribution_json': json.dumps(list(grade_distribution.values())),
         'weekly_trend': weekly_trend,
-        'weekly_trend_json': json.dumps([w['avg_score'] for w in weekly_trend]),
+        'weekly_trend_json': json.dumps([float(w['avg_score']) if w['avg_score'] else 0 for w in weekly_trend]),
         'weekly_labels_json': json.dumps([w['week'] for w in weekly_trend]),
-        'course_stats': course_stats,
-        'top_students': top_students,
-        'participant_stats': participant_stats,
+        'course_stats': [
+            {
+                'course': cs['course'],
+                'presentations_count': cs['presentations_count'],
+                'students_count': cs['students_count'],
+                'average_score': float(cs['average_score']) if cs['average_score'] else 0,
+                'max_score': float(cs['max_score']) if cs['max_score'] else 0,
+                'min_score': float(cs['min_score']) if cs['min_score'] else 0,
+                'pending_count': cs['pending_count'],
+                'analyzed_count': cs['analyzed_count'],
+                'graded_count': cs['graded_count'],
+            }
+            for cs in course_stats
+        ],
+        'top_students': [
+            {
+                'student': ts['student'],
+                'avg_score': float(ts['avg_score']) if ts['avg_score'] else 0,
+                'presentations_count': ts['presentations_count'],
+            }
+            for ts in top_students
+        ],
+        'participant_stats': {
+            'total_participants': participant_stats['total_participants'],
+            'avg_participation_time': float(participant_stats['avg_participation_time']) if participant_stats['avg_participation_time'] else 0,
+        },
         'recent_activity': recent_activity,
         'teacher_courses': teacher_courses,
         'teacher_assignments': teacher_assignments,
