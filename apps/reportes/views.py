@@ -307,6 +307,9 @@ def teacher_reports_view(request):
             'presentations_count': course_presentations.count(),
             'students_count': unique_students,
             'average_score': course_graded.aggregate(avg=Avg('final_score'))['avg'] or 0,
+            'ai_average': course_presentations.filter(
+                ai_score__isnull=False
+            ).aggregate(avg=Avg('ai_score'))['avg'] or 0,
             'max_score': course_graded.aggregate(max=Max('final_score'))['max'] or 0,
             'min_score': course_graded.aggregate(min=Min('final_score'))['min'] or 0,
             'pending_count': course_presentations.filter(
@@ -355,6 +358,7 @@ def teacher_reports_view(request):
     
     # Convertir datos para gráficos (JSON)
     # IMPORTANTE: Convertir Decimal a float para evitar errores de serialización JSON
+    # CRÍTICO: ensure_ascii=False permite caracteres especiales, pero usamos separateors para punto decimal
     context = {
         'user': request.user,
         'stats': {
@@ -368,16 +372,30 @@ def teacher_reports_view(request):
             'completion_rate': float(stats['completion_rate']) if stats['completion_rate'] else 0,
         },
         'grade_distribution': grade_distribution,
-        'grade_distribution_json': json.dumps(list(grade_distribution.values())),
-        'weekly_trend': weekly_trend,
-        'weekly_trend_json': json.dumps([float(w['avg_score']) if w['avg_score'] else 0 for w in weekly_trend]),
-        'weekly_labels_json': json.dumps([w['week'] for w in weekly_trend]),
+        'grade_distribution_json': json.dumps(list(grade_distribution.values()), ensure_ascii=False),
+        'weekly_trend': [
+            {
+                'week': w['week'],
+                'avg_score': float(w['avg_score']) if w['avg_score'] else 0,
+                'count': w['count']
+            } for w in weekly_trend
+        ],
+        'weekly_trend_full_json': json.dumps([
+            {
+                'week': w['week'],
+                'avg_score': float(w['avg_score']) if w['avg_score'] else 0,
+                'count': w['count']
+            } for w in weekly_trend
+        ], ensure_ascii=False),
+        'weekly_trend_json': json.dumps([float(w['avg_score']) if w['avg_score'] else 0 for w in weekly_trend], ensure_ascii=False),
+        'weekly_labels_json': json.dumps([w['week'] for w in weekly_trend], ensure_ascii=False),
         'course_stats': [
             {
                 'course': cs['course'],
                 'presentations_count': cs['presentations_count'],
                 'students_count': cs['students_count'],
                 'average_score': float(cs['average_score']) if cs['average_score'] else 0,
+                'ai_average': float(cs['ai_average']) if cs['ai_average'] else 0,
                 'max_score': float(cs['max_score']) if cs['max_score'] else 0,
                 'min_score': float(cs['min_score']) if cs['min_score'] else 0,
                 'pending_count': cs['pending_count'],

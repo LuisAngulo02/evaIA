@@ -1,10 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load l10n %}
 
 {% block title %}Dashboard de Rendimiento - Sistema de Evaluación{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 <style>
     .performance-dashboard {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -296,11 +296,11 @@
                     <div class="kpi-icon">
                         <i class="fas fa-trophy"></i>
                     </div>
-                    <div class="kpi-value">{{ stats.average_score|floatformat:1 }}%</div>
+                    <div class="kpi-value">{{ stats.average_score|floatformat:1|unlocalize }}%</div>
                     <div class="kpi-label">Promedio General</div>
                     <div class="kpi-change text-info">
                         <i class="fas fa-robot me-1"></i>
-                        IA: {{ stats.ai_average|floatformat:1 }}%
+                        IA: {{ stats.ai_average|floatformat:1|unlocalize }}%
                     </div>
                 </div>
             </div>
@@ -393,13 +393,13 @@
                                         <div class="course-stat-label">Presentaciones</div>
                                     </div>
                                     <div class="course-stat">
-                                        <div class="course-stat-value">{{ course_stat.average_score|floatformat:1 }}%</div>
-                                        <div class="course-stat-label">Promedio</div>
+                                        <div class="course-stat-value">{{ course_stat.ai_average|floatformat:1|unlocalize }}%</div>
+                                        <div class="course-stat-label">AI Promedio</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="progress-bar-custom">
-                                <div class="progress-fill" style="width: {{ course_stat.average_score }}%"></div>
+                                <div class="progress-fill" style="width: {{ course_stat.average_score|unlocalize }}%"></div>
                             </div>
                         </div>
                         {% endfor %}
@@ -443,7 +443,7 @@
                                 </div>
                             </div>
                             <div class="student-score">
-                                {{ student_data.avg_score|floatformat:1 }}%
+                                {{ student_data.avg_score|floatformat:1|unlocalize }}%
                             </div>
                         </div>
                         {% endfor %}
@@ -525,6 +525,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Debug: Mostrar todos los datos recibidos
+    console.log('=== DEBUG: Datos del Backend ===');
+    console.log('Grade Distribution:', {{ grade_distribution_json|safe }});
+    console.log('Weekly Trend Scores:', {{ weekly_trend_json|safe }});
+    console.log('Weekly Labels:', {{ weekly_labels_json|safe }});
+    console.log('Stats:', {
+        total_presentations: {{ stats.total_presentations|default:0|unlocalize }},
+        graded_presentations: {{ stats.graded_presentations|default:0|unlocalize }},
+        average_score: {{ stats.average_score|default:0|unlocalize }}
+    });
+    
     // Configuración común de Chart.js
     Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
     Chart.defaults.color = '#4a5568';
@@ -533,20 +544,17 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if grade_distribution %}
     const gradeDistCtx = document.getElementById('gradeDistributionChart');
     if (gradeDistCtx) {
-        const gradeData = {{ grade_distribution_json|safe }};
+        // Parsear datos desde JSON
+        const gradeDataArray = {{ grade_distribution_json|safe }};
+        
+        console.log('Grade Distribution Data:', gradeDataArray); // Debug
         
         new Chart(gradeDistCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Excelente', 'Muy Bueno', 'Bueno', 'Regular', 'Bajo'],
+                labels: ['Excelente (90-100)', 'Muy Bueno (80-89)', 'Bueno (70-79)', 'Regular (60-69)', 'Bajo (<60)'],
                 datasets: [{
-                    data: [
-                        gradeData.excelente || 0,
-                        gradeData.muy_bueno || 0,
-                        gradeData.bueno || 0,
-                        gradeData.regular || 0,
-                        gradeData.bajo || 0
-                    ],
+                    data: gradeDataArray,
                     backgroundColor: [
                         '#48bb78',
                         '#4299e1',
@@ -593,15 +601,21 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if weekly_trend %}
     const weeklyTrendCtx = document.getElementById('weeklyTrendChart');
     if (weeklyTrendCtx) {
-        const weeklyData = {{ weekly_trend_json|safe }};
+        // Parsear datos desde JSON
+        const weeklyScores = {{ weekly_trend_json|safe }};
+        const weeklyLabels = {{ weekly_labels_json|safe }};
+        const weeklyCounts = {{ weekly_trend_full_json|safe }};
+        
+        console.log('Weekly Trend Scores:', weeklyScores); // Debug
+        console.log('Weekly Labels:', weeklyLabels); // Debug
         
         new Chart(weeklyTrendCtx, {
             type: 'line',
             data: {
-                labels: weeklyData.map(w => w.week),
+                labels: weeklyLabels,
                 datasets: [{
-                    label: 'Promedio de Calificaciones',
-                    data: weeklyData.map(w => w.avg_score),
+                    label: 'Promedio de Calificaciones (%)',
+                    data: weeklyScores,
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
                     borderWidth: 3,
@@ -614,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointBorderWidth: 2
                 }, {
                     label: 'Cantidad de Presentaciones',
-                    data: weeklyData.map(w => w.count),
+                    data: weeklyCounts.map(w => w.count),
                     borderColor: '#48bb78',
                     backgroundColor: 'rgba(72, 187, 120, 0.1)',
                     borderWidth: 2,
