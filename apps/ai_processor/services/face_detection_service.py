@@ -754,6 +754,15 @@ class FaceDetectionService:
             # Obtener información del video
             fps = cap.get(cv2.CAP_PROP_FPS)
             total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            
+            # 🔧 FIX: Validar y corregir FPS incorrectos
+            # Algunos videos tienen metadatos incorrectos (ej: 1000 FPS)
+            if fps > 120 or fps < 10:
+                print(f"⚠️ FPS SOSPECHOSO DETECTADO: {fps}")
+                print(f"   Esto es probablemente un error en los metadatos del video")
+                print(f"   Usando FPS estándar: 30 FPS")
+                fps = 30.0  # Valor estándar por defecto
+            
             duration = total_frames / fps if fps > 0 else 0
             
             # OPTIMIZACIÓN ULTRA-RÁPIDA: Sample rate MÁS AGRESIVO (procesar solo 3-5 fps)
@@ -764,7 +773,7 @@ class FaceDetectionService:
             else:
                 sample_rate = 5   # <25fps → ~5 fps procesados (antes 2)
             
-            logger.info(f"📊 Video: {duration:.1f}s, {fps:.1f} FPS → sample_rate={sample_rate} (ULTRA-RÁPIDO)")
+            logger.info(f"📊 Video: {duration:.1f}s, {fps:.1f} FPS (corregido si necesario) → sample_rate={sample_rate} (ULTRA-RÁPIDO)")
             
             # OPTIMIZACIÓN: Resetear contadores de caché
             self._cache_hits = 0
@@ -1050,14 +1059,25 @@ class FaceDetectionService:
             min_time_seconds = 3.0  # Aumentado de 0.3 a 3.0 segundos
             valid_tracks = []
             
-            for track in face_tracks:
+            print(f"\n🔍 VALIDANDO TRACKS (mínimo {min_time_seconds}s):")
+            print(f"   FPS: {fps}, Sample rate: {sample_rate}")
+            
+            for idx, track in enumerate(face_tracks):
                 appearances = len(track['appearances'])
                 time_seconds = (appearances * sample_rate) / fps
                 
+                print(f"\n   Track {idx+1}:")
+                print(f"      - Apariciones: {appearances}")
+                print(f"      - Tiempo calculado: {time_seconds:.2f}s")
+                print(f"      - Fórmula: ({appearances} × {sample_rate}) ÷ {fps} = {time_seconds:.2f}s")
+                
                 if time_seconds >= min_time_seconds:
+                    print(f"      - ✅ VÁLIDO (≥ {min_time_seconds}s)")
                     valid_tracks.append(track)
+                else:
+                    print(f"      - ❌ DESCARTADO (< {min_time_seconds}s)")
             
-            print(f"✅ Participantes válidos: {len(valid_tracks)}\n")
+            print(f"\n✅ Participantes válidos: {len(valid_tracks)}/{len(face_tracks)}\n")
             
             # Crear directorio para fotos si no existe
             photos_dir = None

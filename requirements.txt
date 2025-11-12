@@ -51,9 +51,6 @@ scipy==1.14.1
 scikit-learn==1.5.2
 pandas==2.2.3
 joblib==1.4.2
-# ml_dtypes: NO fijar versión, dejar que TensorFlow/MediaPipe/JAX resuelvan
-# TensorFlow 2.18.0 requiere <0.5.0, pero JAX requiere >=0.5.0
-# Solución: instalar TensorFlow primero, luego el resto
 
 
 # VISIÓN POR COMPUTADORA Y DETECCIÓN FACIAL
@@ -68,33 +65,8 @@ deepface==0.0.95
 tensorflow==2.18.0
 tf-keras==2.18.0
 
-# ⚠️ IMPORTANTE: InsightFace NO funciona en Windows (ni Python 3.11 ni 3.12)
-# Razón: No hay wheels pre-compilados para Windows en PyPI
-# Requiere compilación con: Microsoft Visual C++ 14.0+, Cython, configuración compleja
-# 
-# SOLUCIÓN IMPLEMENTADA: Usar Facenet512 (512-dim) optimizado con sample rate agresivo
-# - Facenet512: 150-200ms por rostro (512 dimensiones)
-# - Sample rate optimizado: procesa solo 3-5 fps (vs 10 fps anterior)
-# - Detección más estricta: min_confidence=0.50 (vs 0.40 anterior)
-# - Thresholds: tracking=0.30, template=0.15, fusion=0.12
-# 
-# Si en el futuro quieres usar InsightFace (10x más rápido):
-# Opción 1: WSL2 (Ubuntu en Windows) - pip install insightface funciona
-# Opción 2: Docker con imagen Linux
-# Opción 3: Servidor Linux nativo (AWS, Azure, GCP)
-# 
-# Para Windows: Facenet512 es la mejor opción práctica (sin compilación)
-
 Pillow==11.3.0
 
-# OPTIMIZACIÓN ACTIVA (Facenet512 + Sample Rate Agresivo):
-# - Sample rate: 15/8/5 para 60/30/<25 fps → procesa solo 3-5 fps
-# - Embedding cache: 40-60% cache hits
-# - Detección estricta: min_confidence=0.50 (menos falsos positivos)
-# - Max rostros: 3 (vs 5 anterior) → procesa menos rostros simultáneos
-# - Resultado: Video 3min @ 30fps se procesa en 2-4 minutos (vs 10 min anterior)
-# - Caché de embeddings con hash MD5: 40-60% hits → 2-3x speedup adicional
-# - SPEEDUP TOTAL: 2.5-5x vs sistema anterior sin optimizaciones agresivas
 
 
 # PROCESAMIENTO DE AUDIO Y VOZ
@@ -183,17 +155,6 @@ threadpoolctl==3.6.0
 
 # BUFFERS DE PROTOCOLO Y SERIALIZACIÓN
 
-# ⚠️ CONFLICTO CRÍTICO: MediaPipe NO funciona con protobuf 5.x
-# - MediaPipe 0.10.21 requiere: protobuf>=4.25.3, <5.0.0 (ESTRICTO <5)
-# - TensorFlow 2.18.0 requiere: protobuf>=3.20.3, <6.0.0 (instala 5.x por defecto)
-# - ERROR con protobuf 5.x: "Failed to parse text-format mediapipe.CalculatorGraphConfig"
-# 
-# SOLUCIÓN DEFINITIVA: protobuf==4.25.5 (última versión 4.x estable)
-# - ✅ MediaPipe funciona correctamente (parsea .tflite sin errores)
-# - ✅ TensorFlow 2.18.0 funciona con 4.25.5 (prefiere 5.x pero tolera 4.x)
-# - ❌ Incompatible con InsightFace (necesita 3.x)
-#
-# CRÍTICO: NO actualizar a protobuf 5.x (rompe MediaPipe completamente)
 protobuf==4.25.5
 flatbuffers==25.9.23
 
@@ -219,92 +180,3 @@ regex==2025.9.18
 PyYAML==6.0.3
 jiter==0.11.0
 
-
-# =============================================================================
-# NOTAS DE OPTIMIZACIÓN DEL SISTEMA DE DETECCIÓN FACIAL
-# =============================================================================
-#
-# VERSIÓN: V12 Multi-Sample Template Matching con Optimizaciones
-#
-# MEJORAS DE RENDIMIENTO IMPLEMENTADAS:
-# 
-# 1. CACHÉ DE EMBEDDINGS (2-3x speedup)
-#    - Hash MD5 de ROIs faciales (32x32 grayscale)
-#    - Evita recomputar embeddings de rostros idénticos
-#    - Eficiencia típica: 40-60% cache hits
-#    - Usa: hashlib (stdlib), no requiere dependencia adicional
-#
-# 2. ADAPTIVE SAMPLE RATE (50-70% reducción de frames procesados)
-#    - 60 FPS → procesa 1 de cada 6 frames (~10 fps)
-#    - 30 FPS → procesa 1 de cada 3 frames (~10 fps)
-#    - <25 FPS → procesa 1 de cada 2 frames (~12.5 fps)
-#    - Mantiene calidad de detección, reduce carga computacional
-#
-# 3. LOGGING OPTIMIZADO (30-40% reducción I/O)
-#    - Eliminados logs por frame/rostro durante procesamiento
-#    - Solo estadísticas finales y errores críticos
-#    - Reduce overhead de escritura a consola/archivo
-#
-# 4. MEMORY MANAGEMENT
-#    - Caché se limpia al inicio/fin de cada video
-#    - Templates limitados a 5 por persona
-#    - Previene memory leaks en procesamiento largo
-#
-# STACK DE DETECCIÓN FACIAL:
-#
-# - MediaPipe 0.10.21: Detección inicial (min_confidence=0.40)
-# - DeepFace 0.0.95: Framework para embeddings
-# - Facenet512: Modelo de embeddings (512-dim, via TensorFlow)
-# - scikit-learn 1.5.2: AgglomerativeClustering para fusión de tracks
-#
-# NOTA SOBRE INSIGHTFACE:
-# InsightFace (buffalo_l) sería 10x más rápido y mejor discriminación,
-# pero requiere Python <3.12 o compilador Visual C++ 14.0+ en Windows.
-# El sistema está preparado para usar InsightFace si se instala exitosamente,
-# con fallback automático a Facenet512 si no está disponible.
-#
-# Para instalar InsightFace (opcional, Python <3.12):
-#   pip install insightface onnxruntime
-#
-# ⚠️ CONFLICTOS DE DEPENDENCIAS RESUELTOS:
-#
-# 1. CONFLICTO NumPy 2.x vs OpenCV:
-#    - OpenCV 4.9.0.80 compilado con NumPy 1.x
-#    - TensorFlow 2.18.0 instala NumPy 2.x por defecto
-#    - ERROR: "AttributeError: _ARRAY_API not found"
-#    - SOLUCIÓN: numpy==1.26.4 (última versión 1.x)
-#
-# 2. CONFLICTO protobuf 4.x vs 5.x:
-#    - MediaPipe 0.10.21 requiere: protobuf>=4.25.3,<5.0.0 (ESTRICTO <5)
-#    - TensorFlow 2.18.0 requiere: protobuf>=3.20.3,<6.0.0 (instala 5.x por defecto)
-#    - ERROR con protobuf 5.x: "Failed to parse text-format mediapipe.CalculatorGraphConfig"
-#    - SOLUCIÓN: protobuf==4.25.5 (última versión 4.x estable)
-#    - MediaPipe funciona correctamente, TensorFlow tolera 4.x
-#
-# 3. CONFLICTO ml_dtypes versiones:
-#    - TensorFlow 2.18.0 requiere: ml_dtypes<0.5.0,>=0.4.0
-#    - JAX 0.7.1 (dep de TensorFlow) requiere: ml_dtypes>=0.5.0
-#    - ERROR: "AttributeError: module 'ml_dtypes' has no attribute 'float8_e3m4'"
-#    - SOLUCIÓN: ml_dtypes==0.5.3 (versión más reciente)
-#    - TensorFlow funciona con 0.5.3 a pesar del warning
-#
-# 4. CONFLICTO TensorFlow versiones:
-#    - TensorFlow 2.20.0 requiere: protobuf>=5.28.0 (incompatible con MediaPipe)
-#    - SOLUCIÓN: Downgrade a TensorFlow 2.18.0 (acepta protobuf 5.x Y MediaPipe funciona)
-#
-# VERSIONES FINALES QUE FUNCIONAN:
-# - numpy==1.26.4 (compatible con OpenCV 4.9.0.80)
-# - tensorflow==2.18.0 (tolera protobuf 4.x)
-# - tf-keras==2.18.0 (coincide con TensorFlow)
-# - ml_dtypes==0.5.3 (requerido por JAX en TensorFlow)
-# - protobuf==4.25.5 (CRÍTICO: MediaPipe requiere 4.x, NO funciona con 5.x)
-#
-# Al instalar requirements.txt, el sistema funciona correctamente.
-# MediaPipe parsea archivos .tflite sin errores con protobuf 4.25.5.
-#
-# THRESHOLDS CONFIGURADOS (para Facenet512):
-# - Tracking: 0.35 (más estricto que InsightFace 0.30)
-# - Template Update: 0.15 (templates muy puros)
-# - Fusion: 0.12 (solo duplicados MUY similares)
-#
-# =============================================================================
