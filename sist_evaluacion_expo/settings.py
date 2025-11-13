@@ -97,7 +97,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'sist_evaluacion_expo_db',
         'USER': 'postgres',
-        'PASSWORD': '123',
+        'PASSWORD': 'luis123',
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -227,18 +227,42 @@ PASSWORD_RESET_TIMEOUT = 3600  # 1 hora para que expire el link
 
 # CONFIGURACIÓN DE CLOUDINARY
 
+# Configuración de múltiples cuentas Cloudinary
+CLOUDINARY_ACCOUNTS = []
 
-# Cargar configuración desde variables de entorno
+# Cargar cuenta primaria
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', '')
 CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY', '')
 CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET', '')
 
 if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    # Configurar Cloudinary
+    CLOUDINARY_ACCOUNTS.append({
+        'cloud_name': CLOUDINARY_CLOUD_NAME,
+        'api_key': CLOUDINARY_API_KEY,
+        'api_secret': CLOUDINARY_API_SECRET,
+        'name': 'primary'
+    })
+
+# Cargar cuentas adicionales (2, 3, 4, etc.)
+for i in range(2, 10):  # Soporta hasta 9 cuentas
+    cloud_name = os.getenv(f'CLOUDINARY_CLOUD_NAME_{i}', '')
+    api_key = os.getenv(f'CLOUDINARY_API_KEY_{i}', '')
+    api_secret = os.getenv(f'CLOUDINARY_API_SECRET_{i}', '')
+    
+    if cloud_name and api_key and api_secret:
+        CLOUDINARY_ACCOUNTS.append({
+            'cloud_name': cloud_name,
+            'api_key': api_key,
+            'api_secret': api_secret,
+            'name': f'account_{i}'
+        })
+
+# Configurar la cuenta primaria por defecto
+if CLOUDINARY_ACCOUNTS:
     cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
+        cloud_name=CLOUDINARY_ACCOUNTS[0]['cloud_name'],
+        api_key=CLOUDINARY_ACCOUNTS[0]['api_key'],
+        api_secret=CLOUDINARY_ACCOUNTS[0]['api_secret'],
         secure=True
     )
     
@@ -247,15 +271,16 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     
     # Configuración adicional de Cloudinary Storage
     CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-        'API_KEY': CLOUDINARY_API_KEY,
-        'API_SECRET': CLOUDINARY_API_SECRET,
+        'CLOUD_NAME': CLOUDINARY_ACCOUNTS[0]['cloud_name'],
+        'API_KEY': CLOUDINARY_ACCOUNTS[0]['api_key'],
+        'API_SECRET': CLOUDINARY_ACCOUNTS[0]['api_secret'],
     }
     
-    print(f" Cloudinary configurado: {CLOUDINARY_CLOUD_NAME}")
-    print(f" Los archivos multimedia se almacenarán en la nube")
+    print(f"✓ Cloudinary configurado con {len(CLOUDINARY_ACCOUNTS)} cuenta(s)")
+    for idx, account in enumerate(CLOUDINARY_ACCOUNTS):
+        print(f"  - Cuenta {idx + 1}: {account['cloud_name']}")
 else:
-    print(" Cloudinary NO configurado - usando almacenamiento local")
+    print("⚠ Cloudinary NO configurado - usando almacenamiento local")
     print("   Para usar Cloudinary, configura las variables en .env:")
     print("   - CLOUDINARY_CLOUD_NAME")
     print("   - CLOUDINARY_API_KEY")
