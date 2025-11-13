@@ -49,7 +49,7 @@ class GroqKeyManager:
         Carga todas las API keys desde variables de entorno.
         
         Busca:
-        - GROQ_API_KEY_1, GROQ_API_KEY_2, ..., GROQ_API_KEY_N
+        - GROQ_API_KEY_1, GROQ_API_KEY_2, ..., GROQ_API_KEY_30
         - GROQ_API_KEY (fallback)
         
         Returns:
@@ -57,8 +57,8 @@ class GroqKeyManager:
         """
         keys = []
         
-        # Intentar cargar keys numeradas (1-10)
-        for i in range(1, 11):
+        # Intentar cargar keys numeradas (1-30)
+        for i in range(1, 31):
             key = os.getenv(f'GROQ_API_KEY_{i}', '').strip()
             if key and key not in keys:
                 keys.append(key)

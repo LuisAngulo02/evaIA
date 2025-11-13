@@ -91,6 +91,7 @@ WSGI_APPLICATION = 'sist_evaluacion_expo.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# Configuración principal - PostgreSQL (Producción/Desarrollo)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -101,6 +102,20 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+# Opción alternativa - SQLite (Solo para desarrollo/pruebas sin PostgreSQL)
+# Para usar SQLite en lugar de PostgreSQL:
+# 1. Comenta el bloque DATABASES de arriba
+# 2. Descomenta el bloque de abajo
+# 3. Ejecuta: python manage.py migrate
+# NOTA: SQLite tiene limitaciones de concurrencia y no se recomienda para producción
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation

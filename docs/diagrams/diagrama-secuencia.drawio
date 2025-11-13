@@ -1,0 +1,420 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0" version="28.2.9" pages="3">
+  <diagram id="diag1" name="Subida y Análisis">
+    <mxGraphModel dx="1298" dy="522" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title1" value="Diagrama de Secuencia: Subida y Análisis de Presentación" style="text;whiteSpace=wrap;html=1;fontSize=16;fontStyle=1;align=center;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="1200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_est" value="Estudiante" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="70" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_dj" value="Vistas de Django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="200" y="70" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_db" value="Base de Datos (PostgreSQL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="380" y="70" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_ai" value="Servicio IA (Orquestador)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="560" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_ias" value="Servicios IA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="740" y="70" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_groq" value="API Groq (Llama 3.3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="920" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_cld" value="Cloudinary (CDN)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="1100" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_est" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="100" as="sourcePoint" />
+            <mxPoint x="90" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_dj" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="100" as="sourcePoint" />
+            <mxPoint x="270" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_db" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="100" as="sourcePoint" />
+            <mxPoint x="460" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_ai" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="100" as="sourcePoint" />
+            <mxPoint x="650" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_ias" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="820" y="100" as="sourcePoint" />
+            <mxPoint x="820" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_groq" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1010" y="100" as="sourcePoint" />
+            <mxPoint x="1010" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_cld" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1190" y="100" as="sourcePoint" />
+            <mxPoint x="1190" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m1" value="1) Solicitud GET /upload (mostrar formulario)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.1111" y="10" relative="1" as="geometry">
+            <mxPoint x="90" y="150" as="sourcePoint" />
+            <mxPoint x="270" y="150" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m2" value="2) Render formulario" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="190" as="sourcePoint" />
+            <mxPoint x="90" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="3) Envío POST video.mp4 (subida)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry y="-10" relative="1" as="geometry">
+            <mxPoint x="90" y="230" as="sourcePoint" />
+            <mxPoint x="270" y="230" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="4) Insertar Presentación (estado=SUBIDA)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="270" y="270" as="sourcePoint" />
+            <mxPoint x="460" y="270" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="5) Iniciar análisis de presentación" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="310" as="sourcePoint" />
+            <mxPoint x="650" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="6) Actualizar estado=PROCESANDO" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0526" y="10" relative="1" as="geometry">
+            <mxPoint x="650" y="350" as="sourcePoint" />
+            <mxPoint x="460" y="350" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="7) Analizar liveness (autenticidad del video)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0588" y="-10" relative="1" as="geometry">
+            <mxPoint x="650" y="390" as="sourcePoint" />
+            <mxPoint x="820" y="390" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="8) Detectar rostros y participantes" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.0588" y="-10" relative="1" as="geometry">
+            <mxPoint x="650" y="430" as="sourcePoint" />
+            <mxPoint x="820" y="430" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="9) Transcribir audio a texto" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="470" as="sourcePoint" />
+            <mxPoint x="820" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="10) Calcular coherencia (API Groq)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="510" as="sourcePoint" />
+            <mxPoint x="1010" y="510" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="11) Guardar resultados (puntajes y retroalimentación)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0526" y="10" relative="1" as="geometry">
+            <mxPoint x="650" y="550" as="sourcePoint" />
+            <mxPoint x="460" y="550" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="12) Subir video a Cloudinary" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="590" as="sourcePoint" />
+            <mxPoint x="1190" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m13" value="13) Crear notificación (estado=ANALIZADA)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.1579" y="10" relative="1" as="geometry">
+            <mxPoint x="650" y="630" as="sourcePoint" />
+            <mxPoint x="460" y="630" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="14) Consultar /progress" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="670" as="sourcePoint" />
+            <mxPoint x="270" y="670" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m15" value="15) Respuesta {estado: ANALIZADO, progreso:100%}" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.2222" y="10" relative="1" as="geometry">
+            <mxPoint x="270" y="710" as="sourcePoint" />
+            <mxPoint x="90" y="710" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="diag2" name="Calificación Docente">
+    <mxGraphModel dx="1379" dy="555" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title2" value="Diagrama de Secuencia: Calificación por Docente" style="text;whiteSpace=wrap;html=1;fontSize=16;fontStyle=1;align=center;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="1200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_doc" value="Docente" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="70" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_dj2" value="Vistas de Django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="200" y="70" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_db2" value="Base de Datos (PostgreSQL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="380" y="70" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_notif" value="Servicio de Notificaciones" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="560" y="70" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_doc" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="100" as="sourcePoint" />
+            <mxPoint x="90" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_dj2" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="100" as="sourcePoint" />
+            <mxPoint x="270" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_db2" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="100" as="sourcePoint" />
+            <mxPoint x="460" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_notif" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="660" y="100" as="sourcePoint" />
+            <mxPoint x="660" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c1" value="1) Solicitud GET /grade (listar)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="150" as="sourcePoint" />
+            <mxPoint x="270" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c2" value="2) Seleccionar presentaciones WHERE estado=ANALIZADO" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="270" y="190" as="sourcePoint" />
+            <mxPoint x="460" y="190" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c3" value="3) Render lista con scores IA" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="230" as="sourcePoint" />
+            <mxPoint x="90" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c4" value="4) GET /grade/{id}" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="90" y="270" as="sourcePoint" />
+            <mxPoint x="270" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c5" value="5) Seleccionar presentación + participantes + análisis" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="270" y="310" as="sourcePoint" />
+            <mxPoint x="460" y="310" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c6" value="6) Render vista detallada (video, transcripción, IA)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.1111" y="10" relative="1" as="geometry">
+            <mxPoint x="270" y="350" as="sourcePoint" />
+            <mxPoint x="90" y="350" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c7" value="7) Envío POST calificación (ajustes opcionales)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.1111" y="-10" relative="1" as="geometry">
+            <mxPoint x="90" y="390" as="sourcePoint" />
+            <mxPoint x="270" y="390" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c8" value="8) Actualizar participantes + presentación (estado=CALIFICADA) [TX]" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="270" y="430" as="sourcePoint" />
+            <mxPoint x="460" y="430" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c9" value="9) Notificar presentación calificada" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0256" y="-10" relative="1" as="geometry">
+            <mxPoint x="270" y="470" as="sourcePoint" />
+            <mxPoint x="660" y="470" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c10" value="10) Crear notificación + correo opcional" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry y="10" relative="1" as="geometry">
+            <mxPoint x="660" y="510" as="sourcePoint" />
+            <mxPoint x="460" y="510" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="c11" value="11) Redirect + mensaje de éxito" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry y="10" relative="1" as="geometry">
+            <mxPoint x="270" y="550" as="sourcePoint" />
+            <mxPoint x="90" y="550" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="diag3" name="Notificaciones en Tiempo Real">
+    <mxGraphModel dx="1103" dy="444" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="1080" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title3" value="Diagrama de Secuencia: Notificaciones en Tiempo Real (encuesta)" style="text;whiteSpace=wrap;html=1;fontSize=16;fontStyle=1;align=center;strokeColor=none;fillColor=none;" parent="1" vertex="1">
+          <mxGeometry x="20" y="20" width="1200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_user" value="Usuario (Navegador)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="20" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_js" value="Cliente JavaScript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="240" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_api" value="API de Django" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="460" y="70" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_db3" value="Base de Datos (PostgreSQL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;align=center;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="640" y="70" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="line_user" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="100" as="sourcePoint" />
+            <mxPoint x="110" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_js" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="100" as="sourcePoint" />
+            <mxPoint x="330" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_api" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="100" as="sourcePoint" />
+            <mxPoint x="540" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="line_db3" style="endArrow=none;html=1;strokeWidth=1;dashed=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="730" y="100" as="sourcePoint" />
+            <mxPoint x="730" y="800" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n1" value="1) Carga de página" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="150" as="sourcePoint" />
+            <mxPoint x="330" y="150" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n2" value="2) setInterval(poll 10s) iniciar ciclo" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="190" as="sourcePoint" />
+            <mxPoint x="540" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n3" value="3) GET /api/notifications/unread_count" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="230" as="sourcePoint" />
+            <mxPoint x="540" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n4" value="4) Contar no leídas (recipient=usuario AND is_read=false)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="540" y="270" as="sourcePoint" />
+            <mxPoint x="730" y="270" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n5" value="5) {count:N}" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="310" as="sourcePoint" />
+            <mxPoint x="330" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n6" value="6) Actualizar badge (N)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="350" as="sourcePoint" />
+            <mxPoint x="110" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n7" value="7) GET /api/notifications/list (on click)" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="390" as="sourcePoint" />
+            <mxPoint x="540" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n8" value="8) Seleccionar últimas 20 notificaciones" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="540" y="430" as="sourcePoint" />
+            <mxPoint x="730" y="430" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n9" value="9) Lista JSON" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="470" as="sourcePoint" />
+            <mxPoint x="330" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n10" value="10) Mostrar menú + marcar como leída (/mark_read/{id})" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0476" y="-10" relative="1" as="geometry">
+            <mxPoint x="330" y="510" as="sourcePoint" />
+            <mxPoint x="540" y="510" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n11" value="11) Actualizar is_read=true, read_at=NOW()" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry x="-0.0526" y="-10" relative="1" as="geometry">
+            <mxPoint x="540" y="550" as="sourcePoint" />
+            <mxPoint x="730" y="550" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n12" value="12) Decrementar badge y navegar a action_url" style="endArrow=block;html=1;strokeWidth=1;" parent="1" edge="1">
+          <mxGeometry y="10" relative="1" as="geometry">
+            <mxPoint x="330" y="590" as="sourcePoint" />
+            <mxPoint x="110" y="590" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

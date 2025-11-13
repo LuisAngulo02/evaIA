@@ -209,15 +209,40 @@ EMAIL_HOST_PASSWORD=tu_contraseña_de_aplicacion
 # ==========================================
 # GROQ API - ANÁLISIS DE COHERENCIA CON IA
 # ==========================================
-# Sistema de rotación automática de 5 keys
+# Sistema de rotación automática de 30 keys
 GROQ_API_KEY_1=gsk_tu_key_1_aqui
 GROQ_API_KEY_2=gsk_tu_key_2_aqui
 GROQ_API_KEY_3=gsk_tu_key_3_aqui
 GROQ_API_KEY_4=gsk_tu_key_4_aqui
 GROQ_API_KEY_5=gsk_tu_key_5_aqui
+GROQ_API_KEY_6=gsk_tu_key_6_aqui
+GROQ_API_KEY_7=gsk_tu_key_7_aqui
+GROQ_API_KEY_8=gsk_tu_key_8_aqui
+GROQ_API_KEY_9=gsk_tu_key_9_aqui
+GROQ_API_KEY_10=gsk_tu_key_10_aqui
+GROQ_API_KEY_11=gsk_tu_key_11_aqui
+GROQ_API_KEY_12=gsk_tu_key_12_aqui
+GROQ_API_KEY_13=gsk_tu_key_13_aqui
+GROQ_API_KEY_14=gsk_tu_key_14_aqui
+GROQ_API_KEY_15=gsk_tu_key_15_aqui
+GROQ_API_KEY_16=gsk_tu_key_16_aqui
+GROQ_API_KEY_17=gsk_tu_key_17_aqui
+GROQ_API_KEY_18=gsk_tu_key_18_aqui
+GROQ_API_KEY_19=gsk_tu_key_19_aqui
+GROQ_API_KEY_20=gsk_tu_key_20_aqui
+GROQ_API_KEY_21=gsk_tu_key_21_aqui
+GROQ_API_KEY_22=gsk_tu_key_22_aqui
+GROQ_API_KEY_23=gsk_tu_key_23_aqui
+GROQ_API_KEY_24=gsk_tu_key_24_aqui
+GROQ_API_KEY_25=gsk_tu_key_25_aqui
+GROQ_API_KEY_26=gsk_tu_key_26_aqui
+GROQ_API_KEY_27=gsk_tu_key_27_aqui
+GROQ_API_KEY_28=gsk_tu_key_28_aqui
+GROQ_API_KEY_29=gsk_tu_key_29_aqui
+GROQ_API_KEY_30=gsk_tu_key_30_aqui
 
 # Instrucción: Regístrate en https://console.groq.com
-# Puedes usar una sola key (duplicarla 5 veces) o 5 diferentes
+# Puedes usar una sola key (duplicarla 30 veces) o 30 diferentes
 
 # ==========================================
 # CLOUDINARY - ALMACENAMIENTO DE ARCHIVOS
@@ -260,7 +285,7 @@ SECRET_KEY=django-insecure-change-this-in-production
     print("\n🚀 PRÓXIMOS PASOS:")
     print("\n   1. Editar .env con tus credenciales:")
     print("      - EMAIL_HOST_USER y EMAIL_HOST_PASSWORD")
-    print("      - GROQ_API_KEY_1 hasta GROQ_API_KEY_5")
+    print("      - GROQ_API_KEY_1 hasta GROQ_API_KEY_30")
     print("      - CLOUDINARY (opcional)")
     print()
     print("   2. Activar entorno virtual:")

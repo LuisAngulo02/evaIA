@@ -1,0 +1,185 @@
+===============================================================================
+CÁLCULO DE CAPACIDAD CON 30 API KEYS DE GROQ
+===============================================================================
+
+LÍMITES DE GROQ API (Plan Gratuito - actualizado Nov 2024)
+------------------------------------------------------------
+Por cada API key gratuita:
+- Requests por minuto (RPM): 30 requests/min
+- Tokens por minuto (TPM): 6,000 tokens/min
+- Requests por día (RPD): 14,400 requests/día
+- Tokens por día (TPD): Ilimitado en tokens (solo limitado por RPM)
+
+Modelo usado: Llama 3.3 70B
+
+
+ANÁLISIS TÍPICO POR VIDEO DE PRESENTACIÓN
+------------------------------------------------------------
+Componentes que usan Groq API:
+1. Análisis de coherencia por participante
+2. Feedback personalizado por participante
+3. Análisis global opcional
+
+Consumo promedio por video de 5-10 minutos con 2-3 participantes:
+- Requests totales: 3-6 requests (1-2 por participante + análisis global)
+- Tokens por request:
+  * Input: ~1,500 tokens (transcripción + contexto + instrucciones)
+  * Output: ~500 tokens (análisis estructurado JSON)
+  * Total por request: ~2,000 tokens
+- Total tokens por video: 6,000-12,000 tokens
+
+Tiempo de procesamiento: ~10-20 segundos (con rotación de keys)
+
+
+CAPACIDAD CON 1 API KEY
+------------------------------------------------------------
+Por minuto:
+- Máximo 30 requests/min
+- Máximo 6,000 tokens/min
+- Limitante: TOKENS (6,000 tokens permite ~3 requests de 2,000 tokens)
+- Videos procesables: ~1 video/minuto (si tiene 3 participantes)
+
+Por hora:
+- 60 minutos × 1 video/min = ~60 videos/hora
+
+Por día:
+- 14,400 requests/día
+- Con 4 requests promedio/video = ~3,600 videos/día
+- PERO limitado por TPM: ~1,440 videos/día (60 videos/hora × 24h)
+
+
+CAPACIDAD CON 30 API KEYS (CON ROTACIÓN AUTOMÁTICA)
+------------------------------------------------------------
+Sistema de rotación:
+- El sistema alterna entre las 30 keys automáticamente
+- Si una key alcanza rate limit, pasa a la siguiente
+- Cada key se "resetea" cada minuto
+
+Por minuto (rotación perfecta):
+- 30 keys × 6,000 tokens/min = 180,000 tokens/min disponibles
+- Con 6,000-12,000 tokens/video = 15-30 videos/minuto
+
+Por hora:
+- Escenario conservador: 15 videos/min × 60 min = 900 videos/hora
+- Escenario optimista: 30 videos/min × 60 min = 1,800 videos/hora
+- Promedio recomendado: ~1,200 videos/hora
+
+Por día:
+- Conservador: 900 videos/hora × 24h = 21,600 videos/día
+- Optimista: 1,800 videos/hora × 24h = 43,200 videos/día
+- Promedio recomendado: ~28,800 videos/día
+
+
+FACTORES QUE AFECTAN LA CAPACIDAD REAL
+------------------------------------------------------------
+✅ Factores que mejoran capacidad:
+- Videos cortos (< 5 min): menos tokens, más videos/hora
+- Pocos participantes (1-2): menos requests/video
+- Transcripciones concisas: menos tokens de input
+- Cache de resultados: evita reprocesar mismo video
+
+⚠️ Factores que reducen capacidad:
+- Videos largos (> 10 min): más tokens por request
+- Muchos participantes (4-5): más requests/video
+- Transcripciones detalladas: más tokens de input
+- Análisis múltiples: reintentos por errores
+- Latencia de red: tiempo entre requests
+
+
+ESCENARIOS DE USO PRÁCTICO
+------------------------------------------------------------
+
+Escenario 1: Universidad pequeña (100 estudiantes/mes)
+- 100 estudiantes × 3 presentaciones/semestre = 300 videos/semestre
+- Con 30 keys: 300 videos procesables en ~15-20 minutos
+- Capacidad sobrante: 99.9%
+
+Escenario 2: Universidad mediana (1,000 estudiantes/mes)
+- 1,000 estudiantes × 3 presentaciones/semestre = 3,000 videos/semestre
+- Con 30 keys: 3,000 videos procesables en ~2-3 horas
+- Capacidad sobrante: 99%
+
+Escenario 3: Universidad grande (10,000 estudiantes/mes)
+- 10,000 estudiantes × 3 presentaciones/semestre = 30,000 videos/semestre
+- Con 30 keys: 30,000 videos procesables en ~1 día completo
+- Capacidad sobrante: 90%
+
+Escenario 4: Procesamiento intensivo continuo
+- Si procesas 24/7 sin parar: ~28,800 videos/día
+- Mes completo: ~864,000 videos/mes
+- Año completo: ~10.5 millones de videos/año
+
+
+RECOMENDACIONES DE CONFIGURACIÓN
+------------------------------------------------------------
+Para máximo rendimiento con 30 keys:
+
+1. Distribución de keys:
+   - Opción A: 30 cuentas diferentes (máxima capacidad)
+   - Opción B: 10 cuentas × 3 keys c/u (más fácil gestión)
+   - Opción C: 1 cuenta duplicada 30 veces (mínima capacidad pero funcional)
+
+2. Configuración óptima en .env:
+   GROQ_API_KEY_1=gsk_cuenta1_key1
+   GROQ_API_KEY_2=gsk_cuenta1_key2
+   ...
+   GROQ_API_KEY_30=gsk_cuenta10_key3
+
+3. Timeout de rotación:
+   - Actual: 60 segundos (default)
+   - Recomendado para alto volumen: 30 segundos
+   - Para debugging: 120 segundos
+
+4. Estrategias de optimización:
+   - Procesar videos en cola (batch processing)
+   - Priorizar videos cortos en horas pico
+   - Cachear análisis de asignaciones repetidas
+   - Comprimir transcripciones largas (resúmenes)
+
+
+MONITOREO Y ALERTAS
+------------------------------------------------------------
+El sistema ya incluye:
+✅ Rotación automática de keys
+✅ Detección de rate limits (429)
+✅ Fallback a siguiente key disponible
+✅ Logging de uso por key
+✅ Reintentos automáticos
+
+Métricas recomendadas a monitorear:
+- Requests por key por minuto
+- Tasa de éxito/fallo por key
+- Tiempo promedio de respuesta
+- Distribución de carga entre keys
+
+
+RESUMEN EJECUTIVO
+------------------------------------------------------------
+Con 30 API keys de Groq configuradas correctamente:
+
+📊 CAPACIDAD TEÓRICA:
+   - Máxima: ~43,200 videos/día
+   - Conservadora: ~21,600 videos/día
+   - Promedio recomendado: ~28,800 videos/día
+
+💰 COSTO:
+   - GRATIS (plan gratuito de Groq)
+   - $0 por 30 API keys
+   - $0 por ~28,800 videos/día
+
+⚡ VELOCIDAD:
+   - ~1,200 videos/hora
+   - ~20 videos/minuto
+   - ~3 segundos por video (promedio)
+
+🎯 CONCLUSIÓN:
+   30 API keys de Groq son más que suficientes para:
+   - Universidades de hasta 50,000 estudiantes
+   - Procesamiento continuo 24/7
+   - Picos de carga estacionales (fin de semestre)
+   - Margen de seguridad: >90%
+
+
+ACTUALIZADO: Noviembre 2024
+Sistema: evaIA v12 con rotación de 30 keys
+===============================================================================

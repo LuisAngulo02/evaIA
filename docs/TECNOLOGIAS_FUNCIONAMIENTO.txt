@@ -1,0 +1,172 @@
+==============================
+FUNCIONAMIENTO DETALLADO DEL SISTEMA EVAIA
+==============================
+
+ÍNDICE
+1. Backend y Frontend General
+2. Tecnologías Principales y Para Qué se Usan
+3. Módulos del Backend (Autenticación, Presentaciones, Procesador IA, Notificaciones, Reportes)
+4. Detección y Reconocimiento Facial (MediaPipe + DeepFace)
+5. Embeddings y Comparación Final
+6. Grabación / Validación en Vivo (Un Solo Rostro)
+7. Transcripción con Whisper
+8. Prompts y Evaluación con Groq (Llama 3.3 70B)
+9. Formato de Salida de la Evaluación IA
+10. Cloudinary y Gestión de Medios
+11. Exportación de PDF y Gráficas de Reporte
+12. Estados de las Presentaciones
+13. Consideraciones de Rendimiento
+14. Manejo de Errores y Degradación
+
+-----------------------------------------
+1. Backend y Frontend General
+-----------------------------------------
+Backend: Python 3.11 + Django 5.x con arquitectura modular (apps separadas), patrón MVT (Model–View–Template) y capa de servicios para lógica IA pesada. Uso de PostgreSQL como base de datos. Python aporta ecosistema científico (NumPy, Pandas, scikit-learn), bindings de IA y rapidez de iteración.
+Frontend: Plantillas Django (HTML + Jinja-like), CSS y JavaScript plano (algunas funciones de polling). Se prevé mejora futura con WebSockets o un micro frontend si se escala.
+Autenticación: Sistema de usuarios personalizado (roles: estudiante, docente, admin) con decoradores y filtros.
+
+-----------------------------------------
+2. Tecnologías Principales y Para Qué se Usan
+-----------------------------------------
+Python: Lenguaje principal de implementación (tipado dinámico, ecosistema científico, rapidez de desarrollo).
+MediaPipe: Detección rápida de rostros y landmarks básicos en fotogramas.
+DeepFace: Reconocimiento y generación de embeddings de rostros (modelos: ArcFace, Facenet, VGG-Face). En la implementación actual se usa Facenet512 por defecto; si está disponible InsightFace en el entorno, el código lo prioriza para embeddings.
+Whisper (OpenAI / implementación local): Transcripción de audio→texto (modelo pequeño para rapidez, puede escalar a medium si hardware lo permite).
+Groq API (Llama 3.3 70B): Evaluación semántica y generación de feedback estructurado mediante prompts específicos.
+Cloudinary: Almacenamiento externo de videos e imágenes optimizado (transformaciones, CDN, caché global, thumbnails).
+Scikit-learn: Clustering (Agglomerative / DBSCAN) para agrupar embeddings y consolidar identidad de participantes.
+MoviePy / ffmpeg / imageio-ffmpeg: Extracción de audio y fotogramas del video.
+Pandas / NumPy: Manipulación de vectores, normalización y cálculos de métricas de desempeño.
+Matplotlib / Plotly (si usado): Generación de gráficas para reportes de desempeño (puntajes promedio, dispersión, evolución temporal).
+
+-----------------------------------------
+3. Módulos del Backend
+-----------------------------------------
+Autenticación (`authentication`): Maneja registro, login, roles, permisos, helpers en `decoradores.py`. Plantillas base para flujos de acceso.
+Presentaciones (`presentaciones`): Modelos de Curso, Asignación, Presentación, Participante, Configuración IA, Análisis IA. Contiene tareas y validadores (fechas, tamaños). Orquesta ciclo de vida: SUBIDA → PROCESANDO → ANALIZADA → CALIFICADA.
+Procesador IA (`ai_processor`): Conjunto de servicios independientes:
+  - Transcripción (Whisper)
+  - Detección facial (MediaPipe + DeepFace)
+  - Coherencia semántica (Groq)
+  - Liveness (detección autenticidad)
+  - Segmentación de audio (si aplica)
+Notificaciones (`notifications`): Modelos de notificaciones, servicio para crear eventos (presentación analizada, calificada), polling para contador.
+Reportes (`reportes`): Generación de reportes PDF/Excel y gráficas (puntajes IA por estudiante, comparativas por curso, histórico de mejora).
+
+-----------------------------------------
+4. Detección y Reconocimiento Facial
+-----------------------------------------
+Pipeline:
+ 1. Muestreo de fotogramas (1 fps o adaptativo) para rendimiento.
+ 2. MediaPipe detecta bounding boxes y landmarks (ojos, boca) por frame.
+ 3. Para cada rostro estable, se recorta y normaliza (alineación ligera basada en ojos).
+ 4. DeepFace (modelo Facenet512) genera embedding (512-dim); si InsightFace está disponible, se usa su embedding 512-dim.
+ 5. Se acumulan embeddings por rostro y se hace clustering para separar individuos.
+Umbrales de confianza (según código actual):
+  - Detección (MediaPipe FaceDetection): min_detection_confidence=0.50; se descartan detecciones < 0.40.
+  - Verificación facial (Face Mesh): min_detection_confidence=0.75; min_tracking_confidence=0.60.
+  - Embeddings (distancia coseno transformada d=(1-cos)/2): para seguimiento en tiempo real se usa umbral ~0.18; para fusión de tracks el threshold es adaptativo (≈0.20 típico, ajustado por distribución).
+  - Liveness simple (si aplica): heurística combinada (parpadeo, micro-movimientos) ≥ 0.6.
+Prevención de múltiples rostros simultáneos en vivo: Si se detectan >1 rostro estable durante más de X segundos (config 2-3s), se marca evento de incidencia y se solicita repetir sección o se reduce puntaje de autenticidad.
+
+-----------------------------------------
+5. Embeddings y Comparación Final
+-----------------------------------------
+Generación: DeepFace devuelve embeddings ya normalizados.
+Normalización adicional: Se aplica L2 normalize (v / ||v||) para mantener magnitud consistente.
+Métrica principal: Distancia coseno (1 - cos_sim) o en algunos casos euclidiana si se habilita.
+Consolidación identidad: Para cada cluster, se calcula embedding promedio y se asocia a un participante.
+Desambiguación: Si dos clusters están dentro de margen 0.05 de distancia se fusionan; si hay variabilidad alta se subdividen.
+
+-----------------------------------------
+6. Grabación / Validación en Vivo
+-----------------------------------------
+Objetivo: Asegurar que sólo un participante activo aparece durante la presentación.
+Mecanismo:
+  - Streaming (o procesamiento por lotes rápido) revisa cada frame muestreado.
+  - Se mantiene ventana deslizante (últimos 5-10 segundos) de conteo de rostros.
+  - Si en >60% de los frames de la ventana hay exactamente 1 rostro → condición estable OK.
+  - Si aparece segundo rostro en ≥3 frames consecutivos → marcar alerta y registrar en análisis (posible asistencia externa).
+  - Liveness se combina (parpadeo, micro movimientos) para descartar pantalla estática.
+
+-----------------------------------------
+7. Transcripción con Whisper
+-----------------------------------------
+Extracción audio: ffmpeg convierte video a WAV/MP3 de tasa constante.
+Modelo: Whisper small (por velocidad); se puede escalar a medium para mayor exactitud.
+Pre-proceso: Normalización de volumen, segmentación por silencio (>0.8s) para lotes.
+Salida: Texto crudo + timestamps por segmento.
+Post-proceso: Limpieza de tics (“eh”, “um”), corrección ortográfica ligera y eliminación repeticiones.
+
+-----------------------------------------
+8. Prompts y Evaluación con Groq
+-----------------------------------------
+Se usan distintos prompts para obtener:
+  - Coherencia global del discurso.
+  - Claridad y estructura lógica.
+  - Participación equilibrada (si multi-persona, se pasa resumen de turnos).
+  - Uso de terminología específica (si la asignación tiene lista de palabras clave).
+Estrategia:
+  1. Prompt base con transcripción resumida.
+  2. Segundo prompt para extracción de puntos clave.
+  3. Tercer prompt para generar feedback accionable (máx 5 sugerencias).
+Formato pedido al modelo: JSON con campos: {
+  "coherencia": number(0-100),
+  "claridad": number(0-100),
+  "terminologia": number(0-100),
+  "participacion_equilibrada": number(0-100),
+  "resumen": string,
+  "sugerencias": [string]
+}
+Si el modelo genera texto libre, se aplica regex + validación schema para reintentar.
+Rotación de claves: Lista de API keys en configuración; si error 429/timeout se cambia a la siguiente.
+
+-----------------------------------------
+9. Formato de Salida de la Evaluación IA
+-----------------------------------------
+La base de datos almacena:
+  - Puntajes numéricos normalizados (0–100).
+  - Feedback textual estructurado (sugerencias).
+  - Resumen general.
+  - Metadatos (duración, número de participantes, fecha análisis).
+
+-----------------------------------------
+10. Cloudinary y Gestión de Medios
+-----------------------------------------
+Subida: Tras completar análisis se envía el video a Cloudinary (API upload). Se guarda public_id.
+Transformaciones: Thumbnails a resoluciones bajas para vista rápida (ej. 320x180), posible recorte centrado.
+CDN: Acceso rápido en distintas regiones; cache-control para mejorar primera carga.
+Fallback: Si Cloudinary falla se mantiene archivo local y se marca flag en DB.
+
+-----------------------------------------
+11. Exportación de PDF y Gráficas de Reporte
+-----------------------------------------
+Datos: Se agregan puntajes promedio por presentación y por participante.
+Gráficas: Barras (coherencia vs claridad), líneas (evolución temporal), pastel (participación). Generadas y convertidas a imagen embebida.
+PDF: Plantilla base (logotipo, curso, fecha, tabla de puntajes, imagen de gráficas) usando biblioteca (ReportLab / WeasyPrint según configuración). Export Excel similar con columnas separadas.
+
+-----------------------------------------
+12. Estados de las Presentaciones
+-----------------------------------------
+SUBIDA: Recién almacenada, sin análisis.
+PROCESANDO: En cola de análisis IA (transcripción/detección en progreso).
+ANALIZADA: Resultados IA disponibles.
+CALIFICADA: Docente revisó y/o ajustó puntajes finales.
+
+-----------------------------------------
+13. Consideraciones de Rendimiento
+-----------------------------------------
+Muestreo temporal para reducir carga (1 fps vs 30 fps).
+Cache de embeddings por presentación para evitar recomputar.
+Uso de lotes pequeños en transcripción (segmentos) para reintentos parciales.
+Evitar llamadas redundantes a Groq (resumen sólo si duración > X minutos).
+
+-----------------------------------------
+14. Manejo de Errores y Degradación
+-----------------------------------------
+Transcripción fallo: Reintento con configuración más simple (sin segmentación fina).
+Groq saturado: Cambio de key + reducción de contexto (resumen más corto) + fallback a heurísticas simples de coherencia (basadas en densidad de repeticiones).
+Detección facial inconsistente: Se marca confiabilidad baja y se reduce peso de participación en cálculo final.
+Cloudinary fallo: Flag fallback_local=true y se notifica al admin.
+
+FIN DEL DOCUMENTO

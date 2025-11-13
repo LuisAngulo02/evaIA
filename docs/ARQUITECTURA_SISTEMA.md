@@ -1,5 +1,9 @@
 # DOCUMENTACIÓN COMPLETA DEL SISTEMA EVALEXPO AI
 
+**Última actualización:** Noviembre 2025  
+**Versión del Sistema:** 2.0  
+**Estado:** Producción
+
 ## Tabla de Contenidos
 1. [Introducción General](#introducción-general)
 2. [Arquitectura del Sistema](#arquitectura-del-sistema)
@@ -9,7 +13,7 @@
 6. [Base de Datos](#base-de-datos)
 7. [Inteligencia Artificial](#inteligencia-artificial)
 8. [APIs y Servicios Externos](#apis-y-servicios-externos)
-9. [Seguridad](#seguridad)
+9. [Seguridad y Privacidad](#seguridad-y-privacidad)
 10. [Instalación y Configuración](#instalación-y-configuración)
 
 ---
@@ -18,86 +22,256 @@
 
 ### ¿Qué es EvalExpo AI?
 
-**EvalExpo AI** es un sistema integral de evaluación de presentaciones académicas que utiliza inteligencia artificial avanzada para analizar y calificar exposiciones de estudiantes. El sistema automatiza gran parte del proceso de evaluación, proporcionando retroalimentación detallada tanto a estudiantes como a docentes.
+**EvalExpo AI** es un sistema integral de evaluación de presentaciones académicas que utiliza inteligencia artificial avanzada para analizar y calificar exposiciones de estudiantes de manera automatizada, objetiva y escalable. El sistema combina múltiples tecnologías de IA de última generación para proporcionar evaluaciones completas y retroalimentación detallada en tiempo real.
 
 ### Objetivo Principal
 
-Facilitar la evaluación objetiva y consistente de presentaciones orales mediante el análisis automatizado de múltiples aspectos como:
-- Contenido y coherencia temática
-- Fluidez y claridad del discurso
-- Lenguaje corporal y postura
-- Participación individual en exposiciones grupales
-- Calidad vocal y dicción
+Facilitar la evaluación objetiva, consistente y escalable de presentaciones orales mediante el análisis automatizado de múltiples dimensiones:
+
+**Análisis de Contenido:**
+- Coherencia temática con las instrucciones de la asignación
+- Relevancia y profundidad del contenido expuesto
+- Estructura y organización del discurso
+- Calidad argumentativa y ejemplos utilizados
+
+**Análisis de Participación:**
+- Detección automática de participantes en presentaciones grupales
+- Medición individual de tiempo de participación por persona
+- Identificación de participantes activos vs pasivos
+- Análisis de distribución equitativa del tiempo
+
+**Análisis de Autenticidad:**
+- Detección de videos grabados en vivo vs pregrabados
+- Verificación de autenticidad mediante análisis de liveness
+- Identificación de patrones de edición o manipulación
+
+**Análisis de Desempeño:**
+- Transcripción automática de audio con timestamps
+- Análisis de fluidez verbal y pausas
+- Evaluación de dicción y claridad del habla
+- Detección de muletillas y repeticiones
 
 ### Usuarios del Sistema
 
-1. **Estudiantes**: Suben sus presentaciones en video y reciben retroalimentación automatizada
-2. **Docentes**: Gestionan cursos, asignaciones y califican presentaciones con apoyo de IA
-3. **Administradores**: Gestionan usuarios, configuran el sistema y monitorean el rendimiento
+1. **Estudiantes**: 
+   - Suben videos de presentaciones individuales o grupales
+   - Reciben retroalimentación automatizada de IA en minutos
+   - Consultan calificaciones, estadísticas y reportes personalizados
+   - Visualizan análisis detallado de participación
+
+2. **Docentes**: 
+   - Crean y gestionan cursos y asignaciones
+   - Configuran parámetros de evaluación y nivel de rigurosidad de IA
+   - Revisan análisis automatizado de IA antes de calificar
+   - Ajustan calificaciones manualmente según su criterio
+   - Generan reportes académicos en Excel/PDF
+
+3. **Administradores**: 
+   - Gestionan usuarios y asignación de roles
+   - Configuran parámetros globales del sistema
+   - Monitorean rendimiento y uso de APIs
+   - Acceden a estadísticas generales del sistema
 
 ---
 
 ## 2. ARQUITECTURA DEL SISTEMA
 
-### Patrón de Arquitectura: MVT (Model-View-Template)
+### Patrón de Arquitectura: MVT (Model-View-Template) con Microservicios de IA
 
-El sistema está construido siguiendo el patrón MVT de Django, una variación del patrón MVC:
+El sistema está construido siguiendo el patrón MVT de Django con una arquitectura modular orientada a servicios de IA:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      NAVEGADOR WEB                          │
-│              (Chrome, Firefox, Edge, etc.)                  │
-└────────────────────┬────────────────────────────────────────┘
-                     │ HTTP Request/Response
+┌──────────────────────────────────────────────────────────────────┐
+│                        NAVEGADOR WEB                             │
+│                  (Chrome, Firefox, Edge, Safari)                 │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │ HTTPS Request/Response
+                            │ WebSocket (Notificaciones en tiempo real)
+                            │
+┌───────────────────────────▼──────────────────────────────────────┐
+│                     DJANGO WEB SERVER                            │
+│                      (Puerto 8000 local)                         │
+│                    Gunicorn/uWSGI (Producción)                   │
+├──────────────────────────────────────────────────────────────────┤
+│  URL Router → Middleware → Views → Context Processors            │
+│  Authentication → CSRF → Session → Messages                      │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+            ┌───────────────┼───────────────┐
+            │               │               │
+            ▼               ▼               ▼
+    ┌──────────────┐ ┌──────────────┐ ┌────────────────┐
+    │   MODELS     │ │    FORMS     │ │   TEMPLATES    │
+    │   (ORM)      │ │ (Validación) │ │   (DTL + JS)   │
+    └──────┬───────┘ └──────────────┘ └────────────────┘
+           │
+           ▼
+    ┌─────────────────────────────────────────────────────┐
+    │           CAPA DE SERVICIOS DE IA                   │
+    ├─────────────────────────────────────────────────────┤
+    │  • AIService (Orquestador principal)                │
+    │  • TranscriptionService (Whisper)                   │
+   │  • FaceDetectionService (MediaPipe + DeepFace)       │
+    │  • AdvancedCoherenceService (Groq + Llama 3.3)      │
+    │  • LivenessDetectionService (OpenCV)                │
+    │  • AudioSegmentationService                         │
+    │  • CloudinaryService (Almacenamiento)               │
+    │  • NotificationService (Notificaciones)             │
+    └────────────────┬────────────────────────────────────┘
                      │
-┌────────────────────▼────────────────────────────────────────┐
-│                   DJANGO WEB SERVER                         │
-│                  (Puerto 8000 local)                        │
-├─────────────────────────────────────────────────────────────┤
-│  URL Router  →  Views  →  Templates  →  Static Files       │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-        ┌────────────┼────────────┐
-        │            │            │
-        ▼            ▼            ▼
-┌───────────┐  ┌──────────┐  ┌─────────────┐
-│  MODELS   │  │  FORMS   │  │  SERVICES   │
-│ (ORM)     │  │          │  │  (Lógica)   │
-└─────┬─────┘  └──────────┘  └──────┬──────┘
-      │                              │
-      ▼                              ▼
-┌─────────────────┐         ┌──────────────────┐
-│   PostgreSQL    │         │  APIs Externas   │
-│   (Base Datos)  │         │  - Groq AI       │
-│                 │         │  - Whisper       │
-│                 │         │  - Cloudinary    │
-└─────────────────┘         └──────────────────┘
+        ┌────────────┼────────────┬──────────────┐
+        │            │            │              │
+        ▼            ▼            ▼              ▼
+┌──────────────┐ ┌─────────┐ ┌──────────┐ ┌────────────┐
+│  PostgreSQL  │ │ Caché   │ │ APIs     │ │ Cloudinary │
+│  (Base de    │ │ Redis   │ │ Externas │ │ (CDN)      │
+│   Datos)     │ │(Progreso│ │          │ │            │
+│              │ │ Tareas) │ │ • Groq   │ │            │
+│              │ │         │ │ • OpenAI │ │            │
+└──────────────┘ └─────────┘ └──────────┘ └────────────┘
 ```
 
-### Capas del Sistema
+### Capas del Sistema (Detallado)
 
 #### 1. **Capa de Presentación** (Frontend)
-- **Templates HTML**: Utilizan Django Template Language (DTL)
-- **CSS**: Bootstrap 5.3 + estilos personalizados
-- **JavaScript**: Vanilla JS para interactividad dinámica
-- **Componentes**: Modales, formularios, tablas dinámicas, reproductor de video
+**Tecnologías:**
+- **Templates HTML**: Django Template Language (DTL) con herencia jerárquica
+- **CSS Framework**: Bootstrap 5.3 + estilos personalizados responsivos
+- **JavaScript**: Vanilla JS + Fetch API para interactividad asíncrona
+- **Componentes UI**: 
+  - Modales dinámicos para calificación y detalles
+  - Formularios con validación en tiempo real
+  - Tablas con ordenamiento y filtrado
+  - Reproductor de video con controles personalizados
+  - Barras de progreso para procesamiento de IA
+  - Sistema de notificaciones toast en tiempo real
+
+**Características:**
+- Diseño responsive (mobile-first)
+- Progressive Web App (PWA) ready
+- Lazy loading de imágenes y videos
+- Optimización de rendimiento con minificación CSS/JS
 
 #### 2. **Capa de Lógica de Negocio** (Backend)
-- **Views**: Controlan el flujo de la aplicación
-- **Services**: Contienen la lógica compleja (análisis IA, procesamiento video)
-- **Forms**: Validación y procesamiento de datos de entrada
-- **Signals**: Eventos automáticos del sistema
+**Componentes Principales:**
+
+**Views (Controladores):**
+- `upload_presentation_view`: Subida de videos con validación
+- `grade_presentations_view`: Panel de calificación para docentes
+- `teacher_dashboard_view`: Dashboard con estadísticas en tiempo real
+- `student_reports_view`: Visualización de calificaciones y reportes
+- Decoradores personalizados: `@student_required`, `@teacher_required`, `@admin_required`
+
+**Services (Lógica de IA):**
+- `AIService`: Orquestador principal del flujo de análisis completo
+- `TranscriptionService`: Transcripción de audio con Whisper
+- `FaceDetectionService`: Detección y tracking de rostros con MediaPipe/DeepFace
+- `AdvancedCoherenceService`: Análisis semántico con Llama 3.3 70B
+- `LivenessDetectionService`: Detección de autenticidad de videos
+- `AudioSegmentationService`: Segmentación de audio por participante
+- `CloudinaryService`: Gestión de almacenamiento en la nube
+- `NotificationService`: Sistema de notificaciones push
+
+**Forms (Validación):**
+- Validación server-side y client-side
+- Sanitización de entradas
+- Manejo de archivos multimedia grandes (hasta 100MB)
+
+**Signals (Eventos Automáticos):**
+- `post_save` en User → Crear Profile automáticamente
+- `pre_save` en Presentation → Validar datos antes de guardar
+- Notificaciones automáticas en cambios de estado
 
 #### 3. **Capa de Datos**
-- **Models (ORM)**: Abstracción de la base de datos
-- **Migraciones**: Control de versiones del esquema de BD
-- **Queries**: Optimizadas con select_related y prefetch_related
+**Base de Datos: PostgreSQL 12+**
+
+**Optimizaciones:**
+- Índices en campos frecuentemente consultados
+- `select_related()` para relaciones ForeignKey
+- `prefetch_related()` para relaciones ManyToMany
+- Particionamiento de tablas grandes (futuro)
+- Backup automático diario
+
+**Caché:**
+- Django Cache Framework con Redis (opcional)
+- Caché de progreso de procesamiento
+- Caché de embeddings de rostros para evitar recálculos
 
 #### 4. **Capa de Servicios Externos**
-- **Groq API**: Análisis de coherencia con LLMs (Llama 3.3 70B)
-- **Whisper (OpenAI)**: Transcripción de audio a texto
-- **Cloudinary**: Almacenamiento en la nube de videos
-- **MediaPipe**: Detección de rostros y seguimiento
+
+**Groq API (Análisis de Coherencia):**
+- Modelo: Llama 3.3 70B Versatile
+- Sistema de rotación automática de API keys (hasta 10 keys)
+- Manejo inteligente de rate limits
+- Retry automático con backoff exponencial
+- Timeout: 45 segundos
+
+**OpenAI Whisper (Transcripción):**
+- Modelo: Small (balance velocidad/precisión)
+- Procesamiento local (sin enviar a API)
+- Soporte para múltiples idiomas
+- Extracción de timestamps precisos
+
+**Cloudinary (Almacenamiento CDN):**
+- Almacenamiento de videos en la nube
+- Generación automática de thumbnails
+- Streaming optimizado
+- Transcoding automático a múltiples formatos
+
+**MediaPipe + DeepFace (Detección y Reconocimiento Facial):**
+- Detección en tiempo real de múltiples rostros
+- Tracking con identificación de personas únicas
+- Análisis de landmarks faciales (468 puntos)
+- Clustering jerárquico para agrupar rostros similares
+
+### Arquitectura de Microservicios de IA
+
+Cada servicio de IA es independiente y modular:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              AIService (Orquestador)                    │
+│  - Coordina el flujo completo de análisis               │
+│  - Maneja progreso y reportes de estado                 │
+│  - Gestiona errores y reintentos                        │
+└───────────────────┬─────────────────────────────────────┘
+                    │
+        ┌───────────┼───────────┬──────────────┐
+        │           │           │              │
+        ▼           ▼           ▼              ▼
+┌─────────────┐ ┌─────────┐ ┌───────────┐ ┌──────────────┐
+│ Liveness    │ │  Face   │ │Transcribe │ │  Coherence   │
+│ Detection   │ │Detection│ │ Service   │ │   Analyzer   │
+│             │ │         │ │           │ │              │
+│ • Análisis  │ │• Media- │ │• Whisper  │ │• Groq API    │
+│   metadata  │ │  Pipe   │ │• FFmpeg   │ │• Llama 3.3   │
+│ • Ruido     │ │• Insight│ │• Segmen-  │ │• Análisis    │
+│ • Brillo    │ │  Face   │ │  tación   │ │  semántico   │
+│ • Temporal  │ │• OpenCV │ │• Align.   │ │• Evaluación  │
+└─────────────┘ └─────────┘ └───────────┘ └──────────────┘
+```
+
+### Flujo de Datos (Pipeline de Análisis)
+
+```
+1. SUBIDA DE VIDEO
+   ↓
+2. VALIDACIÓN (formato, tamaño, duración)
+   ↓
+3. ANÁLISIS DE LIVENESS (15% progreso)
+   ↓
+4. DETECCIÓN DE ROSTROS (30% progreso)
+   ↓
+5. TRANSCRIPCIÓN COMPLETA (50% progreso)
+   ↓
+6. ANÁLISIS DE COHERENCIA POR PARTICIPANTE (70% progreso)
+   ↓
+7. CÁLCULO DE CALIFICACIONES (90% progreso)
+   ↓
+8. GENERACIÓN DE RETROALIMENTACIÓN (100% progreso)
+   ↓
+9. NOTIFICACIÓN AL ESTUDIANTE
+```
 
 ---
 
@@ -107,73 +281,114 @@ El sistema está construido siguiendo el patrón MVT de Django, una variación d
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **Python** | 3.11.8 | Lenguaje principal |
-| **Django** | 5.2.1 | Framework web |
-| **PostgreSQL** | 15.x | Base de datos relacional |
-| **psycopg2** | 2.9.10 | Adaptador PostgreSQL para Python |
-| **psycopg2-binary** | 2.9.10 | Versión binaria precompilada |
+| **Python** | 3.11.9 | Lenguaje principal del sistema |
+| **Django** | 5.2.7 | Framework web MVT |
+| **PostgreSQL** | 12+ | Base de datos relacional ACID |
+| **psycopg2-binary** | 2.9.11 | Adaptador PostgreSQL optimizado |
 
-### Inteligencia Artificial
+### Inteligencia Artificial y Machine Learning
 
+#### Modelos de Lenguaje (LLM)
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **Groq SDK** | 0.32.0 | API para modelos LLM (Llama 3.3 70B) |
-| **OpenAI** | 1.91.0 | Cliente de OpenAI API |
-| **OpenAI Whisper** | 20250625 | Transcripción de audio |
-| **PyTorch** | 2.8.0 | Framework de Deep Learning |
-| **TorchAudio** | 2.8.0 | Procesamiento de audio con PyTorch |
-| **TorchVision** | 0.23.0 | Visión por computadora con PyTorch |
-| **Transformers** | 4.46.3 | Modelos de Hugging Face |
-| **Sentence-Transformers** | 5.1.1 | Embeddings semánticos |
-| **MediaPipe** | 0.10.21 | Detección facial y tracking |
-| **JAX** | 0.7.1 | Computación numérica de alto rendimiento |
-| **JAXlib** | 0.7.1 | Biblioteca de bajo nivel para JAX |
+| **Groq SDK** | 0.32.0 | API para Llama 3.3 70B (análisis de coherencia) |
+| **OpenAI** | 1.59.5 | Cliente OpenAI (Whisper) |
+| **OpenAI Whisper** | 20231117 | Transcripción de audio a texto con timestamps |
+| **Transformers** | 4.46.3 | Modelos pre-entrenados de Hugging Face |
+| **Sentence-Transformers** | 3.3.1 | Embeddings semánticos para análisis de texto |
+| **Tokenizers** | 0.20.3 | Tokenización rápida para NLP |
+| **TikToken** | 0.12.0 | Tokenizador de OpenAI para conteo de tokens |
+
+#### Deep Learning Frameworks
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **PyTorch** | 2.5.1 | Framework principal de Deep Learning |
+| **TorchAudio** | 2.5.1 | Procesamiento de audio con tensores |
+| **TorchVision** | 0.20.1 | Visión por computadora con PyTorch |
+
+#### Visión por Computadora
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **OpenCV (cv2)** | 4.9.0.80 | Procesamiento de imágenes y video |
+| **MediaPipe** | 0.10.21 | Detección facial y tracking en tiempo real (468 landmarks) |
+| **DeepFace** | 0.0.x | Framework de reconocimiento facial (modelos: VGG-Face, Facenet, ArcFace, etc.) |
+| **Face Recognition** | 1.3.0 | Comparación de rostros (dlib wrapper) |
+| **dlib** | 19.24.6 | Detección de landmarks faciales |
 
 ### Procesamiento Multimedia
 
+#### Video
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **OpenCV** | 4.12.0.88 | Visión por computadora |
-| **OpenCV-Contrib** | 4.12.0.88 | Módulos adicionales de OpenCV |
-| **MoviePy** | 2.2.1 | Procesamiento de video |
-| **Librosa** | 0.11.0 | Análisis de audio |
-| **Pydub** | 0.25.1 | Manipulación de audio |
-| **SoundFile** | 0.13.1 | Lectura/escritura de archivos de audio |
-| **SoundDevice** | 0.5.2 | Captura de audio en tiempo real |
-| **Soxr** | 1.0.0 | Remuestreo de audio de alta calidad |
-| **AudioRead** | 3.0.1 | Decodificación de audio |
-| **ImageIO** | 2.37.0 | Lectura/escritura de imágenes |
-| **ImageIO-FFmpeg** | 0.6.0 | Soporte FFmpeg para ImageIO |
-| **FFmpeg** | (binario) | Codecs y conversión |
+| **MoviePy** | 2.2.1 | Edición y procesamiento de video |
+| **ImageIO** | 2.36.1 | Lectura/escritura de frames de video |
+| **ImageIO-FFmpeg** | 0.6.0 | Binarios de FFmpeg integrados |
+| **Pillow (PIL)** | 11.0.0 | Manipulación de imágenes |
 
-### Ciencia de Datos
-
+#### Audio
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **NumPy** | 2.2.6 | Operaciones numéricas |
-| **Pandas** | 2.3.3 | Manipulación de datos |
-| **Scikit-learn** | 1.7.2 | Machine Learning clásico |
-| **Matplotlib** | 3.9.2 | Visualización de datos |
-| **SciPy** | 1.14.1 | Computación científica |
-| **Joblib** | 1.5.2 | Serialización y paralelización |
+| **Librosa** | 0.10.2.post1 | Análisis avanzado de audio (MFCCs, pitch, tempo) |
+| **Pydub** | 0.25.1 | Segmentación y manipulación de audio |
+| **SoundFile** | 0.13.2 | Lectura/escritura de archivos WAV/FLAC |
+| **AudioRead** | 3.0.1 | Decodificación universal de formatos de audio |
+| **Resampy** | 0.4.3 | Remuestreo de audio de alta calidad |
 
-### Almacenamiento en la Nube
+### Ciencia de Datos y Análisis
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **Cloudinary** | 1.44.1 | CDN y almacenamiento de videos |
-| **django-cloudinary-storage** | 0.3.0 | Integración con Django |
+| **NumPy** | 1.26.4 | Operaciones numéricas vectorizadas (IMPORTANTE: <2.0 por compatibilidad con OpenCV) |
+| **Pandas** | 2.2.3 | Manipulación y análisis de datos tabulares |
+| **Scikit-learn** | 1.5.2 | Clustering (AgglomerativeClustering para rostros) |
+| **SciPy** | 1.14.1 | Algoritmos científicos avanzados |
+| **Matplotlib** | 3.9.4 | Visualización de gráficos |
+| **Joblib** | 1.4.2 | Paralelización y caché de cálculos costosos |
 
-### Servidor Web y Producción
+### Almacenamiento y CDN
 
 | Tecnología | Versión | Propósito |
 |------------|---------|-----------|
-| **Gunicorn** | 23.0.0 | Servidor WSGI para producción |
-| **WhiteNoise** | 6.8.2 | Servir archivos estáticos |
+| **Cloudinary** | 1.44.1 | CDN global, almacenamiento de videos/imágenes |
+| **django-cloudinary-storage** | 0.3.0 | Integración transparente con Django Storage API |
 
-### Django Extensions
+### Generación de Reportes
 
 | Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **OpenPyXL** | 3.1.5 | Exportación de Excel con estilos |
+| **ReportLab** | 4.2.5 | Generación de PDFs profesionales |
+| **XlsxWriter** | 3.2.0 | Generación rápida de Excel |
+
+### Utilidades y Configuración
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **python-dotenv** | 1.1.1 | Gestión de variables de entorno (.env) |
+| **python-decouple** | 3.8 | Separación de configuración del código |
+| **pytz** | 2025.2 | Manejo de zonas horarias |
+| **tzdata** | 2025.2 | Base de datos de zonas horarias |
+
+### Servidor Web y Despliegue
+
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **Gunicorn** | 23.0.0 | Servidor WSGI para producción (multi-worker) |
+| **WhiteNoise** | 6.8.2 | Servir archivos estáticos eficientemente |
+
+### Requisitos del Sistema
+
+**Software Externo Necesario:**
+- **FFmpeg**: Para procesamiento de video/audio (incluido via imageio-ffmpeg)
+- **PostgreSQL 12+**: Base de datos
+- **Redis** (Opcional): Caché y tareas asíncronas
+
+**Requisitos de Hardware Recomendados:**
+- **CPU**: 4+ cores (Intel i5/i7 o AMD Ryzen 5/7)
+- **RAM**: 8GB mínimo, 16GB recomendado
+- **GPU**: NVIDIA con CUDA (opcional, acelera PyTorch)
+- **Almacenamiento**: 20GB+ espacio libre (para modelos y datos temporales)
+- **Conexión**: Internet estable para APIs de Groq y Cloudinary
 |------------|---------|-----------|
 | **django-extensions** | 4.1 | Comandos adicionales de Django |
 | **django-widget-tweaks** | 1.5.0 | Utilidades para formularios |
@@ -232,150 +447,903 @@ evaIa V0.5/
 │   │   ├── models.py              # Notification
 │   │   ├── views.py               # Gestión de notificaciones
 │   │   ├── signals.py             # Triggers automáticos
-│   │   └── services.py            # Lógica de notificaciones
-│   │
-│   ├── reportes/                  # Generación de reportes
-│   │   ├── views.py               # Reportes PDF/Excel
-│   │   └── models.py              # Métricas
-│   │
-│   └── help/                      # Ayuda y documentación
-│       ├── views.py               # Guías de usuario
-│       └── urls.py                # Rutas de ayuda
+---
+
+## 4. MÓDULOS Y COMPONENTES
+
+### Estructura de Directorios Completa
+
+```
+evaIA/
 │
-├── templates/                     # Plantillas HTML
-│   ├── base.html                  # Plantilla base
-│   ├── auth/                      # Login, registro
-│   ├── dashboard/                 # Dashboards de usuarios
-│   ├── presentations/             # CRUD de presentaciones
+├── sist_evaluacion_expo/          # Configuración principal del proyecto
+│   ├── settings.py                # Configuración Django (DB, APIs, IA)
+│   ├── urls.py                    # Rutas URL principales
+│   ├── wsgi.py                    # Entrada WSGI para producción
+│   └── asgi.py                    # Entrada ASGI para websockets (futuro)
+│
+├── authentication/                # Autenticación y gestión de usuarios
+│   ├── models.py                  # Profile (extensión de User)
+│   ├── views.py                   # Login, registro, perfil, dashboard
+│   ├── forms.py                   # Formularios de autenticación
+│   ├── decoradores.py             # @student_required, @teacher_required, @admin_required
+│   ├── utils.py                   # Utilidades de autenticación
+│   ├── urls.py                    # Rutas de auth/
+│   └── management/commands/       # Comandos personalizados
+│       └── setup_groups.py        # Crear grupos (Estudiante, Docente, Administrador)
+│
+├── apps/
+│   │
+│   ├── presentaciones/            # MÓDULO PRINCIPAL - Gestión de presentaciones
+│   │   ├── models.py              # 6 modelos principales:
+│   │   │                          #   • Course: Cursos académicos
+│   │   │                          #   • Assignment: Asignaciones de presentaciones
+│   │   │                          #   • Presentation: Presentaciones de estudiantes
+│   │   │                          #   • Participant: Participantes individuales
+│   │   │                          #   • AIAnalysis: Análisis detallado de IA
+│   │   │                          #   • AIConfiguration: Configuración personalizada de IA
+│   │   ├── views.py               # Vistas principales:
+│   │   │                          #   • upload_presentation_view: Subir videos
+│   │   │                          #   • grade_presentations_view: Calificar
+│   │   │                          #   • teacher_dashboard_view: Dashboard docente
+│   │   │                          #   • student_dashboard_view: Dashboard estudiante
+│   │   │                          #   • edit_participant_grade: Editar participante
+│   │   │                          #   • bulk_grade_presentation: Calificación masiva
+│   │   ├── forms.py               # Formularios de subida y edición
+│   │   ├── forms_grading.py       # Formularios especializados de calificación
+│   │   ├── urls.py                # Rutas de presentations/
+│   │   ├── ai_utils.py            # Utilidades de cálculo de calificaciones
+│   │   ├── validators.py          # Validadores personalizados de archivos
+│   │   ├── tasks.py               # Tareas asíncronas (futuro: Celery)
+│   │   └── templatetags/          # Template tags personalizados
+│   │
+│   ├── ai_processor/              # MÓDULO DE IA - Servicios de análisis
+│   │   ├── services/              # 8 servicios especializados:
+│   │   │   ├── ai_service.py              # ORQUESTADOR PRINCIPAL
+│   │   │   │                              #   • analyze_presentation(): Pipeline completo
+│   │   │   │                              #   • Coordina todos los demás servicios
+│   │   │   │                              #   • Maneja progreso y errores
+│   │   │   │
+│   │   │   ├── transcription_service.py   # TRANSCRIPCIÓN DE AUDIO
+│   │   │   │                              #   • Whisper Small model
+│   │   │   │                              #   • Extracción de audio con FFmpeg
+│   │   │   │                              #   • Segmentos con timestamps
+│   │   │   │                              #   • Detección de pausas
+│   │   │   │
+│   │   │   ├── face_detection_service.py  # DETECCIÓN DE ROSTROS
+│   │   │   │                              #   • MediaPipe Face Detection
+│   │   │   │                              #   • DeepFace para embeddings
+│   │   │   │                              #   • Clustering jerárquico (V12)
+│   │   │   │                              #   • Tracking de participantes
+│   │   │   │                              #   • Cálculo de tiempo de participación
+│   │   │   │                              #   • Captura de fotos de rostros
+│   │   │   │
+│   │   │   ├── advanced_coherence_service.py  # ANÁLISIS DE COHERENCIA
+│   │   │   │                                  #   • Groq API (Llama 3.3 70B)
+│   │   │   │                                  #   • Análisis semántico profundo
+│   │   │   │                                  #   • Sistema de rotación de API keys
+│   │   │   │                                  #   • 3 niveles de rigurosidad
+│   │   │   │                                  #   • Evaluación por participante
+│   │   │   │
+│   │   │   ├── liveness_detection_service.py  # DETECCIÓN DE AUTENTICIDAD
+│   │   │   │                                  #   • Análisis de metadatos
+│   │   │   │                                  #   • Detección de ruido de cámara
+│   │   │   │                                  #   • Variaciones de brillo
+│   │   │   │                                  #   • Consistencia temporal
+│   │   │   │                                  #   • Score de liveness (0-100)
+│   │   │   │
+│   │   │   ├── audio_segmentation_service.py  # SEGMENTACIÓN DE AUDIO
+│   │   │   │                                  #   • Separación por participante
+│   │   │   │                                  #   • Múltiples estrategias
+│   │   │   │                                  #   • Alineación temporal
+│   │   │   │
+│   │   │   ├── cloudinary_service.py          # ALMACENAMIENTO EN NUBE
+│   │   │   │                                  #   • Upload de videos
+│   │   │   │                                  #   • Generación de thumbnails
+│   │   │   │                                  #   • URLs seguras (HTTPS)
+│   │   │   │                                  #   • Eliminación de archivos
+│   │   │   │
+│   │   │   ├── groq_key_manager.py            # GESTIÓN DE API KEYS
+│   │   │   │                                  #   • Rotación automática
+│   │   │   │                                  #   • Manejo de rate limits
+│   │   │   │                                  #   • Reintentos inteligentes
+│   │   │   │                                  #   • Soporte hasta 10 keys
+│   │   │   │
+│   │   │   └── coherence_analyzer.py          # ANÁLISIS DE COHERENCIA (Legacy)
+│   │   │
+│   │   └── models.py              # Modelos (si se requieren en el futuro)
+│   │
+│   ├── notifications/             # Sistema de notificaciones
+│   │   ├── models.py              # Notification, NotificationSettings
+│   │   ├── views.py               # Lista, marcar como leída, eliminar
+│   │   ├── views_simple.py        # API simplificada
+│   │   ├── services.py            # NotificationService (crear notificaciones)
+│   │   ├── signals.py             # Señales automáticas
+│   │   ├── context_processors.py  # Contador de no leídas
+│   │   └── management/commands/
+│   │       └── send_due_reminders.py  # Recordatorios automáticos
+│   │
+│   ├── reportes/                  # Generación de reportes académicos
+│   │   ├── views.py               # Exportación Excel/PDF
+│   │   │                          #   • Estudiante: calificaciones personales
+│   │   │                          #   • Docente: reportes de curso
+│   │   │                          #   • Admin: estadísticas generales
+│   │   ├── models.py              # Modelos de métricas (futuro)
+│   │   └── urls.py                # Rutas de reports/
+│   │
+│   └── help/                      # Ayuda y documentación en línea
+│       ├── views.py               # Guías de usuario
+│       ├── urls.py                # Rutas de help/
+│       └── templates/help/        # Tutoriales HTML
+│
+├── templates/                     # Plantillas HTML globales
+│   ├── base.html                  # Plantilla base con navbar, footer
+│   ├── base_auth.html             # Base para páginas de autenticación
+│   ├── auth/                      # Login, registro, perfil, dashboard
+│   ├── presentations/             # CRUD de presentaciones, calificación
 │   ├── notifications/             # UI de notificaciones
-│   └── reportes/                  # Visualización de reportes
+│   ├── reportes/                  # Visualización y descarga de reportes
+│   └── help/                      # Páginas de ayuda
 │
 ├── static/                        # Archivos estáticos
-│   ├── css/                       # Estilos personalizados
-│   ├── js/                        # JavaScript
-│   └── img/                       # Imágenes
+│   ├── css/
+│   │   ├── dashboard.css          # Estilos de dashboards
+│   │   ├── grades.css             # Estilos de calificaciones
+│   │   └── custom.css             # Estilos personalizados globales
+│   ├── js/
+│   │   ├── notifications.js       # Notificaciones en tiempo real
+│   │   ├── video-player.js        # Reproductor personalizado
+│   │   ├── grade-form.js          # Formularios de calificación
+│   │   └── progress-tracker.js    # Tracker de progreso de análisis
+│   └── img/                       # Logos, iconos, imágenes
 │
-├── uploads/                       # Archivos subidos (local)
+├── uploads/                       # Almacenamiento local (temporal)
 │   ├── presentations/             # Videos de presentaciones
 │   ├── avatars/                   # Fotos de perfil
-│   └── participant_photos/        # Fotos de participantes
+│   ├── participant_photos/        # Fotos de participantes detectados
+│   └── thumbnails/                # Miniaturas de videos
 │
-├── docs/                          # Documentación
-│   ├── ARQUITECTURA_SISTEMA.md    # Este archivo
-│   ├── CONFIGURACION.md           # Guía de configuración
-│   └── DEPENDENCIAS.md            # Descripción de dependencias
+├── docs/                          # Documentación técnica
+│   ├── ARQUITECTURA_SISTEMA.md    # Este archivo (arquitectura completa)
+│   ├── V11_HIERARCHICAL_CLUSTERING_SOLUCION_DEFINITIVA.md
+│   ├── MEJORA_FILTRADO_FALSOS_POSITIVOS.md
+│   ├── OPTIMIZACION_RENDIMIENTO.md
+│   └── ...                        # Más documentos técnicos
 │
 ├── manage.py                      # CLI de Django
-├── requirements.txt               # Dependencias Python
-├── setup.py                       # Script de instalación
-└── .env                           # Variables de entorno
+├── requirements.txt               # Dependencias Python (311 líneas)
+├── setup.py                       # Script de instalación automatizada
+├── .env                           # Variables de entorno (NO en Git)
+├── .gitignore                     # Archivos ignorados por Git
+└── README.md                      # Guía de instalación y uso
 ```
+
+### Modelos de Base de Datos (Resumen)
+
+#### authentication.Profile
+- Extensión del modelo User de Django
+- Campos: institution, phone, avatar, is_verified
+- Métodos: get_role(), is_student(), is_teacher(), is_admin()
+
+#### presentaciones.Course
+- Cursos académicos creados por docentes
+- Relaciones: teacher (ForeignKey a User), students (ManyToMany)
+
+#### presentaciones.Assignment
+- Asignaciones de presentaciones
+- Campos importantes: max_duration, due_date, strictness_level, max_score
+- Tipos: Individual, Grupal, Debate, Pitch, etc.
+
+#### presentaciones.Presentation
+- Presentación de un estudiante
+- 50+ campos incluyendo:
+  - Video: video_file, cloudinary_url, duration, status
+  - Transcripción: transcription_text, transcription_segments
+  - Liveness: is_live_recording, liveness_score, recording_type
+  - Participación: participation_data (JSON)
+  - Calificaciones: ai_score, content_score, fluency_score, final_score
+
+#### presentaciones.Participant
+- Participante individual en presentación grupal
+- Campos: presentation, participant_number, detected_name, photo
+- Calificaciones individuales: coherence_score, participation_time
+
+#### presentaciones.AIConfiguration
+- Configuración personalizada de IA por docente
+- Pesos: content_weight, fluency_weight, body_language_weight
+- Niveles: face_detection_confidence, strictness_level
+
+#### notifications.Notification
+- Notificaciones del sistema
+- Tipos: PRESENTATION_GRADED, NEW_ASSIGNMENT, SUBMISSION_READY_TO_GRADE
+- Prioridades: LOW, MEDIUM, HIGH, URGENT
 
 ---
 
-## 5. FLUJO DE FUNCIONAMIENTO
+## 5. FLUJO DE FUNCIONAMIENTO COMPLETO
 
-### A. Flujo del Estudiante
+### A. Flujo del Estudiante - Subida y Análisis
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. INICIO DE SESIÓN                                         │
-│    - El estudiante ingresa credenciales                     │
-│    - Sistema valida y crea sesión                           │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 2. DASHBOARD ESTUDIANTIL                                    │
-│    - Ve asignaciones pendientes                             │
-│    - Ve historial de presentaciones                         │
-│    - Estadísticas personales                                │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 3. SUBIR PRESENTACIÓN                                       │
-│    a. Selecciona asignación                                 │
-│    b. Completa formulario (título, descripción)             │
-│    c. Sube archivo de video (.mp4, .avi, .mov)              │
-│    d. Validaciones:                                         │
-│       - Tamaño máximo: 100 MB                               │
-│       - Duración máxima: según asignación                   │
-│       - Formato de video válido                             │
-│       - Resolución mínima: 640x480                          │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 4. PROCESAMIENTO AUTOMÁTICO (Backend)                       │
-│    Estado: PROCESSING                                       │
-│                                                              │
-│    a. Extracción de metadatos                               │
-│       - Duración, resolución, FPS, codec                    │
-│       - Generación de miniatura                             │
-│                                                              │
-│    b. Subida a Cloudinary (opcional)                        │
-│       - Video almacenado en CDN                             │
-│       - URL segura generada                                 │
-│                                                              │
-│    c. Extracción de audio                                   │
-│       - FFmpeg extrae pista de audio                        │
-│       - Conversión a formato WAV                            │
-│                                                              │
-│    d. Transcripción con Whisper                             │
-│       - Audio → Texto                                       │
-│       - Detección de segmentos temporales                   │
-│       - Identificación de hablantes                         │
-│                                                              │
-│    e. Detección de rostros con MediaPipe                    │
-│       - Identificación de participantes                     │
-│       - Captura de fotos de cada rostro                     │
-│       - Cálculo de tiempo de participación                  │
-│       - Análisis de expresiones faciales                    │
-│                                                              │
-│    f. Análisis de coherencia con Groq AI (Llama 3.3)        │
-│       - Análisis semántico del contenido                    │
-│       - Evaluación de palabras clave                        │
-│       - Profundidad del tema                                │
-│       - Generación de feedback detallado                    │
-│                                                              │
-│    g. Calificación automática                               │
-│       - Puntajes individuales por participante              │
-│       - Retroalimentación personalizada                     │
-│       - Recomendaciones de mejora                           │
-│                                                              │
-│    Estado cambia a: ANALYZED                                │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 5. NOTIFICACIÓN AL ESTUDIANTE                               │
-│    - Email: "Tu presentación ha sido analizada"             │
-│    - Notificación in-app                                    │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│ 6. VER RESULTADOS                                           │
-│    El estudiante puede:                                     │
-│    - Ver puntaje de IA                                      │
-│    - Leer retroalimentación detallada                       │
-│    - Ver análisis por participante (si es grupal)           │
-│    - Descargar transcripción                                │
-│    - Esperar calificación final del docente                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### B. Flujo del Docente
+**Tiempo total estimado: 2-5 minutos** (dependiendo de la duración del video)
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. DASHBOARD DOCENTE                                        │
-│    - Lista de cursos activos                                │
-│    - Asignaciones pendientes                                │
-│    - Presentaciones por calificar                           │
-│    - Estadísticas del curso                                 │
-└────────────────────┬────────────────────────────────────────┘
+1. AUTENTICACIÓN Y DASHBOARD
+   ↓
+2. SELECCIONAR ASIGNACIÓN
+   ↓
+3. SUBIR VIDEO (validaciones)
+   ↓
+4. PIPELINE DE ANÁLISIS DE IA (8 pasos):
+   
+   [15%]  → Análisis de Liveness (video en vivo vs pregrabado)
+   [30%]  → Detección de Rostros (MediaPipe + DeepFace + Clustering V12)
+   [50%]  → Transcripción Completa (Whisper con timestamps)
+   [60%]  → Segmentación por Participante
+   [70-85%] → Análisis de Coherencia por Participante (Llama 3.3 70B)
+   [90%]  → Cálculo de Calificaciones Finales
+   [100%] → Guardado y Notificación
+   
+   ↓
+5. NOTIFICACIÓN AL ESTUDIANTE
+   ↓
+6. REVISAR RESULTADOS DE IA
+```
+
+#### Detalles del Pipeline de IA:
+
+**PASO 1: Análisis de Liveness (15% progreso)**
+- **Servicio:** LivenessDetectionService
+- **Objetivo:** Determinar si el video fue grabado en vivo o es material pregrabado
+- **Métodos:**
+  - Análisis de metadatos del archivo (fecha creación vs modificación)
+  - Medición de ruido de cámara (desviación estándar del ruido)
+  - Variación de brillo entre frames consecutivos
+  - Análisis de consistencia temporal (detección de cortes de edición)
+  - Patrones de movimiento de cámara
+- **Resultado:** liveness_score (0-100), recording_type (LIVE/RECORDED)
+
+**PASO 2: Detección de Rostros (30% progreso)**
+- **Servicio:** FaceDetectionService (Versión V12 - Hierarchical Clustering)
+- **Tecnologías:** MediaPipe (detección) + DeepFace (embeddings, Facenet512 por defecto) + Scikit-learn (clustering)
+- **Proceso:**
+  1. Detección de rostros frame por frame con MediaPipe (468 landmarks faciales)
+      2. Extracción de embeddings (vector 512-dim) con DeepFace (modelo base actual: Facenet512). Si InsightFace está instalado en el entorno, el servicio puede priorizar su embedding 512-dim.
+  3. Clustering jerárquico (AgglomerativeClustering) con distancia coseno
+  4. Asignación de IDs únicos (Persona 1, Persona 2, ...)
+  5. Tracking temporal y cálculo de tiempo de participación
+  6. Captura de foto representativa de cada participante
+- **Resultado:** Lista de participantes con tiempo, porcentaje, foto
+
+**PASO 3: Transcripción Completa (50% progreso)**
+- **Servicio:** TranscriptionService
+- **Tecnología:** OpenAI Whisper (modelo small)
+- **Proceso:**
+  1. Extracción de audio con FFmpeg (WAV mono 16kHz)
+  2. Transcripción con detección automática de idioma
+  3. Generación de timestamps por segmento
+  4. Cálculo de palabras por minuto (WPM)
+  5. Detección de pausas largas (>2 segundos)
+- **Resultado:** Texto completo + segmentos con timestamps
+
+**PASO 4: Segmentación por Participante (60% progreso)**
+- **Servicio:** AudioSegmentationService
+- **Objetivo:** Asignar texto transcrito a cada participante
+- **Método:** Alineación temporal entre timestamps de rostros y transcripción
+
+**PASO 5: Análisis de Coherencia (70-85% progreso)**
+- **Servicio:** AdvancedCoherenceService
+- **Tecnología:** Groq API con Llama 3.3 70B Versatile
+- **Configuración:**
+  - Temperature: 0.3 (baja para consistencia)
+  - Max tokens: 2000
+  - Timeout: 45 segundos
+  - Sistema de rotación automática de hasta 10 API keys
+- **Análisis por participante:**
+  - Coherencia temática con las instrucciones (0-100)
+  - Relevancia del contenido expuesto (0-100)
+  - Profundidad del análisis (0-100)
+  - Estructura y organización (0-100)
+  - Uso de ejemplos concretos (0-100)
+- **Niveles de rigurosidad:**
+  - **Strict (Estricto):** Evaluación rigurosa, penalizaciones altas
+  - **Moderate (Moderado):** Evaluación balanceada (recomendado)
+  - **Lenient (Permisivo):** Evaluación flexible, enfoque en fortalezas
+- **Resultado:** coherence_score + feedback detallado + fortalezas + áreas de mejora
+
+**PASO 6: Cálculo de Calificaciones (90% progreso)**
+- **Servicio:** ai_utils.calculate_final_grade()
+- **Fórmula personalizable por docente:**
+  ```
+  final_score = (
+    coherence_score * content_weight +
+    fluency_score * fluency_weight +
+    participation_score * participation_weight +
+    liveness_bonus
+  ) * (max_score / 100)
+  ```
+- **Componentes:**
+  - coherence_score: de Llama 3.3 (0-100)
+  - fluency_score: basado en WPM, pausas, muletillas (0-100)
+  - participation_score: tiempo activo, equidad en grupos (0-100)
+  - liveness_bonus: +5 puntos si es grabación en vivo
+
+**PASO 7: Guardado y Finalización (100% progreso)**
+- Cambio de estado: PROCESSING → ANALYZED
+- Creación de registros Participant en base de datos
+- Guardado de AIAnalysis con detalles completos
+- Subida opcional a Cloudinary CDN
+- Limpieza de archivos temporales
+- Envío de notificación al estudiante
+
+### B. Flujo del Docente - Revisión y Calificación
+
+```
+1. DASHBOARD DOCENTE
+   - Ver cursos activos
+   - Presentaciones pendientes de calificar (badge con contador)
+   - Estadísticas del curso
+   ↓
+2. PANEL DE CALIFICACIÓN
+   - Lista de presentaciones ANALYZED
+   - Filtros: por curso, asignación, fecha, estudiante
+   - Ordenar: por fecha subida, nombre, estado
+   ↓
+3. REVISAR ANÁLISIS DE IA
+   - Reproducir video con controles
+   - Ver transcripción completa con timestamps
+   - Revisar análisis por participante:
+     * Foto del participante
+     * Tiempo de participación
+     * Texto transcrito individual
+     * Score de coherencia de IA
+     * Feedback automático de IA
+   - Ver puntajes automáticos sugeridos
+   ↓
+4. AJUSTAR CALIFICACIONES (opcional)
+   - Mantener calificación de IA tal cual
+   - Ajustar manualmente por participante
+   - Agregar feedback del docente
+   - Configurar pesos de evaluación
+   ↓
+5. CALIFICAR Y PUBLICAR
+   - Validar calificaciones (0 a max_score)
+   - Agregar comentarios finales
+   - Publicar calificación
+   - Estado cambia: ANALYZED → GRADED
+   ↓
+6. NOTIFICACIÓN AUTOMÁTICA
+   - Estudiante recibe notificación
+   - Email con link a calificación (opcional)
+```
+
+### C. Flujo del Administrador
+
+```
+1. DASHBOARD ADMIN
+   - Gestión de usuarios (crear, editar, eliminar)
+   - Asignación de roles (Estudiante, Docente, Administrador)
+   - Estadísticas generales del sistema:
+     * Total de usuarios por rol
+     * Total de presentaciones analizadas
+     * Uso de APIs (Groq, Whisper, Cloudinary)
+     * Almacenamiento utilizado
+   ↓
+2. CONFIGURACIÓN GLOBAL
+   - Configurar API keys (Groq, Cloudinary, Email)
+   - Ajustar parámetros de IA por defecto
+   - Configurar límites de subida
+   - Gestionar notificaciones del sistema
+   ↓
+3. MONITOREO Y REPORTES
+   - Ver logs de errores
+   - Exportar reportes Excel/PDF
+   - Analizar estadísticas de uso
+```
+
+### D. Sistema de Notificaciones en Tiempo Real
+
+```
+EVENTOS AUTOMÁTICOS QUE GENERAN NOTIFICACIONES:
+
+Para Estudiantes:
+├─ PRESENTATION_ANALYZED: "Tu presentación ha sido analizada por IA"
+├─ PRESENTATION_GRADED: "Tu presentación ha sido calificada"
+├─ NEW_ASSIGNMENT: "Nueva asignación disponible en [Curso]"
+├─ ASSIGNMENT_DUE_SOON: "Asignación '[Título]' vence en 24 horas"
+└─ ASSIGNMENT_OVERDUE: "Asignación '[Título]' ha vencido"
+
+Para Docentes:
+├─ NEW_SUBMISSION: "Nuevo envío de [Estudiante] en [Asignación]"
+├─ SUBMISSION_READY_TO_GRADE: "[X] presentaciones listas para calificar"
+└─ ASSIGNMENT_DEADLINE_APPROACHING: "Asignación '[Título]' vence mañana"
+
+Para Todos:
+├─ WELCOME: "Bienvenido a EvalExpo AI"
+├─ SYSTEM_UPDATE: "Nueva funcionalidad disponible"
+└─ COURSE_UPDATE: "Actualización en el curso [Nombre]"
+```
+
+### E. Manejo de Errores y Casos Especiales
+
+**Casos de Error en Análisis de IA:**
+
+1. **Sin audio detectado:**
+   - Estado → FAILED
+   - Mensaje: "No se detectó audio en el video. Verifica tu micrófono."
+   - Acción: Estudiante debe subir nuevamente
+
+2. **Sin rostros detectados (pero hay audio):**
+   - Continúa procesamiento solo con audio
+   - Warning en participation_data
+   - Calificación basada en contenido y transcripción únicamente
+
+3. **Timeout de API (Groq/Whisper):**
+   - Reintentos automáticos (3 intentos)
+   - Rotación de API key si hay rate limit
+   - Si falla: Estado → FAILED con mensaje específico
+
+4. **Video corrupto o formato inválido:**
+   - Validación temprana (antes de procesamiento)
+   - Mensaje de error claro al estudiante
+   - No se crea registro en DB
+
+5. **Almacenamiento lleno (Cloudinary):**
+   - Fallback a almacenamiento local
+   - Notificación al administrador
+   - Sistema continúa funcionando
+
+**Sistema de Caché para Optimización:**
+- Caché de embeddings de rostros (evita recálculos)
+- Caché de progreso de procesamiento (Redis/Django Cache)
+- Caché de modelos de IA (Whisper, MediaPipe en memoria)
+
+---
+
+## 6. DIAGRAMAS DE SECUENCIA
+
+Nota: La versión editable de estos diagramas está disponible en el archivo draw.io: docs/diagrams/diagrama-secuencia.drawio (contiene tres páginas: "Subida y Análisis", "Calificación Docente" y "Notificaciones en Tiempo Real").
+
+### 6.1. Diagrama de Secuencia: Subida y Análisis de Presentación
+
+Este diagrama muestra la interacción completa entre el estudiante, el sistema web, los servicios de IA y las APIs externas durante el proceso de subida y análisis de una presentación.
+
+```
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────┐
+│Estudiante│  │  Django  │  │   DB     │  │  AIService  │  │ IA Services  │  │  Groq    │  │Cloudinary│
+│ (Browser)│  │  Views   │  │PostgreSQL│  │(Orquestador)│  │ (Especiali-  │  │   API    │  │   CDN    │
+│          │  │          │  │          │  │             │  │   zados)     │  │          │  │          │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬──────┘  └──────┬───────┘  └─────┬────┘  └─────┬────┘
+      │             │             │               │                │                │             │
+      │ 1. Accede a│             │               │                │                │             │
+      │  /upload   │             │               │                │                │             │
+      ├────────────>│             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │ 2. Renderiza formulario │               │                │                │             │
+      │<────────────┤             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │ 3. Completa│             │               │                │                │             │
+      │  formulario│             │               │                │                │             │
+      │  y sube    │             │               │                │                │             │
+      │  video.mp4 │             │               │                │                │             │
+      ├────────────>│             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │ 4. Valida  │               │                │                │             │
+      │             │  (tamaño,  │               │                │                │             │
+      │             │   formato) │               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │ 5. Crea    │               │                │                │             │
+      │             │  Presentation              │                │                │             │
+      │             │  (status=  │               │                │                │             │
+      │             │   UPLOADED)│               │                │                │             │
+      │             ├────────────>│               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │<────────────┤ 6. OK        │                │                │             │
+      │             │             │               │                │                │             │
+      │ 7. Redirect│             │               │                │                │             │
+      │  + Mensaje │             │               │                │                │             │
+      │  "Procesando"             │               │                │                │             │
+      │<────────────┤             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │ 8. Inicia  │               │                │                │             │
+      │             │  tarea async               │                │                │             │
+      │             │  (analyze_ │               │                │                │             │
+      │             │  presentation)             │                │                │             │
+      │             ├────────────────────────────>│                │                │             │
+      │             │             │               │                │                │             │
+      │             │             │ 9. Actualiza │                │                │             │
+      │             │             │  status =    │                │                │             │
+      │             │             │  PROCESSING  │                │                │             │
+      │             │             │<──────────────┤                │                │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 10. LivenessDetectionService    │             │
+      │             │             │               │  analyze_video()                │             │
+      │             │             │               ├───────────────>│                │             │
+      │             │             │               │                │ - Analiza     │             │
+      │             │             │               │                │   metadatos   │             │
+      │             │             │               │                │ - Mide ruido  │             │
+      │             │             │               │                │ - Variación   │             │
+      │             │             │               │                │   de brillo   │             │
+      │             │             │               │                │                │             │
+      │             │             │               │<───────────────┤ 11. Result:   │             │
+      │             │             │               │  {is_live: T,  │  liveness_score│            │
+      │             │             │               │   score: 78}   │                │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 12. FaceDetectionService        │             │
+      │             │             │               │  process_video()                │             │
+      │             │             │               ├───────────────>│                │             │
+      │             │             │               │                │ - MediaPipe   │             │
+      │             │             │               │                │   detecta     │             │
+      │             │             │               │                │   rostros     │             │
+   │             │             │               │                │ - DeepFace    │             │
+      │             │             │               │                │   embeddings  │             │
+      │             │             │               │                │ - Clustering  │             │
+      │             │             │               │                │   jerárquico  │             │
+      │             │             │               │                │ - Tracking    │             │
+      │             │             │               │                │                │             │
+      │             │             │               │<───────────────┤ 13. Result:   │             │
+      │             │             │               │  {participants:│  [{id:1, time:│            │
+      │             │             │               │   45s}, ...]}  │                │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 14. TranscriptionService        │             │
+      │             │             │               │  transcribe_video()             │             │
+      │             │             │               ├───────────────>│                │             │
+      │             │             │               │                │ - Extrae audio│             │
+      │             │             │               │                │   con FFmpeg  │             │
+      │             │             │               │                │ - Whisper     │             │
+      │             │             │               │                │   transcribe  │             │
+      │             │             │               │                │ - Genera      │             │
+      │             │             │               │                │   timestamps  │             │
+      │             │             │               │                │                │             │
+      │             │             │               │<───────────────┤ 15. Result:   │             │
+      │             │             │               │  {full_text,   │  segments}    │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 16. Por cada participante:     │             │
+      │             │             │               │  AdvancedCoherenceService      │             │
+      │             │             │               │  analyze_participant_coherence()│            │
+      │             │             │               ├───────────────>│                │             │
+      │             │             │               │                │                │             │
+      │             │             │               │                │ 17. Prepara   │             │
+      │             │             │               │                │  prompt con   │             │
+      │             │             │               │                │  asignación + │             │
+      │             │             │               │                │  transcripción│             │
+      │             │             │               │                │                │             │
+      │             │             │               │                │ 18. Llama a   │             │
+      │             │             │               │                │  Groq API     │             │
+      │             │             │               │                ├───────────────>│             │
+      │             │             │               │                │                │ - Llama 3.3│
+      │             │             │               │                │                │   70B       │
+      │             │             │               │                │                │ - Análisis  │
+      │             │             │               │                │                │   semántico │
+      │             │             │               │                │                │             │
+      │             │             │               │                │<───────────────┤ 19. Response│
+      │             │             │               │                │  {coherence:85,│  feedback} │
+      │             │             │               │                │   details...}  │             │
+      │             │             │               │<───────────────┤ 20. Result por│             │
+      │             │             │               │  participante  │  participante  │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 21. Calcula calificaciones     │             │
+      │             │             │               │  finales con pesos             │             │
+      │             │             │               │  configurados                  │             │
+      │             │             │               │                │                │             │
+      │             │             │ 22. Guarda   │                │                │             │
+      │             │             │  resultados  │                │                │             │
+      │             │             │  (Participants,                │                │             │
+      │             │             │   AIAnalysis)│                │                │             │
+      │             │             │<──────────────┤                │                │             │
+      │             │             │               │                │                │             │
+      │             │             │ 23. Actualiza│                │                │             │
+      │             │             │  status =    │                │                │             │
+      │             │             │  ANALYZED    │                │                │             │
+      │             │             │<──────────────┤                │                │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 24. [OPCIONAL] Sube a Cloudinary│             │
+      │             │             │               ├─────────────────────────────────────────────>│
+      │             │             │               │                │                │             │
+      │             │             │               │<─────────────────────────────────────────────┤
+      │             │             │               │  25. {url, public_id}          │             │
+      │             │             │               │                │                │             │
+      │             │             │               │ 26. NotificationService        │             │
+      │             │             │               │  notify_presentation_analyzed()│             │
+      │             │             │               ├───────────────>│                │             │
+      │             │             │               │                │                │             │
+      │             │             │ 27. Crea     │                │                │             │
+      │             │             │  Notification│                │                │             │
+      │             │             │<──────────────┤                │                │             │
+      │             │             │               │                │                │             │
+      │             │<────────────────────────────┤ 28. Análisis   │                │             │
+      │             │  completado │               │  completado    │                │             │
+      │             │             │               │                │                │             │
+      │ 29. Polling│             │               │                │                │             │
+      │  /check_   │             │               │                │                │             │
+      │  progress  │             │               │                │                │             │
+      ├────────────>│             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │ 30. Query  │               │                │                │             │
+      │             │  cache +   │               │                │                │             │
+      │             │  DB status │               │                │                │             │
+      │             ├────────────>│               │                │                │             │
+      │             │<────────────┤ 31. ANALYZED │                │                │             │
+      │             │             │               │                │                │             │
+      │ 32. {status:ANALYZED,    │               │                │                │             │
+      │  progress:100%}           │               │                │                │             │
+      │<────────────┤             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │ 33. Muestra│             │               │                │                │             │
+      │  notificación             │               │                │                │             │
+      │  "Análisis │             │               │                │                │             │
+      │  completado"              │               │                │                │             │
+      │             │             │               │                │                │             │
+      │ 34. Click  │             │               │                │                │             │
+      │  "Ver      │             │               │                │                │             │
+      │  Resultados"              │               │                │                │             │
+      ├────────────>│             │               │                │                │             │
+      │             │             │               │                │                │             │
+      │             │ 35. Query  │               │                │                │             │
+      │             │  Presentation              │                │                │             │
+      │             │  + Participants            │                │                │             │
+      │             │  + AIAnalysis│               │                │                │             │
+      │             ├────────────>│               │                │                │             │
+      │             │<────────────┤ 36. Datos    │                │                │             │
+      │             │             │               │                │                │             │
+      │ 37. Renderiza detalle    │               │                │                │             │
+      │  con resultados de IA    │               │                │                │             │
+      │<────────────┤             │               │                │                │             │
+      │             │             │               │                │                │             │
+```
+
+**Tiempo total estimado:** 2-5 minutos dependiendo de la duración del video
+
+**Notas importantes:**
+- Los pasos 10-20 son asíncronos y pueden ejecutarse en paralelo parcialmente
+- El progreso se reporta en caché (Redis/Django Cache) para consultas en tiempo real
+- Si falla algún paso, el estado cambia a FAILED con mensaje de error específico
+- La rotación de API keys de Groq es automática en caso de rate limits
+
+---
+
+### 6.2. Diagrama de Secuencia: Calificación por Docente
+
+```
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────┐
+│ Docente  │  │  Django  │  │   DB     │  │Notification  │  │  Estudiante  │
+│(Browser) │  │  Views   │  │PostgreSQL│  │  Service     │  │   (Email)    │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬───────┘  └──────┬───────┘
+      │             │             │               │                 │
+      │ 1. Accede a│             │               │                 │
+      │  /grade    │             │               │                 │
+      ├────────────>│             │               │                 │
+      │             │             │               │                 │
+      │             │ 2. Query   │               │                 │
+      │             │  Presentations              │                 │
+      │             │  WHERE     │               │                 │
+      │             │  status =  │               │                 │
+      │             │  ANALYZED  │               │                 │
+      │             ├────────────>│               │                 │
+      │             │             │               │                 │
+      │             │<────────────┤ 3. Lista de  │                 │
+      │             │  presentations              │                 │
+      │             │             │               │                 │
+      │ 4. Renderiza lista con  │               │                 │
+      │  scores de IA sugeridos  │               │                 │
+      │<────────────┤             │               │                 │
+      │             │             │               │                 │
+      │ 5. Click en│             │               │                 │
+      │  presentación            │               │                 │
+      │  específica│             │               │                 │
+      ├────────────>│             │               │                 │
+      │             │             │               │                 │
+      │             │ 6. Query   │               │                 │
+      │             │  Presentation              │                 │
+      │             │  + Participants            │                 │
+      │             │  + AIAnalysis              │                 │
+      │             │  (select_related,          │                 │
+      │             │   prefetch_related)        │                 │
+      │             ├────────────>│               │                 │
+      │             │             │               │                 │
+      │             │<────────────┤ 7. Datos     │                 │
+      │             │  completos  │               │                 │
+      │             │             │               │                 │
+      │ 8. Renderiza vista detallada:           │                 │
+      │  • Video player                          │                 │
+      │  • Transcripción completa                │                 │
+      │  • Lista de participantes con:           │                 │
+      │    - Foto                                │                 │
+      │    - Tiempo participación                │                 │
+      │    - Texto transcrito                    │                 │
+      │    - Score IA                            │                 │
+      │    - Feedback IA                         │                 │
+      │  • Formulario de calificación            │                 │
+      │<────────────┤             │               │                 │
+      │             │             │               │                 │
+      │ 9. Docente │             │               │                 │
+      │  revisa:   │             │               │                 │
+      │  • Ve video│             │               │                 │
+      │  • Lee análisis          │               │                 │
+      │  • Revisa scores         │               │                 │
+      │             │             │               │                 │
+      │ 10. Decide:│             │               │                 │
+      │  [ ] Aceptar IA tal cual │               │                 │
+      │  [X] Ajustar manualmente │               │                 │
+      │             │             │               │                 │
+      │ 11. Modifica:            │               │                 │
+      │  • Ajusta score Part. 1: 85→90           │                 │
+      │  • Ajusta score Part. 2: 78→80           │                 │
+      │  • Agrega feedback manual                │                 │
+      │             │             │               │                 │
+      │ 12. Click  │             │               │                 │
+      │  "Publicar │             │               │                 │
+      │  Calificación"           │               │                 │
+      ├────────────>│             │               │                 │
+      │             │             │               │                 │
+      │             │ 13. Valida │               │                 │
+      │             │  datos:    │               │                 │
+      │             │  • Scores 0-max_score      │                 │
+      │             │  • Feedback no vacío       │                 │
+      │             │             │               │                 │
+      │             │ 14. BEGIN  │               │                 │
+      │             │  TRANSACTION               │                 │
+      │             ├────────────>│               │                 │
+      │             │             │               │                 │
+      │             │ 15. UPDATE │               │                 │
+      │             │  Participants              │                 │
+      │             │  SET manual_grade=X,       │                 │
+      │             │  teacher_feedback=Y        │                 │
+      │             ├────────────>│               │                 │
+      │             │             │               │                 │
+      │             │ 16. UPDATE │               │                 │
+      │             │  Presentation              │                 │
+      │             │  SET status=GRADED,        │                 │
+      │             │  final_score=AVG,          │                 │
+      │             │  graded_by=docente_id,     │                 │
+      │             │  graded_at=NOW()           │                 │
+      │             ├────────────>│               │                 │
+      │             │             │               │                 │
+      │             │ 17. COMMIT │               │                 │
+      │             ├────────────>│               │                 │
+      │             │<────────────┤ 18. OK       │                 │
+      │             │             │               │                 │
+      │             │ 19. Llama  │               │                 │
+      │             │  NotificationService       │                 │
+      │             │  .notify_presentation_graded()              │
+      │             ├────────────────────────────>│                 │
+      │             │             │               │                 │
+      │             │             │ 20. Crea     │                 │
+      │             │             │  Notification│                 │
+      │             │             │<──────────────┤                 │
+      │             │             │               │                 │
+      │             │             │               │ 21. [OPCIONAL] │
+      │             │             │               │  Envía email   │
+      │             │             │               ├────────────────>│
+      │             │             │               │  "Tu presentación│
+      │             │             │               │  ha sido        │
+      │             │             │               │  calificada"    │
+      │             │             │               │                 │
+      │             │<────────────────────────────┤ 22. OK          │
+      │             │             │               │                 │
+      │ 23. Redirect + mensaje   │               │                 │
+      │  "Calificación publicada"│               │                 │
+      │<────────────┤             │               │                 │
+      │             │             │               │                 │
+      │ 24. Muestra│             │               │                 │
+      │  toast de  │             │               │                 │
+      │  éxito     │             │               │                 │
+      │             │             │               │                 │
+      │             │             │               │ 25. Estudiante │
+      │             │             │               │  recibe        │
+      │             │             │               │  notificación  │
+      │             │             │               │  in-app + email│
+      │             │             │               │                 │
+```
+
+**Tiempo estimado:** 3-10 minutos por presentación (según complejidad)
+
+**Notas:**
+- El docente puede calificar múltiples presentaciones en lote
+- Los ajustes manuales sobrescriben los scores de IA
+- Las notificaciones se envían solo si el estudiante las tiene activadas
+- El sistema guarda el historial de cambios para auditoría
+
+---
+
+### 6.3. Diagrama de Secuencia: Creación de Asignación y Notificaciones
+
+```
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐  ┌──────────────┐
+│ Docente  │  │  Django  │  │   DB     │  │Notification  │  │ Estudiantes  │
+│(Browser) │  │  Views   │  │PostgreSQL│  │  Service     │  │   (N users)  │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬───────┘  └──────┬───────┘
+      │             │             │               │                 │
+      │ 1. Accede a│             │               │                 │
+      │  /create_  │             │               │                 │
+      │  assignment│             │               │                 │
+      ├────────────>│             │               │                 │
+      │             │             │               │                 │
+      │             │ 2. Query   │               │                 │
+      │             │  Courses   │               │                 │
+      │             │  WHERE     │               │                 │
+      │             │  teacher = │               │                 │
+      │             │  current_user              │                 │
+      │             ├────────────>│               │                 │
+      │             │<────────────┤ 3. Cursos    │                 │
+      │             │             │               │                 │
+      │ 4. Renderiza formulario  │               │                 │
+      │<────────────┤             │               │                 │
+      │             │             │               │                 │
+      │ 5. Completa:│             │               │                 │
+      │  • Curso   │             │               │                 │
+      │  • Título  │             │               │                 │
+      │  • Descripción           │               │                 │
+      │  • Instrucciones         │               │                 │
+      │  • Duración máx: 10 min  │               │                 │
+      │  • Fecha límite: 15/Nov  │               │                 │
+      │  • Rigurosidad: Moderate │               │                 │
+      │  • Puntaje máx: 20       │               │                 │
+      │             │             │               │                 │
+      │ 6. Submit  │             │               │                 │
+      ├────────────>│             │               │                 │
+      │             │             │               │                 │
+      │             │ 7. Valida: │               │                 │
+      │             │  • Fecha límite > hoy      │                 │
+      │             │  • Duración > 0            │                 │
+      │             │  • Puntaje > 0             │                 │
+      │             │             │               │                 │
+      │             │ 8. Crea    │               │                 │
+      │             │  Assignment│               │                 │
+      │             ├────────────>│               │                 │
+      │             │<────────────┤ 9. OK,       │                 │
+      │             │  id=123     │               │                 │
+      │             │             │               │                 │
+      │             │ 10. Query  │               │                 │
+      │             │  estudiantes               │                 │
+      │             │  del curso │               │                 │
+      │             ├────────────>│               │                 │
+      │             │<────────────┤ 11. Lista    │                 │
+      │             │  [user1,    │               │                 │
+      │             │   user2,...]│               │                 │
+      │             │             │               │                 │
+      │             │ 12. Llama  │               │                 │
+      │             │  NotificationService       │                 │
+      │             │  .notify_new_assignment()  │                 │
+      │             │  (assignment, students)    │                 │
+      │             ├────────────────────────────>│                 │
+      │             │             │               │                 │
+      │             │             │               │ 13. FOR EACH   │
+      │             │             │               │  estudiante:   │
+      │             │             │               │                 │
+      │             │             │ 14. Crea     │                 │
+      │             │             │  Notification│                 │
+      │             │             │  (recipient= │                 │
+      │             │             │   estudiante)│                 │
+      │             │             │<──────────────┤                 │
+      │             │             │               │                 │
+      │             │             │               │ 15. [OPCIONAL] │
+      │             │             │               │  Envía email   │
+      │             │             │               ├────────────────>│
+      │             │             │               │  a cada uno    │
+      │             │             │               │                 │
+      │             │<────────────────────────────┤ 16. OK,        │
+      │             │  N notificaciones creadas   │  enviadas      │
+      │             │             │               │                 │
+      │ 17. Redirect + mensaje   │               │                 │
+      │  "Asignación creada,     │               │                 │
+      │   notificaciones enviadas"│              │                 │
+      │<────────────┤             │               │                 │
+      │             │             │               │                 │
+      │             │             │               │ 18. Estudiantes│
+      │             │             │               │  reciben       │
+      │             │             │               │  notificación  │
+      │             │             │               │  (badge en     │
+      │             │             │               │   navbar)      │
+      │             │             │               │                 │
+```
+
+**Tiempo estimado:** <5 segundos
+
+**Notas:**
+- Las notificaciones se crean en masa de manera eficiente
+- Los emails son opcionales según configuración del estudiante
+- El sistema calcula automáticamente la fecha de expiración de notificaciones
+- Se registra en logs para auditoría
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -440,7 +1408,391 @@ evaIa V0.5/
 
 ---
 
-## 6. BASE DE DATOS
+### 6.4. Diagrama de Secuencia: Consulta de Notificaciones en Tiempo Real
+
+```
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐
+│ Usuario  │  │JavaScript│  │  Django  │  │   DB         │
+│(Browser) │  │  Client  │  │  API     │  │ PostgreSQL   │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬───────┘
+      │             │             │               │
+      │ 1. Página  │             │               │
+      │  carga     │             │               │
+      │            │             │               │
+      │            │ 2. Inicia  │               │
+      │            │  polling   │               │
+      │            │  cada 10s  │               │
+      │            │             │               │
+      │            │ 3. Fetch   │               │
+      │            │  /api/     │               │
+      │            │  notifications             │
+      │            │  /unread_count             │
+      │            ├────────────>│               │
+      │            │             │               │
+      │            │             │ 4. Query     │
+      │            │             │  Notification│
+      │            │             │  WHERE       │
+      │            │             │  recipient = │
+      │            │             │  user AND    │
+      │            │             │  is_read =   │
+      │            │             │  False       │
+      │            │             ├──────────────>│
+      │            │             │               │
+      │            │             │<──────────────┤ 5. COUNT = 3
+      │            │             │               │
+      │            │<────────────┤ 6. JSON      │
+      │            │  {count: 3, │               │
+      │            │   latest: [...]}            │
+      │            │             │               │
+      │            │ 7. Actualiza│               │
+      │            │  badge en  │               │
+      │ 8. Ve "3" │  navbar    │               │
+      │  en badge │             │               │
+      │<───────────┤             │               │
+      │            │             │               │
+      │ 9. Click  │             │               │
+      │  en icono │             │               │
+      │  campana  │             │               │
+      ├───────────>│             │               │
+      │            │             │               │
+      │            │ 10. Fetch  │               │
+      │            │  /api/     │               │
+      │            │  notifications             │
+      │            │  /list     │               │
+      │            ├────────────>│               │
+      │            │             │               │
+      │            │             │ 11. Query    │
+      │            │             │  Notification│
+      │            │             │  WHERE       │
+      │            │             │  recipient = │
+      │            │             │  user        │
+      │            │             │  ORDER BY    │
+      │            │             │  created_at  │
+      │            │             │  DESC        │
+      │            │             │  LIMIT 20    │
+      │            │             ├──────────────>│
+      │            │             │               │
+      │            │             │<──────────────┤ 12. Lista
+      │            │             │               │
+      │            │<────────────┤ 13. JSON     │
+      │            │  [{id: 1,   │               │
+      │            │    title,   │               │
+      │            │    message, │               │
+      │            │    is_read, │               │
+      │            │    ...}, ...]               │
+      │            │             │               │
+      │            │ 14. Renderiza              │
+      │            │  dropdown  │               │
+      │            │  con lista │               │
+      │ 15. Ve    │  de        │               │
+      │  notifica-│  notificaciones            │
+      │  ciones   │             │               │
+      │<───────────┤             │               │
+      │            │             │               │
+      │ 16. Click │             │               │
+      │  en una   │             │               │
+      │  notificación            │               │
+      ├───────────>│             │               │
+      │            │             │               │
+      │            │ 17. Fetch  │               │
+      │            │  /api/     │               │
+      │            │  notifications             │
+      │            │  /mark_read│               │
+      │            │  /{id}     │               │
+      │            ├────────────>│               │
+      │            │             │               │
+      │            │             │ 18. UPDATE   │
+      │            │             │  Notification│
+      │            │             │  SET is_read │
+      │            │             │  = True,     │
+      │            │             │  read_at =   │
+      │            │             │  NOW()       │
+      │            │             │  WHERE id = X│
+      │            │             ├──────────────>│
+      │            │             │<──────────────┤ 19. OK
+      │            │             │               │
+      │            │<────────────┤ 20. {success}│
+      │            │             │               │
+      │            │ 21. Actualiza              │
+      │            │  badge     │               │
+      │ 22. Badge │  (count-1) │               │
+      │  muestra  │             │               │
+      │  "2"      │             │               │
+      │<───────────┤             │               │
+      │            │             │               │
+      │            │ 23. Redirect               │
+      │            │  a action_url              │
+      │            │  (ej: /presentations/123)  │
+      │            │             │               │
+      │ 24. Navega│             │               │
+      │  a destino│             │               │
+      │<───────────┤             │               │
+      │            │             │               │
+```
+
+**Frecuencia de polling:** Cada 10 segundos (configurable)
+
+**Alternativa futura:** WebSockets con Django Channels para notificaciones push en tiempo real
+
+**Optimizaciones:**
+- Caché de contador de no leídas (evita queries constantes)
+- Índices en base de datos en campos `recipient` + `is_read`
+- Paginación en lista de notificaciones (20 por página)
+
+---
+
+### 6.5. Resumen de Diagramas de Secuencia
+
+Los diagramas anteriores ilustran los 4 flujos principales del sistema:
+
+1. **Subida y Análisis de Presentación (Estudiante):**
+   - Flujo completo de 8 pasos del pipeline de IA
+   - Interacción con APIs externas (Groq, Cloudinary)
+   - Manejo asíncrono con reportes de progreso
+   - Tiempo: 2-5 minutos
+
+2. **Calificación por Docente:**
+   - Revisión de análisis de IA
+   - Ajustes manuales opcionales
+   - Publicación y notificación automática
+   - Tiempo: 3-10 minutos por presentación
+
+3. **Creación de Asignación:**
+   - Creación masiva de notificaciones
+   - Envío opcional de emails
+   - Tiempo: <5 segundos
+
+4. **Sistema de Notificaciones en Tiempo Real:**
+   - Polling cada 10 segundos
+   - Actualización dinámica de badges
+   - Marcado de leídas automático
+
+**Patrones Comunes:**
+- Validación temprana de datos
+- Transacciones ACID para operaciones críticas
+- Notificaciones automáticas en eventos importantes
+- Caché para optimizar consultas frecuentes
+- Manejo de errores con mensajes claros
+
+---
+
+### 6.6. Diagrama de Secuencia: Manejo de Errores en Análisis de IA
+
+```
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐  ┌──────────┐
+│Estudiante│  │  Django  │  │   DB     │  │  AIService  │  │  Groq    │
+│          │  │  Views   │  │PostgreSQL│  │             │  │   API    │
+└─────┬────┘  └─────┬────┘  └─────┬────┘  └──────┬──────┘  └─────┬────┘
+      │             │             │               │                │
+      │             │             │               │                │
+      │ CASO 1: SIN AUDIO DETECTADO                                │
+      │ ════════════════════════════════════════════════════════   │
+      │             │             │               │                │
+      │             │ Video sin  │               │                │
+      │             │ audio sube │               │                │
+      │             ├────────────>│               │                │
+      │             │             │               │                │
+      │             │ Inicio     │               │                │
+      │             │ análisis   │               │                │
+      │             ├────────────────────────────>│                │
+      │             │             │               │                │
+      │             │             │               │ Extracción    │
+      │             │             │               │ de audio      │
+      │             │             │               │ → WAV vacío   │
+      │             │             │               │                │
+      │             │             │               │ Transcripción │
+      │             │             │               │ Whisper →     │
+      │             │             │               │ texto = ""    │
+      │             │             │               │                │
+      │             │             │               │ ❌ VALIDACIÓN │
+      │             │             │               │ FALLA         │
+      │             │             │               │                │
+      │             │             │ UPDATE status│                │
+      │             │             │ = FAILED,    │                │
+      │             │             │ ai_feedback =│                │
+      │             │             │ "Sin audio"  │                │
+      │             │             │<──────────────┤                │
+      │             │             │               │                │
+      │             │ Crear      │               │                │
+      │             │ Notification               │                │
+      │             │ (tipo=ERROR)               │                │
+      │             ├────────────>│               │                │
+      │             │             │               │                │
+      │ Recibe      │             │               │                │
+      │ notificación│             │               │                │
+      │ "❌ No se   │             │               │                │
+      │ detectó audio"            │               │                │
+      │<────────────┤             │               │                │
+      │             │             │               │                │
+      │ Debe subir  │             │               │                │
+      │ nuevo video │             │               │                │
+      │             │             │               │                │
+      │             │             │               │                │
+      │ CASO 2: TIMEOUT DE API GROQ                                │
+      │ ════════════════════════════════════════════════════════   │
+      │             │             │               │                │
+      │             │ Análisis en│               │                │
+      │             │ curso...   │               │                │
+      │             │             │               │                │
+      │             │             │               │ Llama Groq    │
+      │             │             │               │ para coherencia│
+      │             │             │               ├───────────────>│
+      │             │             │               │                │
+      │             │             │               │ ⏱️ Esperando...│
+      │             │             │               │ (45 segundos) │
+      │             │             │               │                │
+      │             │             │               │<───────────────┤
+      │             │             │               │ ❌ Timeout     │
+      │             │             │               │                │
+      │             │             │               │ 🔄 INTENTO 2  │
+      │             │             │               │ (con API key  │
+      │             │             │               │  diferente)   │
+      │             │             │               ├───────────────>│
+      │             │             │               │                │
+      │             │             │               │<───────────────┤
+      │             │             │               │ ❌ Timeout     │
+      │             │             │               │                │
+      │             │             │               │ 🔄 INTENTO 3  │
+      │             │             │               ├───────────────>│
+      │             │             │               │                │
+      │             │             │               │<───────────────┤
+      │             │             │               │ ✅ SUCCESS!    │
+      │             │             │               │ {coherence:82} │
+      │             │             │               │                │
+      │             │             │               │ Continúa      │
+      │             │             │               │ normalmente   │
+      │             │             │               │                │
+      │             │             │               │                │
+      │ CASO 3: RATE LIMIT DE GROQ API                             │
+      │ ════════════════════════════════════════════════════════   │
+      │             │             │               │                │
+      │             │             │               │ Llama Groq    │
+      │             │             │               ├───────────────>│
+      │             │             │               │                │
+      │             │             │               │<───────────────┤
+      │             │             │               │ ❌ 429 Rate    │
+      │             │             │               │ Limit Exceeded │
+      │             │             │               │                │
+      │             │             │               │ GroqKeyManager│
+      │             │             │               │ .rotate_key() │
+      │             │             │               │                │
+      │             │             │               │ 🔄 Reintenta  │
+      │             │             │               │ con KEY #2    │
+      │             │             │               ├───────────────>│
+      │             │             │               │                │
+      │             │             │               │<───────────────┤
+      │             │             │               │ ✅ SUCCESS!    │
+      │             │             │               │                │
+      │             │             │ Log: "Rotación│                │
+      │             │             │ de API key    │                │
+      │             │             │ exitosa"      │                │
+      │             │             │<──────────────┤                │
+      │             │             │               │                │
+      │             │             │               │                │
+      │ CASO 4: VIDEO CORRUPTO (Validación Temprana)               │
+      │ ════════════════════════════════════════════════════════   │
+      │             │             │               │                │
+      │ Sube video │             │               │                │
+      │ corrupto   │             │               │                │
+      ├────────────>│             │               │                │
+      │             │             │               │                │
+      │             │ Validación │               │                │
+      │             │ de formato │               │                │
+      │             │             │               │                │
+      │             │ Intenta    │               │                │
+      │             │ abrir con  │               │                │
+      │             │ OpenCV     │               │                │
+      │             │             │               │                │
+      │             │ ❌ FALLA   │               │                │
+      │             │ (codec     │               │                │
+      │             │  inválido) │               │                │
+      │             │             │               │                │
+      │ Error:     │             │               │                │
+      │ "Formato de│             │               │                │
+      │ video      │             │               │                │
+      │ inválido o │             │               │                │
+      │ corrupto"  │             │               │                │
+      │<────────────┤             │               │                │
+      │             │             │               │                │
+      │ NO se crea │             │               │                │
+      │ registro en│             │               │                │
+      │ BD         │             │               │                │
+      │             │             │               │                │
+      │             │             │               │                │
+      │ CASO 5: SIN ROSTROS (pero hay audio)                       │
+      │ ════════════════════════════════════════════════════════   │
+      │             │             │               │                │
+      │             │ Análisis   │               │                │
+      │             │ rostros    │               │                │
+      │             │             │               │ FaceDetection │
+      │             │             │               │ no detecta    │
+      │             │             │               │ ningún rostro │
+      │             │             │               │                │
+      │             │             │               │ ⚠️ WARNING    │
+      │             │             │               │ (no error)    │
+      │             │             │               │                │
+      │             │             │ Guarda        │                │
+      │             │             │ participation_│                │
+      │             │             │ data = {      │                │
+      │             │             │   no_face:true│                │
+      │             │             │   warning:... │                │
+      │             │             │ }             │                │
+      │             │             │<──────────────┤                │
+      │             │             │               │                │
+      │             │             │               │ ✅ CONTINÚA   │
+      │             │             │               │ solo con audio│
+      │             │             │               │ y transcripción│
+      │             │             │               │                │
+      │             │             │               │ Calificación  │
+      │             │             │               │ basada en     │
+      │             │             │               │ coherencia +  │
+      │             │             │               │ fluidez       │
+      │             │             │               │                │
+      │             │             │ UPDATE status│                │
+      │             │             │ = ANALYZED   │                │
+      │             │             │ (con warning)│                │
+      │             │             │<──────────────┤                │
+      │             │             │               │                │
+      │ Recibe      │             │               │                │
+      │ notificación│             │               │                │
+      │ "⚠️ Análisis│             │               │                │
+      │ completado  │             │               │                │
+      │ (sin rostros│             │               │                │
+      │ detectados)"│             │               │                │
+      │<────────────┤             │               │                │
+      │             │             │               │                │
+```
+
+**Estrategias de Manejo de Errores:**
+
+1. **Validación en Capas:**
+   - Client-side (JavaScript): formato, tamaño
+   - Server-side (Django): integridad, codec
+   - Processing (IA): contenido válido
+
+2. **Reintentos Inteligentes:**
+   - Timeouts: 3 intentos con backoff exponencial
+   - Rate limits: rotación automática de API keys
+   - Transient errors: retry inmediato
+
+3. **Graceful Degradation:**
+   - Sin rostros → continúa con audio
+   - Sin API key → usa análisis básico
+   - Cloudinary down → usa storage local
+
+4. **Logging y Monitoreo:**
+   - Todos los errores se registran en logs
+   - Notificaciones al admin en errores críticos
+   - Métricas de tasa de error por servicio
+
+5. **Feedback Claro al Usuario:**
+   - Mensajes descriptivos (no códigos técnicos)
+   - Acciones sugeridas para resolver
+   - Soporte contextual en ayuda
+
+---
+
+## 7. BASE DE DATOS
 
 ### Modelo de Datos (Entidad-Relación)
 
